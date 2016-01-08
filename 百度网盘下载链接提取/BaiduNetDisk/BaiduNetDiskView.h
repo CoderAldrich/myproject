@@ -51,7 +51,6 @@ public:
 	VOID CalcXLTClickPoint(CPoint &ptClick);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	virtual void NewWindow3( IDispatch **ppDisp,VARIANT_BOOL *Cancel,DWORD dwFlags,BSTR bstrUrlContext,BSTR bstrUrl);
-	void OnMainDocumentComplete(LPDISPATCH pDisp, VARIANT* URL);
 
 	HRESULT OnDownloadFile( BSTR bstrFileUrl );
 };

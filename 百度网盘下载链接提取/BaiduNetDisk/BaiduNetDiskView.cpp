@@ -59,11 +59,6 @@ void CBaiduNetDiskView::NewWindow3( IDispatch **ppDisp,VARIANT_BOOL *Cancel,DWOR
 	*Cancel = VARIANT_TRUE;
 }
 
-void CBaiduNetDiskView::OnMainDocumentComplete(LPDISPATCH pDisp, VARIANT* URL)
-{
-	__super::OnMainDocumentComplete(pDisp , URL);
-}
-
 #define INPUT_CODE 1000
 #define CLICK_CODE 1001
 #define CLICK_DOWNLLOAD_BTN 1002
@@ -82,6 +77,7 @@ void CBaiduNetDiskView::OnTimer(UINT_PTR nIDEvent)
 
 	CAutoBrowser AutoBrowser((IWebBrowser2 *)GetApplication(),GetIEServerWnd());
 
+	//输入提取密码
 	if ( INPUT_CODE == nIDEvent )
 	{
 		AutoBrowser.InputText(g_strCheckCode);
@@ -89,42 +85,72 @@ void CBaiduNetDiskView::OnTimer(UINT_PTR nIDEvent)
 		SetTimer(CLICK_CODE,1000,NULL);
 	}
 
+	//点击提交按钮
 	if (CLICK_CODE == nIDEvent)
 	{
+		static int nsubmitClickCount = 0;
 		CElementInformation ElemInfo;
 		ElemInfo.SetTagName(L"a");
 		ElemInfo.AddElementAttribute(L"id",L"submitBtn",TRUE);
 		
-		AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo);
-		SetTimer(CLICK_DOWNLLOAD_BTN,3000,NULL);
+		if( AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo) || nsubmitClickCount >= 5  )
+		{
+			SetTimer(CLICK_DOWNLLOAD_BTN,3000,NULL);
+		}
+		else
+		{
+			SetTimer(CLICK_CODE,1000,NULL);
+		}
+
+		nsubmitClickCount++;
+		
 	}
 
+
+	//点击下载按钮
 	if (CLICK_DOWNLLOAD_BTN == nIDEvent)
 	{
+		static int ndownloadClickCount = 0;
 		CElementInformation ElemInfo;
 		ElemInfo.SetTagName(L"a");
 		ElemInfo.AddElementAttribute(L"id",L"downFileButton",TRUE);
 		ElemInfo.AddElementAttribute(L"class",L"new-dbtn",TRUE);
 		
-		AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo);
-		SetTimer(CLICK_NORMAL_DOWNLLOAD,3000,NULL);
+		if(AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo) || ndownloadClickCount >= 5 )
+		{
+			SetTimer(CLICK_NORMAL_DOWNLLOAD,3000,NULL);
+		}
+		else
+		{
+			SetTimer(CLICK_DOWNLLOAD_BTN,3000,NULL);
+		}
+
+		ndownloadClickCount++;
+		
 
 	}
 
+	//点击普通下载按钮
 	if( CLICK_NORMAL_DOWNLLOAD == nIDEvent )
 	{
 		CElementInformation ElemInfo;
 		ElemInfo.SetTagName(L"a");
 		ElemInfo.AddElementAttribute(L"id",L"_disk_id_15",TRUE);
 		ElemInfo.AddElementAttribute(L"class",L"abtn cancel",TRUE);
-		AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo);
-
+		
+		if( FALSE == AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo) )
+		{
+			SetTimer(CLICK_NORMAL_DOWNLLOAD,3000,NULL);
+		}
 	}
 }
 
 
 HRESULT CBaiduNetDiskView::OnDownloadFile( BSTR bstrFileUrl )
 {
+	//文件下载通知
+
+
 	DeleteFile(g_strResSave);
 
 	CFile ResFile;

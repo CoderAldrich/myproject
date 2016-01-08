@@ -524,7 +524,7 @@ BOOL CAutoBrowser::ClickFirstMatchWebPageElement(CElementInformation *pElemInfo)
 	bRes = GetFirstElemRectToWnd(pElemInfo,&rcElem);
 	if(bRes)
 	{
-		ptElemCenter = GetRandPointInRect(rcElem);//rcElem.CenterPoint();
+		ptElemCenter = rcElem.CenterPoint();
 		bRes = ClickWebPagePoint(ptElemCenter.x,ptElemCenter.y);
 	}
 	return bRes;
