@@ -63,9 +63,17 @@ void CBaiduNetDiskView::NewWindow3( IDispatch **ppDisp,VARIANT_BOOL *Cancel,DWOR
 #define CLICK_CODE 1001
 #define CLICK_DOWNLLOAD_BTN 1002
 #define CLICK_NORMAL_DOWNLLOAD 1003
+
+#define CLICK_SAVE   1004
+#define CLICK_PATH   1005
+#define CLICK_OK   1006
+
+
+#define EXIT_PROCESS 1007
+
 BOOL CBaiduNetDiskView::StartWork()
 {
-	SetTimer(INPUT_CODE,1000,NULL);
+	SetTimer(INPUT_CODE,2000,NULL);
 	return TRUE;
 }
 
@@ -95,7 +103,9 @@ void CBaiduNetDiskView::OnTimer(UINT_PTR nIDEvent)
 		
 		if( AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo) || nsubmitClickCount >= 5  )
 		{
-			SetTimer(CLICK_DOWNLLOAD_BTN,3000,NULL);
+			//SetTimer(CLICK_DOWNLLOAD_BTN,3000,NULL);
+			SetTimer(CLICK_SAVE,3000,NULL);
+			
 		}
 		else
 		{
@@ -107,42 +117,88 @@ void CBaiduNetDiskView::OnTimer(UINT_PTR nIDEvent)
 	}
 
 
-	//点击下载按钮
-	if (CLICK_DOWNLLOAD_BTN == nIDEvent)
-	{
-		static int ndownloadClickCount = 0;
-		CElementInformation ElemInfo;
-		ElemInfo.SetTagName(L"a");
-		ElemInfo.AddElementAttribute(L"id",L"downFileButton",TRUE);
-		ElemInfo.AddElementAttribute(L"class",L"new-dbtn",TRUE);
-		
-		if(AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo) || ndownloadClickCount >= 5 )
-		{
-			SetTimer(CLICK_NORMAL_DOWNLLOAD,3000,NULL);
-		}
-		else
-		{
-			SetTimer(CLICK_DOWNLLOAD_BTN,3000,NULL);
-		}
-
-		ndownloadClickCount++;
-		
-
-	}
-
-	//点击普通下载按钮
-	if( CLICK_NORMAL_DOWNLLOAD == nIDEvent )
+	//点击保存按钮
+	if( CLICK_SAVE == nIDEvent )
 	{
 		CElementInformation ElemInfo;
 		ElemInfo.SetTagName(L"a");
-		ElemInfo.AddElementAttribute(L"id",L"_disk_id_15",TRUE);
-		ElemInfo.AddElementAttribute(L"class",L"abtn cancel",TRUE);
+		ElemInfo.AddElementAttribute(L"id",L"emphasizeButton",TRUE);
+
+		AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo);
 		
-		if( FALSE == AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo) )
+		SetTimer(CLICK_PATH,2000,NULL);
+	}
+
+	if (CLICK_PATH == nIDEvent )
+	{
+		CElementInformation ElemInfo;
+		ElemInfo.SetTagName(L"span");
+		ElemInfo.AddElementAttribute(L"node-path",L"22222",TRUE);
+
+		AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo);
+		
+		SetTimer(CLICK_OK,2000,NULL);
+	}
+	
+	if( CLICK_OK == nIDEvent )
+	{
+		CElementInformation ElemInfo;
+		ElemInfo.SetTagName(L"a");
+		ElemInfo.AddElementAttribute(L"id",L"_disk_id_14",TRUE);
+
+		AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo);
+		
+		SetTimer(EXIT_PROCESS,2000,NULL);
+	}
+
+	if( EXIT_PROCESS == nIDEvent )
+	{
+		ExitProcess(0);
+	}
+	
+	
+
+	if(FALSE)
+	{
+		//点击下载按钮
+		if (CLICK_DOWNLLOAD_BTN == nIDEvent)
 		{
-			SetTimer(CLICK_NORMAL_DOWNLLOAD,3000,NULL);
+			static int ndownloadClickCount = 0;
+			CElementInformation ElemInfo;
+			ElemInfo.SetTagName(L"a");
+			ElemInfo.AddElementAttribute(L"id",L"downFileButton",TRUE);
+			ElemInfo.AddElementAttribute(L"class",L"new-dbtn",TRUE);
+
+			if(AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo) || ndownloadClickCount >= 5 )
+			{
+				SetTimer(CLICK_NORMAL_DOWNLLOAD,3000,NULL);
+			}
+			else
+			{
+				SetTimer(CLICK_DOWNLLOAD_BTN,3000,NULL);
+			}
+
+			ndownloadClickCount++;
+
+
+		}
+
+		//点击普通下载按钮
+		if( CLICK_NORMAL_DOWNLLOAD == nIDEvent )
+		{
+			CElementInformation ElemInfo;
+			ElemInfo.SetTagName(L"a");
+			ElemInfo.AddElementAttribute(L"id",L"_disk_id_15",TRUE);
+			ElemInfo.AddElementAttribute(L"class",L"abtn cancel",TRUE);
+
+			if( FALSE == AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo) )
+			{
+				SetTimer(CLICK_NORMAL_DOWNLLOAD,3000,NULL);
+			}
 		}
 	}
+
+
 }
 
 
