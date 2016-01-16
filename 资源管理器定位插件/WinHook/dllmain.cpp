@@ -13,16 +13,21 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	{
 	case DLL_PROCESS_ATTACH:
 		{
-			WCHAR szLocalPath[MAX_PATH]={0};
-			GetModuleFileNameW(NULL,szLocalPath,MAX_PATH);
-			CString strExePath;
-			strExePath = szLocalPath;
-
-			if (strExePath.CompareNoCase(L"C:\\Windows\\explorer.exe") == 0)
+			static BOOL bInit = FALSE;
+			if ( FALSE == bInit )
 			{
-				g_bHookThisProcess = TRUE;
-			}
+				bInit = TRUE;
+				
+				WCHAR szLocalPath[MAX_PATH]={0};
+				GetModuleFileNameW(NULL,szLocalPath,MAX_PATH);
+				CString strExePath;
+				strExePath = szLocalPath;
 
+				if (strExePath.CompareNoCase(L"C:\\Windows\\explorer.exe") == 0)
+				{
+					g_bHookThisProcess = TRUE;
+				}
+			}
 		}
 		break;
 	case DLL_THREAD_ATTACH:

@@ -56,7 +56,7 @@ LRESULT CALLBACK NewWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 				SetPropW(hWnd,L"Input",(HANDLE)pInput);
 			}
 
-			if ( GetTickCount() - pInput->dwLastInput > 700)
+			if ( GetTickCount() - pInput->dwLastInput > 500)
 			{
 				pInput->strInputText=L"";
 			}
@@ -69,7 +69,7 @@ LRESULT CALLBACK NewWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 			OutputDebugStringW(L"µ±Ç°ËÑË÷£º"+pInput->strInputText);
 #endif
 
- 			if ( ('a' <= wParam && wParam <= 'z') || ( 'A' <= wParam && wParam <= 'Z '))
+ 			if ( ('a' <= wParam && wParam <= 'z') || ( 'A' <= wParam && wParam <= 'Z' ) || ( '0' <= wParam && wParam <= '9' ) )
  			{
 		 		LIST_SEARCH_RESULT SearchRes;
 		 		SearchExplorerItem(hWnd,&SearchRes);
@@ -106,6 +106,17 @@ LRESULT CALLBACK NewWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
  			}
 		}
 
+		if ( WM_DESTROY == nMsg )
+		{
+// 			SEARCH_INPUT_INFO *pInput = (SEARCH_INPUT_INFO *)GetPropW(hWnd,L"Input");
+// 			if (pInput)
+// 			{
+// 				delete pInput;
+// 			}
+// 
+// 			SetPropW(hWnd,L"Input",0);
+		}
+
 		return pWndProc(hWnd,nMsg,wParam,lParam);
 	}
 	return DefWindowProcW(hWnd,nMsg,wParam,lParam);
@@ -114,7 +125,7 @@ LRESULT CALLBACK NewWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 extern BOOL g_bHookThisProcess;
 LRESULT CALLBACK CbtHookProc(int code, WPARAM wParam, LPARAM lParam)
 {
-	if( g_bHookThisProcess && (HCBT_ACTIVATE == code || HCBT_CREATEWND == code || HCBT_SETFOCUS == code))
+	if( g_bHookThisProcess /*&& (HCBT_ACTIVATE == code || HCBT_CREATEWND == code || HCBT_SETFOCUS == code)*/)
 	{
 		HWND hWnd = (HWND)wParam;
 		CString strClassName;
