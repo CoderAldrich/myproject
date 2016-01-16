@@ -91,7 +91,6 @@ LRESULT CALLBACK NewWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 
 		 			if ( strShortPinYin.Find(pInput->strInputText) >=0 || strFullPinYin.Find(pInput->strInputText) >= 0)
 		 			{
-						OutputDebugStringW(it->strItemName);
 		 				CComVariant vtNull;
 		 				vtNull = CHILDID_SELF;
 		 				it->pAcc->accSelect((SELFLAG_TAKEFOCUS | SELFLAG_TAKESELECTION),vtNull);
