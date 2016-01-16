@@ -5,11 +5,9 @@
 #include <Windows.h>
 #include <WinUser.h>
 #include <atlstr.h>
-#include "HzToPy.h"
 #include "RecordBaseT.h"
+#include "ExplorerItemSearch.h"
 
-#include <OleAcc.h>
-#pragma comment(lib,"Oleacc.lib")
 
 //获取当前模块句柄
 HMODULE ModuleHandleByAddr(const void* ptrAddr)  
@@ -29,188 +27,15 @@ HMODULE ThisModuleHandle()
 }
 
 
-UINT GetObjectState(IAccessible* pacc, 
-					VARIANT* pvarChild, 
-					LPTSTR lpszState, 
-					UINT cchState);
-
-
-// --------------------------------------------------------------------------
-//
-//  GetObjectName()
-//
-// --------------------------------------------------------------------------
-UINT GetObjectName(IAccessible* pacc, VARIANT* pvarChild, LPSTR lpszName, UINT cchName)
-{
-	HRESULT hr;
-	BSTR bstrName;
-
-	*lpszName = 0;
-	bstrName = NULL;
-
-	hr = pacc->get_accName(*pvarChild, &bstrName);
-
-	if (SUCCEEDED(hr) && bstrName)
-	{
-		WideCharToMultiByte(CP_ACP, 0, bstrName, -1, lpszName, cchName, NULL, NULL);
-		SysFreeString(bstrName);
-	}
-
-	return(CString(lpszName).GetLength());
-} 
-
-
-// --------------------------------------------------------------------------
-//
-//  GetObjectClass()
-//
-//  This gets the Class of an object.
-//
-// --------------------------------------------------------------------------
-UINT GetObjectClass(IAccessible* pacc, LPSTR lpszClass, UINT cchClass)
-{
-	HWND hWnd;
-	if(S_OK == WindowFromAccessibleObject(pacc,  &hWnd))
-	{
-		if(hWnd)
-			GetClassNameA(hWnd, lpszClass, cchClass);
-		else
-			strcpy(lpszClass, "No window");
-	}
-
-	return 1;
-}
-
-#include <list>
-using namespace std;
-
-typedef struct tagENUM_RES
-{
-	CString strItemName;
-	IAccessible* pAcc;
-}ENUM_RES;
-typedef list<ENUM_RES> LIST_ENUM_RES;
-typedef LIST_ENUM_RES::iterator LIST_ENUM_RES_PTR;
-
-BOOL FindChild (IAccessible* paccParent,
-				BOOL bCollect,LIST_ENUM_RES *pListRes)
-{
-	HRESULT hr;
-	long numChildren;
-	unsigned long numFetched;
-	VARIANT varChild;
-	int index;
-	IAccessible* pCAcc = NULL;
-	IAccessible* paccChild = NULL;
-	IEnumVARIANT* pEnum = NULL;
-	IDispatch* pDisp = NULL;
-
-	char szObjName[256];
-
-	//得到父亲支持的IEnumVARIANT接口
-	hr = paccParent -> QueryInterface(IID_IEnumVARIANT, (PVOID*) & pEnum);
-
-	if(pEnum)
-		pEnum -> Reset();
-
-	//取得父亲拥有的可访问的子的数目
-	paccParent -> get_accChildCount(&numChildren);
-
-	//搜索并比较每一个子ID，找到名字、角色、类与输入相一致的。
-	for(index = 1; index <= numChildren; index++)
-	{
-		pCAcc = NULL;		
-		// 如果支持IEnumVARIANT接口，得到下一个子ID
-		//以及其对应的 IDispatch 接口
-		if (pEnum)
-			hr = pEnum -> Next(1, &varChild, &numFetched);	
-		else
-		{
-			//如果一个父亲不支持IEnumVARIANT接口，子ID就是它的序号
-			varChild.vt = VT_I4;
-			varChild.lVal = index;
-		}
-
-		// 找到此子ID对应的 IDispatch 接口
-		if (varChild.vt == VT_I4)
-		{
-			//通过子ID序号得到对应的 IDispatch 接口
-			pDisp = NULL;
-			hr = paccParent -> get_accChild(varChild, &pDisp);
-		}
-		else
-			//如果父支持IEnumVARIANT接口可以直接得到子IDispatch 接口
-			pDisp = varChild.pdispVal;
-
-		// 通过 IDispatch 接口得到子的 IAccessible 接口 pCAcc
-		if (pDisp)
-		{
-			hr = pDisp->QueryInterface(IID_IAccessible, (void**)&pCAcc);
-			hr = pDisp->Release();
-		}
-
-		// Get information about the child
-		if(pCAcc)
-		{
-			//如果子支持IAccessible 接口，那么子ID就是CHILDID_SELF
-			VariantInit(&varChild);
-			varChild.vt = VT_I4;
-			varChild.lVal = CHILDID_SELF;
-
-			paccChild = pCAcc;
-		}
-		else
-			//如果子不支持IAccessible 接口
-			paccChild = paccParent;
-
-		GetObjectName(paccChild, &varChild, szObjName, sizeof(szObjName));
-
-// #ifdef DEBUG
-// 		OutputDebugStringW(L"ObjName ");
-// 		OutputDebugStringA(szObjName);
-// 		OutputDebugStringW(L"\n");
-// #endif
-
-		if (bCollect)
-		{
-			ENUM_RES ERes;
-			ERes.pAcc = paccChild;
-			ERes.strItemName = szObjName;
-			pListRes->push_back(ERes);
-		}
-
-		CString strObjectName;
-		strObjectName = szObjName;
-
-		if (strObjectName==L"项目视图" && FALSE == bCollect )
-		{
-			if( pCAcc)
-			{
-				FindChild(pCAcc,TRUE,pListRes);
-
-				if(paccChild != pCAcc)
-					pCAcc->Release();
-			}
-			break;
-		}
-
-
-	}
-
-	if(pEnum)
-		pEnum -> Release();
-
-	return 0;
-}
 
 HHOOK g_hCbtHook = NULL;
 
 typedef CRecordBaseT<HWND,LONG_PTR> COldWndProcRecord;
-typedef struct tagNAVI_INFO
+typedef struct tagSEARCH_INPUT_INFO
 {
-	CString strInput;
+	CString strInputText;
 	DWORD dwLastInput;
-}NAVI_INFO;
+}SEARCH_INPUT_INFO;
 
 COldWndProcRecord g_WndRecord;
 
@@ -218,78 +43,65 @@ void pinyin_gb2312(char * inbuf, char * outbuf, bool m_blnSimaple = false, bool 
 
 LRESULT CALLBACK NewWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 {
-	//OutputDebugStringW(L"NewWndProc Call");
-
 	WNDPROC pWndProc = (WNDPROC)GetPropW(hWnd,L"OldWndProc");
 	if (pWndProc)
 	{
 		if ( nMsg == WM_CHAR )
 		{
-			NAVI_INFO *pInput = (NAVI_INFO *)GetPropW(hWnd,L"Input");
+			SEARCH_INPUT_INFO *pInput = (SEARCH_INPUT_INFO *)GetPropW(hWnd,L"Input");
 			if ( NULL == pInput)
 			{
-				pInput = new NAVI_INFO;
+				pInput = new SEARCH_INPUT_INFO;
 				pInput->dwLastInput = GetTickCount();
 				SetPropW(hWnd,L"Input",(HANDLE)pInput);
 			}
 
-			if ( GetTickCount() - pInput->dwLastInput > 1000)
+			if ( GetTickCount() - pInput->dwLastInput > 700)
 			{
-				pInput->strInput=L"";
+				pInput->strInputText=L"";
 			}
 
 			pInput->dwLastInput = GetTickCount();
-			pInput->strInput += (char)wParam;
-			pInput->strInput.MakeLower();
+			pInput->strInputText += (char)wParam;
+			pInput->strInputText.MakeLower();
 
-			OutputDebugStringW(L"Input: "+pInput->strInput);
+#if defined(DEBUG) || defined(_DEBUG)
+			OutputDebugStringW(L"当前搜索："+pInput->strInputText);
+#endif
 
- 			if ( ('a' <= wParam && wParam <= 'z') && ( 'A' <= wParam && wParam <= 'Z '))
+ 			if ( ('a' <= wParam && wParam <= 'z') || ( 'A' <= wParam && wParam <= 'Z '))
  			{
-			 	IAccessible *paccMainWindow = NULL;
-			 	HRESULT hr = AccessibleObjectFromWindow(hWnd,OBJID_WINDOW,IID_IAccessible,(void **)&paccMainWindow);
-			 
-			 	CHzToPy Test;
-			 
-			 	if (hr == S_OK && paccMainWindow)
-			 	{
-			 		LIST_ENUM_RES Res;
-			 		FindChild(paccMainWindow,FALSE,&Res);
-			 		paccMainWindow->Release();
-			 
-			 		for (LIST_ENUM_RES_PTR it = Res.begin();it!=Res.end();it++)
-			 		{
-			 			CString strPinYin;
-						CString strFullPinYin;
+		 		LIST_SEARCH_RESULT SearchRes;
+		 		SearchExplorerItem(hWnd,&SearchRes);
+		 		for (LIST_SEARCH_RESULT_PTR it = SearchRes.begin();it!=SearchRes.end();it++)
+		 		{
+		 			CString strShortPinYin;
+					CString strFullPinYin;
+					CStringA strTempPinYin;
 
-			 			strPinYin = Test.HzToPinYin(it->strItemName);
-			 			if (strPinYin.GetLength() == 0 )
-			 			{
-			 				strPinYin = it->strItemName;
-			 			}
-			 			strPinYin.MakeLower();
+					pinyin_gb2312(CStringA(it->strItemName).GetBuffer(), strTempPinYin.GetBuffer(200), false, false, true, true, true);
+					strTempPinYin.ReleaseBuffer();
+					strFullPinYin = strTempPinYin;
+					strFullPinYin.MakeLower();
 
-						CStringA strTempPinYin;
-						pinyin_gb2312(CStringA(it->strItemName).GetBuffer(), strTempPinYin.GetBuffer(5000), false, false, true, true, true);
-						strTempPinYin.ReleaseBuffer();
+					pinyin_gb2312(CStringA(it->strItemName).GetBuffer(), strTempPinYin.GetBuffer(200), true, false, true, true, true);
+					strTempPinYin.ReleaseBuffer();
+					strShortPinYin = strTempPinYin;
+					strShortPinYin.MakeLower();
 
-						strFullPinYin = strTempPinYin;
-						strFullPinYin.MakeLower();
+		 			if ( strShortPinYin.Find(pInput->strInputText) >=0 || strFullPinYin.Find(pInput->strInputText) >= 0)
+		 			{
+						OutputDebugStringW(it->strItemName);
+		 				CComVariant vtNull;
+		 				vtNull = CHILDID_SELF;
+		 				it->pAcc->accSelect((SELFLAG_TAKEFOCUS | SELFLAG_TAKESELECTION),vtNull);
 
-			 			if (strPinYin.Find(pInput->strInput) >=0 || strFullPinYin.Find(pInput->strInput) >= 0)
-			 			{	
-			 				CComVariant vtNull;
-			 				vtNull = CHILDID_SELF;
-			 				it->pAcc->accSelect(SELFLAG_TAKESELECTION,vtNull);
+						break;
+		 			}
+		 		}
 
-							break;
-			 			}
-			 
-			 			it->pAcc->Release();
-			 			
-			 		}
-			 
-			 	}
+				ReleaseSearchResult(&SearchRes);
+
 
  				return 0;
  			}
@@ -300,9 +112,10 @@ LRESULT CALLBACK NewWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProcW(hWnd,nMsg,wParam,lParam);
 }
 
+extern BOOL g_bHookThisProcess;
 LRESULT CALLBACK CbtHookProc(int code, WPARAM wParam, LPARAM lParam)
 {
-	if(HCBT_ACTIVATE == code || HCBT_CREATEWND == code || HCBT_SETFOCUS == code)
+	if( g_bHookThisProcess && (HCBT_ACTIVATE == code || HCBT_CREATEWND == code || HCBT_SETFOCUS == code))
 	{
 		HWND hWnd = (HWND)wParam;
 		CString strClassName;
@@ -311,23 +124,22 @@ LRESULT CALLBACK CbtHookProc(int code, WPARAM wParam, LPARAM lParam)
 
 		if (strClassName.CompareNoCase(L"DirectUIHWND") == 0)
 		{
-			OutputDebugStringW(L"DirectUIHWND Found");
-			LONG_PTR lOldWndProc = GetWindowLongPtrW(hWnd,(-4));
-			if (lOldWndProc != (LONG_PTR)NewWndProc)
+			HWND hWndParent = GetParent(hWnd);
+			GetClassName(hWndParent,strClassName.GetBuffer(MAX_CLASS_NAME),MAX_CLASS_NAME);
+			strClassName.ReleaseBuffer();
+			if (strClassName.CompareNoCase(L"SHELLDLL_DefView") == 0 )
 			{
-				SetPropW(hWnd,L"OldWndProc",(HANDLE)lOldWndProc);
-				SetWindowLongPtrW(hWnd,(-4),(LONG_PTR)NewWndProc);
+				LONG_PTR lOldWndProc = GetWindowLongPtrW(hWnd,(-4));
+				if (lOldWndProc != (LONG_PTR)NewWndProc)
+				{
+					SetPropW(hWnd,L"OldWndProc",(HANDLE)lOldWndProc);
+					SetWindowLongPtrW(hWnd,(-4),(LONG_PTR)NewWndProc);
 
-				g_WndRecord.AddRecord(hWnd,lOldWndProc);
-
-// 				static BOOL bSetClass = FALSE;
-// 				if ( FALSE == bSetClass )
-// 				{
-// 					bSetClass = TRUE;
-// 					SetClassLongPtrW(hWnd,(-24),(LONG_PTR)NewWndProc);
-// 				}
-				
+					g_WndRecord.AddRecord(hWnd,lOldWndProc);
+				}
 			}
+
+
 		}
 	}
 	return CallNextHookEx(g_hCbtHook,code,wParam,lParam);
