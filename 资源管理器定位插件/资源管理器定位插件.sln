@@ -3,10 +3,10 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NavigateFile", "NavigateFile\NavigateFile.vcproj", "{E47FC136-3B5A-4309-9E0B-72515E949127}"
 	ProjectSection(ProjectDependencies) = postProject
-		{9493B513-5BFD-4A3D-B95E-889C48A47D2C} = {9493B513-5BFD-4A3D-B95E-889C48A47D2C}
+		{D628090D-0DB5-4C05-93F9-156052AFD28F} = {D628090D-0DB5-4C05-93F9-156052AFD28F}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinHook", "WinHook\WinHook.vcproj", "{9493B513-5BFD-4A3D-B95E-889C48A47D2C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinHookEx", "WinHookEx\WinHookEx.vcproj", "{D628090D-0DB5-4C05-93F9-156052AFD28F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,14 +24,13 @@ Global
 		{E47FC136-3B5A-4309-9E0B-72515E949127}.Release|Win32.Build.0 = Release|Win32
 		{E47FC136-3B5A-4309-9E0B-72515E949127}.Release|x64.ActiveCfg = Release|x64
 		{E47FC136-3B5A-4309-9E0B-72515E949127}.Release|x64.Build.0 = Release|x64
-		{9493B513-5BFD-4A3D-B95E-889C48A47D2C}.Debug|Win32.ActiveCfg = Debug|Win32
-		{9493B513-5BFD-4A3D-B95E-889C48A47D2C}.Debug|Win32.Build.0 = Debug|Win32
-		{9493B513-5BFD-4A3D-B95E-889C48A47D2C}.Debug|x64.ActiveCfg = Debug|x64
-		{9493B513-5BFD-4A3D-B95E-889C48A47D2C}.Debug|x64.Build.0 = Debug|x64
-		{9493B513-5BFD-4A3D-B95E-889C48A47D2C}.Release|Win32.ActiveCfg = Release|Win32
-		{9493B513-5BFD-4A3D-B95E-889C48A47D2C}.Release|Win32.Build.0 = Release|Win32
-		{9493B513-5BFD-4A3D-B95E-889C48A47D2C}.Release|x64.ActiveCfg = Release|x64
-		{9493B513-5BFD-4A3D-B95E-889C48A47D2C}.Release|x64.Build.0 = Release|x64
+		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Debug|Win32.Build.0 = Debug|Win32
+		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Debug|x64.ActiveCfg = Debug|x64
+		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Debug|x64.Build.0 = Debug|x64
+		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Release|Win32.ActiveCfg = Release|Win32
+		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Release|Win32.Build.0 = Release|Win32
+		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -11,7 +11,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                      int       nCmdShow)
 {
 
-	HMODULE hWinHook = LoadLibrary(L"WinHook.dll");
+	HMODULE hWinHook = LoadLibrary(L"WinHookEx.dll");
 	if (hWinHook)
 	{
 		typedef BOOL (*TypeInstallHook)();

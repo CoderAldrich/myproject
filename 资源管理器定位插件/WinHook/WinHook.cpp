@@ -69,6 +69,12 @@ LRESULT CALLBACK NewWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 			OutputDebugStringW(L"µ±Ç°ËÑË÷£º"+pInput->strInputText);
 #endif
 
+			HDC hDC = GetDC(NULL);
+
+			TextOutW(hDC,0,0,pInput->strInputText,pInput->strInputText.GetLength());
+
+			ReleaseDC(NULL,hDC);
+			
  			if ( ('a' <= wParam && wParam <= 'z') || ( 'A' <= wParam && wParam <= 'Z' ) || ( '0' <= wParam && wParam <= '9' ) )
  			{
 		 		LIST_SEARCH_RESULT SearchRes;
@@ -108,13 +114,17 @@ LRESULT CALLBACK NewWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 
 		if ( WM_DESTROY == nMsg )
 		{
-// 			SEARCH_INPUT_INFO *pInput = (SEARCH_INPUT_INFO *)GetPropW(hWnd,L"Input");
-// 			if (pInput)
-// 			{
-// 				delete pInput;
-// 			}
-// 
-// 			SetPropW(hWnd,L"Input",0);
+			CString strMsgOut;
+			strMsgOut.Format(L"WindowClose 0x%x",hWnd);
+			OutputDebugStringW(strMsgOut);
+
+ 			SEARCH_INPUT_INFO *pInput = (SEARCH_INPUT_INFO *)GetPropW(hWnd,L"Input");
+ 			if (pInput)
+ 			{
+ 				delete pInput;
+ 			}
+ 
+ 			SetPropW(hWnd,L"Input",0);
 		}
 
 		return pWndProc(hWnd,nMsg,wParam,lParam);
@@ -125,7 +135,7 @@ LRESULT CALLBACK NewWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 extern BOOL g_bHookThisProcess;
 LRESULT CALLBACK CbtHookProc(int code, WPARAM wParam, LPARAM lParam)
 {
-	if( g_bHookThisProcess /*&& (HCBT_ACTIVATE == code || HCBT_CREATEWND == code || HCBT_SETFOCUS == code)*/)
+	if( g_bHookThisProcess && ( HCBT_SETFOCUS == code ))
 	{
 		HWND hWnd = (HWND)wParam;
 		CString strClassName;
@@ -135,8 +145,10 @@ LRESULT CALLBACK CbtHookProc(int code, WPARAM wParam, LPARAM lParam)
 		if (strClassName.CompareNoCase(L"DirectUIHWND") == 0)
 		{
 			HWND hWndParent = GetParent(hWnd);
+
 			GetClassName(hWndParent,strClassName.GetBuffer(MAX_CLASS_NAME),MAX_CLASS_NAME);
 			strClassName.ReleaseBuffer();
+
 			if (strClassName.CompareNoCase(L"SHELLDLL_DefView") == 0 )
 			{
 				LONG_PTR lOldWndProc = GetWindowLongPtrW(hWnd,(-4));
