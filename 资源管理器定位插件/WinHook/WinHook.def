@@ -1,0 +1,3 @@
+LIBRARY	"WinHook"
+EXPORTS
+	InstallHook
