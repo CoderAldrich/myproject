@@ -48,17 +48,6 @@ LRESULT CALLBACK NewWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 	WNDPROC pWndProc = (WNDPROC)GetPropW(hWnd,L"OldWndProc");
 	if (pWndProc)
 	{
-// 		if (nMsg == WM_MOVE || nMsg == WM_SIZE || nMsg == WM_WINDOWPOSCHANGED )
-// 		{
-// 			if (g_pShowDlg)
-// 			{
-// 				CRect rcWin;
-// 				::GetWindowRect(hWnd,&rcWin);
-// 
-// 				g_pShowDlg->MoveWindow(rcWin.right-300,rcWin.top,300,200,FALSE);
-// 				g_pShowDlg->ShowWindow(SW_SHOW);
-// 			}
-// 		}
 		if ( nMsg == WM_CHAR )
 		{
 			SEARCH_INPUT_INFO *pInput = (SEARCH_INPUT_INFO *)GetPropW(hWnd,L"Input");
@@ -82,21 +71,6 @@ LRESULT CALLBACK NewWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 			OutputDebugStringW(L"µ±Ç°ËÑË÷£º"+pInput->strInputText);
 #endif
 
-// 			HDC hDC = GetDC(NULL);
-// 
-// 			TextOutW(hDC,0,0,pInput->strInputText,pInput->strInputText.GetLength());
-// 
-// 			ReleaseDC(NULL,hDC);
-			
-// 			if (g_pShowDlg)
-// 			{
-// 				CRect rcWin;
-// 				::GetWindowRect(hWnd,&rcWin);
-// 
-// 				g_pShowDlg->MoveWindow(rcWin.right-300,rcWin.top,300,200,FALSE);
-// 				g_pShowDlg->ShowWindow(SW_SHOW);
-// 			}
-
  			if ( ('a' <= wParam && wParam <= 'z') || ( 'A' <= wParam && wParam <= 'Z' ) || ( '0' <= wParam && wParam <= '9' ) )
  			{
 		 		LIST_SEARCH_RESULT SearchRes;
@@ -119,10 +93,8 @@ LRESULT CALLBACK NewWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
 
 		 			if ( strShortPinYin.Find(pInput->strInputText) >=0 || strFullPinYin.Find(pInput->strInputText) >= 0)
 		 			{
-		 				CComVariant vtNull;
-		 				vtNull = CHILDID_SELF;
-		 				it->pAcc->accSelect((SELFLAG_TAKEFOCUS | SELFLAG_TAKESELECTION),vtNull);
 
+						SetSelectExplorerItem(&(*it));
 						break;
 		 			}
 		 		}
@@ -147,8 +119,6 @@ LRESULT CALLBACK NewWndProc(HWND hWnd, UINT nMsg, WPARAM wParam, LPARAM lParam)
  			}
  
  			SetPropW(hWnd,L"Input",0);
-
-			//g_pShowDlg->ShowWindow(SW_HIDE);
 		}
 
 		return pWndProc(hWnd,nMsg,wParam,lParam);
@@ -166,7 +136,7 @@ LRESULT CALLBACK CbtHookProc(int code, WPARAM wParam, LPARAM lParam)
 		GetClassName(hWnd,strClassName.GetBuffer(MAX_CLASS_NAME),MAX_CLASS_NAME);
 		strClassName.ReleaseBuffer();
 
-		if (strClassName.CompareNoCase(L"DirectUIHWND") == 0)
+		if (strClassName.CompareNoCase(L"DirectUIHWND") == 0 || strClassName.CompareNoCase(L"SysListView32") == 0)
 		{
 			HWND hWndParent = GetParent(hWnd);
 
@@ -184,8 +154,6 @@ LRESULT CALLBACK CbtHookProc(int code, WPARAM wParam, LPARAM lParam)
 					g_WndRecord.AddRecord(hWnd,lOldWndProc);
 				}
 			}
-
-
 		}
 	}
 	return CallNextHookEx(g_hCbtHook,code,wParam,lParam);

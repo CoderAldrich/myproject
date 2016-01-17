@@ -4,13 +4,11 @@
 #include "stdafx.h"
 #include "NavigateFile.h"
 #include <atlstr.h>
-
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
                      LPTSTR    lpCmdLine,
                      int       nCmdShow)
 {
-
 	HMODULE hWinHook = LoadLibrary(L"WinHookEx.dll");
 	if (hWinHook)
 	{

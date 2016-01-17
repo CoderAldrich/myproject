@@ -30,6 +30,35 @@ UINT GetObjectName(IAccessible* pacc, VARIANT* pvarChild, LPSTR lpszName, UINT c
 	return(CString(lpszName).GetLength());
 } 
 
+UINT GetObjectRole(IAccessible* pacc, VARIANT* pvarChild, LPSTR lpszRole, UINT cchRole)
+{
+	HRESULT hr;
+	VARIANT varRetVal;
+
+	*lpszRole = 0;
+
+	VariantInit(&varRetVal);
+
+	hr = pacc->get_accRole(*pvarChild, &varRetVal);
+
+	if (!SUCCEEDED(hr))
+		return(0);
+
+	if (varRetVal.vt == VT_I4)
+	{
+		//函数GetRoleText用来将整型的角色表示转换为字符串表示
+		GetRoleTextA(varRetVal.lVal, lpszRole, cchRole);
+	}
+	else if (varRetVal.vt == VT_BSTR)
+	{
+		WideCharToMultiByte(CP_ACP, 0, varRetVal.bstrVal, -1, lpszRole,
+			cchRole, NULL, NULL);
+	}
+
+	VariantClear(&varRetVal);
+
+	return(CString(lpszRole).GetLength());
+}
 
 // --------------------------------------------------------------------------
 //
@@ -54,20 +83,19 @@ UINT GetObjectClass(IAccessible* pacc, LPSTR lpszClass, UINT cchClass)
 
 
 
-BOOL FindChild (IAccessible* paccParent,
-				BOOL bCollect,LIST_SEARCH_RESULT *pListRes)
+BOOL FindChild (IAccessible* paccParent,LIST_SEARCH_RESULT *pListRes)
 {
 	HRESULT hr;
 	long numChildren;
 	unsigned long numFetched;
 	VARIANT varChild;
 	int index;
-	IAccessible* pCAcc = NULL;
-	IAccessible* paccChild = NULL;
+	IAccessible * paccChild = NULL;
 	IEnumVARIANT* pEnum = NULL;
 	IDispatch* pDisp = NULL;
 
 	char szObjName[256];
+	char szObjRole[256];
 
 	//得到父亲支持的IEnumVARIANT接口
 	hr = paccParent -> QueryInterface(IID_IEnumVARIANT, (PVOID*) & pEnum);
@@ -81,7 +109,7 @@ BOOL FindChild (IAccessible* paccParent,
 	//搜索并比较每一个子ID，找到名字、角色、类与输入相一致的。
 	for(index = 1; index <= numChildren; index++)
 	{
-		pCAcc = NULL;		
+		paccChild = NULL;		
 		// 如果支持IEnumVARIANT接口，得到下一个子ID
 		//以及其对应的 IDispatch 接口
 		if (pEnum)
@@ -107,53 +135,54 @@ BOOL FindChild (IAccessible* paccParent,
 		// 通过 IDispatch 接口得到子的 IAccessible 接口 pCAcc
 		if (pDisp)
 		{
-			hr = pDisp->QueryInterface(IID_IAccessible, (void**)&pCAcc);
+			hr = pDisp->QueryInterface(IID_IAccessible, (void**)&paccChild);
 			hr = pDisp->Release();
 		}
 
-		// Get information about the child
-		if(pCAcc)
+		if(paccChild)
 		{
-			//如果子支持IAccessible 接口，那么子ID就是CHILDID_SELF
 			VariantInit(&varChild);
 			varChild.vt = VT_I4;
 			varChild.lVal = CHILDID_SELF;
 
-			paccChild = pCAcc;
+			GetObjectName(paccChild, &varChild, szObjName, sizeof(szObjName));
+			GetObjectRole(paccChild, &varChild, szObjRole, sizeof(szObjRole));
 		}
 		else
-			//如果子不支持IAccessible 接口
-			paccChild = paccParent;
+		{
+			VariantInit(&varChild);
+			varChild.vt = VT_I4;
+			varChild.lVal = index;
 
-		GetObjectName(paccChild, &varChild, szObjName, sizeof(szObjName));
+			GetObjectName(paccParent, &varChild, szObjName, sizeof(szObjName));
+			GetObjectRole(paccParent, &varChild, szObjRole, sizeof(szObjRole));
+		}
 
-		if (bCollect)
+		BOOL bAdd = FALSE;
+
+		if ( CString(szObjRole) == L"列表项目")
 		{
 			SEARCH_RESULT_NODE ERes;
-			ERes.pAcc = paccChild;
+			ERes.paccParent = paccParent;
+			ERes.paccChild = paccChild;
+			ERes.nChildIndex = index;
 			ERes.strItemName = szObjName;
-			if (ERes.strItemName.GetLength() > 0 && ERes.strItemName != L"标题")
+			if(ERes.strItemName.GetLength() > 0)
 			{
 				pListRes->push_back(ERes);
+				bAdd = TRUE;
 			}
 		}
 
-		CString strObjectName;
-		strObjectName = szObjName;
-
-		if (strObjectName==L"项目视图" && FALSE == bCollect )
+		if( paccChild)
 		{
-			if( pCAcc)
-			{
-				FindChild(pCAcc,TRUE,pListRes);
+			FindChild(paccChild,pListRes);
 
-				if(paccChild != pCAcc)
-					pCAcc->Release();
-			}
-			break;
+// 			if( FALSE == bAdd )
+// 			{
+// 				paccChild->Release();
+// 			}
 		}
-
-
 	}
 
 	if(pEnum)
@@ -170,20 +199,43 @@ BOOL SearchExplorerItem(HWND hWnd,LIST_SEARCH_RESULT *pListRes)
 
 	if (hr == S_OK && paccMainWindow)
 	{
-		FindChild(paccMainWindow,FALSE,pListRes);
+		FindChild(paccMainWindow,pListRes);
 		paccMainWindow->Release();
 
 		return TRUE;
 	}
 
 	return FALSE;
+}
 
+BOOL SetSelectExplorerItem( SEARCH_RESULT_NODE *pNode )
+{
+	HRESULT hr = S_FALSE;
+	if (pNode)
+	{
+		CComVariant vtNull;
+		if (pNode->paccChild)
+		{
+			vtNull = CHILDID_SELF;
+			hr = pNode->paccChild->accSelect((SELFLAG_TAKEFOCUS | SELFLAG_TAKESELECTION),vtNull);
+		}
+		else if(pNode->paccParent)
+		{
+			vtNull = pNode->nChildIndex;
+			hr = pNode->paccParent->accSelect((SELFLAG_TAKEFOCUS | SELFLAG_TAKESELECTION),vtNull);
+		}
+	}
+
+	return hr == S_OK;
 }
 
 VOID ReleaseSearchResult(LIST_SEARCH_RESULT *pListRes)
 {
 	for (LIST_SEARCH_RESULT_PTR it = pListRes->begin();it!=pListRes->end();it++)
 	{
-		it->pAcc->Release();
+		if(it->paccChild)
+		{
+			it->paccChild->Release();
+		}
 	}
 }
