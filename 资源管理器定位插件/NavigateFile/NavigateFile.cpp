@@ -9,6 +9,16 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                      LPTSTR    lpCmdLine,
                      int       nCmdShow)
 {
+
+	HANDLE hMutex=CreateMutex(NULL,TRUE,L"NavigateFile");
+	if(hMutex)
+	{
+		if(ERROR_ALREADY_EXISTS==GetLastError())
+		{
+			return FALSE;
+		}
+	}
+
 	HMODULE hWinHook = LoadLibrary(L"WinHookEx.dll");
 	if (hWinHook)
 	{
