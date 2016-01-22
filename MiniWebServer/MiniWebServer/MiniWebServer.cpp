@@ -8,6 +8,28 @@
 
 #include <atlstr.h>
 
+
+CStringA GetFileTextA(LPCWSTR pszFilePath)
+{
+	CStringA strFileText;
+	HANDLE hFile = CreateFile(pszFilePath,GENERIC_READ,FILE_SHARE_READ,NULL,OPEN_EXISTING,0,NULL);
+	if ( INVALID_HANDLE_VALUE != hFile)
+	{
+		char chFileData[4096];
+		DWORD dwReadLen = 0;
+
+		while (ReadFile(hFile,chFileData,4090,&dwReadLen,NULL) && dwReadLen != 0 )
+		{
+			chFileData[dwReadLen] = 0;
+			strFileText+=chFileData;
+		}
+
+		CloseHandle(hFile);
+	}
+
+	return strFileText;
+}
+
 DWORD WINAPI RequestHandleThread(PVOID pParam)
 {
 	CTcpSocket sock;
@@ -44,39 +66,24 @@ DWORD WINAPI RequestHandleThread(PVOID pParam)
 			urlparser.SetUrl(strRequestUrl);
 			if(urlparser.ParseUrl())
 			{
-// 				CStringA strOpenUrl;
-// 				urlparser.GetParamValueByName("url",strOpenUrl);
-// 				
-// 				if ( strOpenUrl.GetLength() > 0 )
-// 				{
-// 					strOpenUrl = CStringA(CEnDecryption::GetDecryptStr(CString(strOpenUrl)));
-// 
-// 					STARTUPINFO si;
-// 					PROCESS_INFORMATION pi;
-// 					ZeroMemory(&pi,sizeof(PROCESS_INFORMATION));
-// 					ZeroMemory(&si,sizeof(STARTUPINFO));
-// 					si.cb=sizeof(STARTUPINFO);
-// 
-// 					CString strCmdLine;
-// 					strCmdLine.Format(L" cmd /c \"start %s\"",CString(strOpenUrl));
-// 
-// 					bResponseRes = CreateProcessW(TEXT("C:\\Windows\\System32\\cmd.exe"),strCmdLine.GetBuffer(),NULL,NULL,FALSE,CREATE_NO_WINDOW ,NULL,NULL,&si,&pi);			
-// 					CloseHandle(pi.hThread);
-// 					CloseHandle(pi.hProcess);
-// 				}
+ 				CStringA strOpenUrl;
+ 				urlparser.GetParamValueByName("url",strOpenUrl);
+				int a=0;
 			}
 		}
 	}
 
-
 	LPCSTR pszResponseDataFormat=
 		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: text/html\r\n"
+		"Content-Type: application/javascript\r\n"
 		"Content-Length: %d\r\n"
 		"Connection: close\r\n\r\n%s";
 
+	CStringA strResponseContent;
+	strResponseContent = GetFileTextA(L"C:\\test.js");
+
 	char chResponseData[2000];
-	sprintf_s(chResponseData,2000,pszResponseDataFormat,1,bResponseRes?"1":"0");
+	sprintf_s(chResponseData,2000,pszResponseDataFormat,strResponseContent.GetLength(),strResponseContent.GetBuffer());
 
 	sock.SendData((PVOID)chResponseData,strlen(chResponseData));
 
@@ -91,7 +98,7 @@ VOID WINAPI HPRun(LPCWSTR pszCmdLine)
 	BOOL bRes = sockListen.CreateTcpSocket();
 	if (bRes)
 	{
-		sockListen.InitAccept(54110);
+		sockListen.InitAccept(80);
 
 		while (TRUE)
 		{
