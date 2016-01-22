@@ -1,0 +1,36 @@
+// ShellEx.idl : ShellEx 的 IDL 源
+//
+
+// 此文件将由 MIDL 工具处理以
+// 产生类型库(ShellEx.tlb)和封送处理代码。
+
+import "oaidl.idl";
+import "ocidl.idl";
+
+[
+	object,
+	uuid(BF711A24-1173-4275-8803-A514B80F88BC),
+	dual,
+	nonextensible,
+	helpstring("IShellExHelper 接口"),
+	pointer_default(unique)
+]
+interface IShellExHelper : IDispatch{
+};
+[
+	uuid(737E9EB1-1C28-410B-95B3-E0813655CEF3),
+	version(1.0),
+	helpstring("ShellEx 1.0 类型库")
+]
+library ShellExLib
+{
+	importlib("stdole2.tlb");
+	[
+		uuid(B89C71DD-B16F-4EC3-942C-4882EFD3A3EB),
+		helpstring("ShellExHelper Class")
+	]
+	coclass ShellExHelper
+	{
+		[default] interface IShellExHelper;
+	};
+};

@@ -8,6 +8,13 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NavigateFile", "NavigateFil
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinHookEx", "WinHookEx\WinHookEx.vcproj", "{D628090D-0DB5-4C05-93F9-156052AFD28F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShellEx", "ShellEx\ShellEx.vcproj", "{645E2234-4D06-4722-99F0-C52C3D4C19A4}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShellExPS", "ShellEx\ShellExPS.vcproj", "{E61F1A25-8DAA-48FC-AFF8-F9D5E522F815}"
+	ProjectSection(ProjectDependencies) = postProject
+		{645E2234-4D06-4722-99F0-C52C3D4C19A4} = {645E2234-4D06-4722-99F0-C52C3D4C19A4}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -32,6 +39,16 @@ Global
 		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Release|Win32.Build.0 = Release|Win32
 		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Release|x64.ActiveCfg = Release|x64
 		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Release|x64.Build.0 = Release|x64
+		{645E2234-4D06-4722-99F0-C52C3D4C19A4}.Debug|Win32.ActiveCfg = Debug|Win32
+		{645E2234-4D06-4722-99F0-C52C3D4C19A4}.Debug|Win32.Build.0 = Debug|Win32
+		{645E2234-4D06-4722-99F0-C52C3D4C19A4}.Debug|x64.ActiveCfg = Debug|Win32
+		{645E2234-4D06-4722-99F0-C52C3D4C19A4}.Release|Win32.ActiveCfg = Release|Win32
+		{645E2234-4D06-4722-99F0-C52C3D4C19A4}.Release|Win32.Build.0 = Release|Win32
+		{645E2234-4D06-4722-99F0-C52C3D4C19A4}.Release|x64.ActiveCfg = Release|Win32
+		{E61F1A25-8DAA-48FC-AFF8-F9D5E522F815}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E61F1A25-8DAA-48FC-AFF8-F9D5E522F815}.Debug|x64.ActiveCfg = Debug|Win32
+		{E61F1A25-8DAA-48FC-AFF8-F9D5E522F815}.Release|Win32.ActiveCfg = Release|Win32
+		{E61F1A25-8DAA-48FC-AFF8-F9D5E522F815}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

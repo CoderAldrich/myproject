@@ -1,0 +1,26 @@
+HKCR
+{
+	ShellEx.ShellExHelper.1 = s 'ShellExHelper Class'
+	{
+		CLSID = s '{B89C71DD-B16F-4EC3-942C-4882EFD3A3EB}'
+	}
+	ShellEx.ShellExHelper = s 'ShellExHelper Class'
+	{
+		CLSID = s '{B89C71DD-B16F-4EC3-942C-4882EFD3A3EB}'
+		CurVer = s 'ShellEx.ShellExHelper.1'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {B89C71DD-B16F-4EC3-942C-4882EFD3A3EB} = s 'ShellExHelper Class'
+		{
+			ProgID = s 'ShellEx.ShellExHelper.1'
+			VersionIndependentProgID = s 'ShellEx.ShellExHelper'
+			ForceRemove 'Programmable'
+			InprocServer32 = s '%MODULE%'
+			{
+				val ThreadingModel = s 'Apartment'
+			}
+			'TypeLib' = s '{737E9EB1-1C28-410B-95B3-E0813655CEF3}'
+		}
+	}
+}

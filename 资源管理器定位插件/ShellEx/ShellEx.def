@@ -1,0 +1,10 @@
+; ShellEx.def : 定义模块参数。
+
+LIBRARY      "ShellEx.DLL"
+
+EXPORTS
+	DllCanUnloadNow		PRIVATE
+	DllGetClassObject	PRIVATE
+	DllRegisterServer	PRIVATE
+	DllUnregisterServer	PRIVATE
+	DllInstall		PRIVATE
