@@ -79,6 +79,9 @@ DWORD WINAPI WorkThread(PVOID pParam)
 			rcSouSuo.right = rcSouSuo.left +(float)nWidth/5.1488f;
 			rcSouSuo.bottom = rcSouSuo.top +(float)nHeight/3.8795f;
 
+			rcSouSuo.top-=20;
+			rcSouSuo.bottom-=20;
+
 			PostClickWindow(hWndWork,rcSouSuo.CenterPoint().x,rcSouSuo.CenterPoint().y);
 
 
