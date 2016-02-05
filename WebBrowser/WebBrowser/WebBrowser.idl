@@ -1,0 +1,78 @@
+// 58Browser.idl : 58Browser 的 IDL 源
+//
+
+// 此文件将由 MIDL 工具处理以
+// 产生类型库(58Browser.tlb)和封送处理代码。
+
+import "oaidl.idl";
+import "ocidl.idl";
+
+[
+	object,
+	uuid(E627BDEC-5560-413f-9218-9BEA5DD4EE2B),
+	dual,
+	nonextensible,
+	helpstring("I58Browser 接口"),
+	pointer_default(unique)
+]
+interface I58Browser : IDispatch{
+	[id(1), helpstring("方法NotifyNewWindow")]            HRESULT NotifyNewWindow             ([in] UINT nPageID,[in,out] IDispatch **ppPageRef,[in] BSTR pszUrl,[in,out] BOOL *bCancel,[in] BOOL bNewFrame,[in] BOOL isWKPopup,[in,out] LONG * nNewPageID);
+	[id(2), helpstring("方法NotifyBeforeMainNavigate")]   HRESULT NotifyBeforeMainNavigate    ([in] UINT nPageID,[in] BSTR bstrUrl,[in,out] BOOL *bCancel);
+	[id(3), helpstring("方法NotifyBeforeSubNavigate")]    HRESULT NotifyBeforeSubNavigate     ([in] UINT nPageID,[in] BSTR bstrUrl,[in,out] BOOL *bCancel);
+	[id(4), helpstring("方法NotifyMainDocumentComplete")] HRESULT NotifyMainDocumentComplete  ([in] UINT nPageID,[in] BSTR bstrUrl);
+	[id(5), helpstring("方法NotifyTitleChange")]          HRESULT NotifyTitleChange           ([in] UINT nPageID,[in] BSTR bstrNewTitle);
+	[id(6), helpstring("方法NotifyUrlChange")]            HRESULT NotifyUrlChange             ([in] UINT nPageID,[in] BSTR bstrNewUrl);
+	[id(7), helpstring("方法NotifyStatusCommand")]        HRESULT NotifyStatusCommand         ([in] UINT nPageID,[in] BOOL bCanBack, [in] BOOL bCanForward);
+	[id(8), helpstring("方法NotifyStatusTextChange")]     HRESULT NotifyStatusTextChange      ([in] UINT nPageID,[in] BSTR bstrNewStatusText);
+	[id(9), helpstring("方法NotifySetCurrentPage")]       HRESULT NotifySetCurrentPage        ([in] UINT nPageID);
+	[id(10), helpstring("方法NotifyConnectMe")]           HRESULT NotifyConnectMe             ([in] BOOL bPro32WKIsReady);
+};
+
+[
+	object,
+	uuid(1322496C-F669-468f-8D31-8865F074659D),
+	dual,
+	nonextensible,
+	helpstring("IProcessControl 接口"),
+	pointer_default(unique)
+]
+interface IProcessControl : IDispatch{
+    [id(1), helpstring("方法ControlNew32Instance")]          HRESULT ControlNew32Instance(         [in] LONG nPageID, [in] BSTR bstrInitUrl, [in,out] IDispatch ** ppPageRef, [in,out] LONG* phWnd);
+	[id(2), helpstring("方法ControlGotoUrl")]                HRESULT ControlGotoUrl(               [in] LONG nPageID, [in] BSTR bstrUrl);
+	[id(3), helpstring("方法ControlQueryWnd")]               HRESULT ControlQueryWnd(              [in] LONG nPageID, [out] OLE_HANDLE* phWnd);
+	[id(4), helpstring("方法ControlQueryUrl")]               HRESULT ControlQueryUrl(              [in] LONG nPageID, [out] BSTR* pbstrUrl);
+	[id(5), helpstring("方法ControlQueryTitle")]             HRESULT ControlQueryTitle(            [in] LONG nPageID, [out] BSTR* pbstrTitle);
+	[id(6), helpstring("方法ControlGoBack")]                 HRESULT ControlGoBack(                [in] LONG nPageID );
+	[id(7), helpstring("方法ControlQueryBackForwardStatus")] HRESULT ControlQueryBackForwardStatus([in] LONG nPageID, [out] BOOL* pbCanBack, [out] BOOL* pbCanForward);
+	[id(8), helpstring("方法ControlRefreash")]               HRESULT ControlRefreash(              [in] LONG nPageID);
+	[id(9), helpstring("方法ControlStopLoading")]            HRESULT ControlStopLoading(           [in] LONG nPageID);
+};
+
+
+[
+	uuid(41D64632-1D8A-41EE-B08A-EC407382A59E),
+	version(1.0),
+	helpstring("58Browser 1.0 类型库")
+]
+library My58BrowserLib
+{
+	importlib("stdole2.tlb");
+
+	[
+		uuid(BF1EFCDC-0062-4368-9D80-F049C3094E60),
+		helpstring("58Browser Class")
+	]
+	coclass Co58Browser
+	{
+		[default] interface I58Browser;
+	};
+
+	[
+		uuid(DB987E4E-1A99-489b-A60A-3ABF6257B45A),
+		helpstring("CoControlClass Class")
+	]
+	coclass CoProcessControlClass
+	{
+		[default] interface IProcessControl;
+	};
+};

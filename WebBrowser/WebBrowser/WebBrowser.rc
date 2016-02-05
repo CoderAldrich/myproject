@@ -1,0 +1,505 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#ifndef APSTUDIO_INVOKED
+#include "targetver.h"
+#endif
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// 中文(中华人民共和国) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+#ifdef _WIN32
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#ifndef APSTUDIO_INVOKED\r\n"
+    "#include ""targetver.h""\r\n"
+    "#endif\r\n"
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)\r\n"
+    "LANGUAGE 4, 2\r\n"
+    "#pragma code_page(936)\r\n"
+    "#include ""res\\WebBrowser.rc2""  // 非 Microsoft Visual C++ 编辑的资源\r\n"
+    "#include ""l.CHS\\afxres.rc""          // 标准组件\r\n"
+    "#include ""l.CHS\\afxprint.rc""        // 打印/打印预览资源\r\n"
+    "#endif\r\n"
+    "\r\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON                    "res\\WebBrowser.ico"
+IDR_WebBrowserTYPE      ICON                    "res\\WebBrowserDoc.ico"
+IDI_IE9_ADD_TAB         ICON                    "res\\ieframe_31073.ico"
+IDI_IE9_SEARCH          ICON                    "res\\iexplore_32538.ico"
+IDI_ADDR_BAR_DEFAULT    ICON                    "res\\iexplore_32545.ico"
+IDI_STATUS_STATIC       ICON                    "res\\iexplore_32542.ico"
+IDI_IE8_TAB_DEFAULT     ICON                    "res\\TabDefault.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_IE8_NAVI_HOT        BITMAP                  "res\\TRAVEL_HOT_XP3.bmp"
+IDB_IE8_NAVI            BITMAP                  "res\\TRAVEL_ENABLED_XP2.bmp"
+IDB_IE8_NAVI_PRESS      BITMAP                  "res\\TRAVEL_PRESS_XP1.bmp"
+IDB_IE8_NAVI_DISABLE    BITMAP                  "res\\TRAVEL_DISABLED_XP.BMP.bmp"
+IDB_NAVICMD_HOVER       BITMAP                  "res\\NaviCmdHover.bmp"
+IDB_NAVICMD_NORMAL      BITMAP                  "res\\NaviCmdNormal.bmp"
+IDB_NAVICMD_PRESS       BITMAP                  "res\\NaviCmdPress.bmp"
+IDB_NAVI_BG             BITMAP                  "res\\NAVI_BG.bmp"
+IDB_TAB_BTN_NORMAL      BITMAP                  "res\\ieframe_634.bmp"
+IDB_TAB_BTN_HOVER       BITMAP                  "res\\ieframe_635.bmp"
+IDB_TAB_BTN_PRESS       BITMAP                  "res\\ieframe_636.bmp"
+IDB_SEARCH_HOT_XP       BITMAP                  "res\\SEARCH_HOT_XP_120.BMP.bmp"
+IDB_SEARCH_PRESSED      BITMAP                  "res\\SEARCH_PRESSED_XP_120.BMP.bmp"
+IDB_SEARCH_XP           BITMAP                  "res\\SEARCH_XP_120.BMP.bmp"
+IDB_IE8_CMD             BITMAP                  "res\\ieframe_699.bmp"
+IDB_IE9_CMD_NORMAL      BITMAP                  "res\\ieframe_CONTROL_ENABLED.BMP.bmp"
+IDB_IE9_CMD_HOT         BITMAP                  "res\\ieframe_CONTROL_HOT.BMP.bmp"
+IDB_IE9_CMD_PRESS       BITMAP                  "res\\ieframe_CONTROL_PRESSED.BMP.bmp"
+IDB_IE9_NAVI_NORMAL     BITMAP                  "res\\ieframe_TRAVEL_DISABLED_CLIENTCAPTION.BMP.bmp"
+IDB_IE9_NAVI_HOT        BITMAP                  "res\\ieframe_TRAVEL_HOT_CLIENTCAPTION.BMP.bmp"
+IDB_IE9_NAVI_CMD_NORMAL BITMAP                  "res\\ieframe_ADDRESS_MINIE_GLASS.BMP.bmp"
+IDB_IE9_NAVI_CMD_HOT    BITMAP                  "res\\ieframe_ADDRESS_MINIE_HOT_GLASS.BMP.bmp"
+IDB_IE9_NAVI_CMD_PRESS  BITMAP                  "res\\ieframe_ADDRESS_MINIE_PRESSED_GLASS.BMP.bmp"
+IDB_IE6_TOOLBAR         BITMAP                  "res\\shell32_204.bmp"
+IDB_IE6_GOTO            BITMAP                  "res\\shell32_230_1.bmp"
+IDB_TAB_NORMAL          BITMAP                  "res\\TAB_NORMAL.bmp"
+IDB_TAB_HOT             BITMAP                  "res\\TAB_HOT_NORMAL.bmp"
+IDB_TAB_BASE            BITMAP                  "res\\TAB_BASE.bmp"
+IDB_TAB_HOT_BASE        BITMAP                  "res\\TAB_HOT_BASE.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MAINFRAME MENU 
+BEGIN
+    POPUP "文件(&F)"
+    BEGIN
+        MENUITEM "新建(&N)",                      ID_NOTHING_ENABLE
+        MENUITEM "打开(&O)...\tCtrl+O",           ID_FILE_OPEN
+        MENUITEM "保存(&S)\tCtrl+S",              ID_FILE_SAVE
+        MENUITEM "另存为(&A)...",                  ID_NOTHING_ENABLE
+        MENUITEM SEPARATOR
+        MENUITEM "页面设置(&U)",                    ID_NOTHING_ENABLE
+        MENUITEM "打印(&P)...\tCtrl+P",           ID_FILE_PRINT
+        MENUITEM "打印设置(&R)...",                 ID_FILE_PRINT_SETUP
+        MENUITEM SEPARATOR
+        MENUITEM "发送(&E)",                      ID_FILE_MRU_FILE1
+        MENUITEM "导入和导出(&T)…",                  ID_NOTHING_ENABLE
+        MENUITEM SEPARATOR
+        MENUITEM "属性(&R)",                      ID_NOTHING_ENABLE
+        MENUITEM "脱机工作(&W)",                    ID_NOTHING_ENABLE
+        MENUITEM "关闭(&C)",                      ID_FILE_CLOSE
+    END
+    POPUP "编辑(&E)"
+    BEGIN
+        MENUITEM "剪切(&T)\tCtrl+X",              ID_EDIT_CUT
+        MENUITEM "复制(&C)\tCtrl+C",              ID_EDIT_COPY
+        MENUITEM "粘贴(&P)\tCtrl+V",              ID_EDIT_PASTE
+        MENUITEM SEPARATOR
+        MENUITEM "全选(&A)\tCtrl+A",              ID_NOTHING_ENABLE
+        MENUITEM "查询(在当前面)(&F)\tCtrl+F",        ID_NOTHING_ENABLE
+    END
+    POPUP "查看(&V)"
+    BEGIN
+        MENUITEM "工具栏(&T)",                     ID_NOTHING_ENABLE, CHECKED
+        MENUITEM "状态栏(&B)",                     ID_NOTHING_ENABLE, CHECKED
+        MENUITEM "地址栏(&E)",                     ID_NOTHING_ENABLE, CHECKED
+        POPUP "转到(&O)"
+        BEGIN
+            MENUITEM "后退(&B)\tAlt+←",               ID_NOTHING_ENABLE
+            MENUITEM "前进(&F)\tAlt+→",               ID_NOTHING_ENABLE
+            MENUITEM SEPARATOR
+            MENUITEM "主页(&H)\tAlt+Home",            ID_NOTHING_ENABLE
+        END
+        MENUITEM "停止(&P)\tEsc",                 ID_NOTHING_ENABLE
+        MENUITEM "刷新(&R)\tF5",                  ID_NOTHING_ENABLE
+        MENUITEM SEPARATOR
+        POPUP "文字大小(&X)"
+        BEGIN
+            MENUITEM "最大(&G)",                      ID_NOTHING_ENABLE
+            MENUITEM "较大(&L)",                      ID_NOTHING_ENABLE
+            MENUITEM "中(&M)",                       ID_NOTHING_ENABLE
+            MENUITEM "较小(&S)",                      ID_NOTHING_ENABLE
+            MENUITEM "最小(&A)",                      ID_NOTHING_ENABLE
+        END
+        MENUITEM "编码(&D)",                      ID_NOTHING_ENABLE
+        MENUITEM SEPARATOR
+        MENUITEM "源文件(&C)",                     ID_NOTHING_ENABLE
+        MENUITEM "隐私报告(&V)",                    ID_NOTHING_ENABLE
+        MENUITEM "全屏显示(&F)\tF11",               ID_NOTHING_ENABLE
+    END
+    POPUP "收藏(&A)"
+    BEGIN
+        MENUITEM "添加到收藏夹(&A)…",                 ID_NOTHING_ENABLE
+        MENUITEM "整理收藏夹(&O)…",                  ID_NOTHING_ENABLE
+        MENUITEM SEPARATOR
+    END
+    POPUP "工具(&T)"
+    BEGIN
+        POPUP "邮件和新闻(&M)"
+        BEGIN
+            MENUITEM "阅读邮件(&M)",                    ID_NOTHING_ENABLE
+            MENUITEM "新建邮件(&W)",                    ID_NOTHING_ENABLE
+            MENUITEM "发送链接(&L)",                    ID_NOTHING_ENABLE
+            MENUITEM "发送页面(&P)",                    ID_NOTHING_ENABLE
+            MENUITEM SEPARATOR
+            MENUITEM "阅读新闻(&N)",                    ID_NOTHING_ENABLE
+        END
+        POPUP "弹出窗口阻止程序(&P)"
+        BEGIN
+            MENUITEM "关闭弹出窗口阻止程序(&B)",              ID_NOTHING_ENABLE
+            MENUITEM "弹出窗口阻止程序设置(&P)",              ID_NOTHING_ENABLE
+        END
+        MENUITEM "管理加载项(&A)…",                  ID_NOTHING_ENABLE
+        MENUITEM "同步(&S)…",                     ID_NOTHING_ENABLE
+        MENUITEM "Windows Update(&U)",          ID_NOTHING_ENABLE
+        MENUITEM "诊断连接问题…",                     ID_NOTHING_ENABLE
+        MENUITEM SEPARATOR
+        MENUITEM "重置Web设置(&W)…",                ID_NOTHING_ENABLE
+        MENUITEM SEPARATOR
+        MENUITEM "Internet选项(&O)…",             ID_NOTHING_ENABLE
+    END
+    POPUP "帮助(&H)"
+    BEGIN
+        MENUITEM "目录和索引(&C)",                   ID_NOTHING_ENABLE
+        MENUITEM "每日提示(&D)",                    ID_NOTHING_ENABLE
+        MENUITEM "Netscape用户(&N)",              ID_NOTHING_ENABLE
+        MENUITEM "联机支持(&S)",                    ID_NOTHING_ENABLE
+        MENUITEM "发送反馈意见(&K)",                  ID_NOTHING_ENABLE
+        MENUITEM SEPARATOR
+        MENUITEM "关于Internet Explorer(&A)",     ID_APP_ABOUT
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Toolbar
+//
+
+IDR_MAINFRAME TOOLBAR  16, 16
+BEGIN
+    BUTTON      ID_FILE_NEW
+    BUTTON      ID_FILE_OPEN
+    BUTTON      ID_FILE_SAVE
+    SEPARATOR
+    BUTTON      ID_EDIT_CUT
+    BUTTON      ID_EDIT_COPY
+    BUTTON      ID_EDIT_PASTE
+    SEPARATOR
+    BUTTON      ID_FILE_PRINT
+    BUTTON      ID_APP_ABOUT
+END
+
+IDR_MAINFRAME_256 TOOLBAR  16, 16
+BEGIN
+    BUTTON      ID_FILE_NEW
+    BUTTON      ID_FILE_OPEN
+    BUTTON      ID_FILE_SAVE
+    SEPARATOR
+    BUTTON      ID_EDIT_CUT
+    BUTTON      ID_EDIT_COPY
+    BUTTON      ID_EDIT_PASTE
+    SEPARATOR
+    BUTTON      ID_FILE_PRINT
+    BUTTON      ID_APP_ABOUT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_MAINFRAME ACCELERATORS 
+BEGIN
+    "N",            ID_FILE_NEW,            VIRTKEY, CONTROL
+    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL
+    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL
+    "P",            ID_FILE_PRINT,          VIRTKEY, CONTROL
+    "Z",            ID_EDIT_UNDO,           VIRTKEY, CONTROL
+    "X",            ID_EDIT_CUT,            VIRTKEY, CONTROL
+    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL
+    "V",            ID_EDIT_PASTE,          VIRTKEY, CONTROL
+    VK_BACK,        ID_EDIT_UNDO,           VIRTKEY, ALT
+    VK_DELETE,      ID_EDIT_CUT,            VIRTKEY, SHIFT
+    VK_INSERT,      ID_EDIT_COPY,           VIRTKEY, CONTROL
+    VK_INSERT,      ID_EDIT_PASTE,          VIRTKEY, SHIFT
+    VK_F6,          ID_NEXT_PANE,           VIRTKEY 
+    VK_F6,          ID_PREV_PANE,           VIRTKEY, SHIFT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOGEX 0, 0, 170, 62
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "关于 WebBrowser"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,14,14,21,20
+    LTEXT           "WebBrowser，1.0 版",IDC_STATIC,42,14,114,8,SS_NOPREFIX
+    LTEXT           "Copyright (C) 2014",IDC_STATIC,42,26,114,8
+    DEFPUSHBUTTON   "确定",IDOK,113,41,50,14,WS_GROUP
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 15,11,6,1
+ PRODUCTVERSION 15,11,6,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080403a8"
+        BEGIN
+            VALUE "CompanyName", "Microsoft Corporation"
+            VALUE "FileDescription", "Internet Explorer"
+            VALUE "FileVersion", "15, 11, 6, 1"
+            VALUE "InternalName", "WebBrowser.exe"
+            VALUE "LegalCopyright", "Micorsoft Corporation 保留所有权利。"
+            VALUE "OriginalFilename", "WebBrowser.exe"
+            VALUE "ProductName", "Windows Internet Explorer"
+            VALUE "ProductVersion", "15, 11, 6, 1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 936
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 163
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE 
+BEGIN
+    IDP_OLE_INIT_FAILED     "OLE 初始化失败。请确保 OLE 库是正确的版本。"
+END
+
+STRINGTABLE 
+BEGIN
+    IDR_MAINFRAME           "WebBrowser\n\nWebBrowser\n\n\nWebBrowser.Document\nWebBrowser.Document"
+END
+
+STRINGTABLE 
+BEGIN
+    AFX_IDS_APP_TITLE       "WebBrowser"
+    AFX_IDS_IDLEMESSAGE     "就绪"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_INDICATOR_EXT        "EXT"
+    ID_INDICATOR_CAPS       "CAP"
+    ID_INDICATOR_NUM        "NUM"
+    ID_INDICATOR_SCRL       "SCRL"
+    ID_INDICATOR_OVR        "OVR"
+    ID_INDICATOR_REC        "REC"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_FILE_NEW             "创建新文档\n新建"
+    ID_FILE_OPEN            "打开现有文档\n打开"
+    ID_FILE_CLOSE           "关闭活动文档\n关闭"
+    ID_FILE_SAVE            "保存活动文档\n保存"
+    ID_FILE_SAVE_AS         "用新名称保存活动文档\n另存为"
+    ID_FILE_PAGE_SETUP      "更改打印选项\n页面设置"
+    ID_FILE_PRINT_SETUP     "更改打印机选项和打印选项\n打印设置"
+    ID_FILE_PRINT           "打印活动文档\n打印"
+    ID_FILE_PRINT_DIRECT    "使用当前选项打印活动文档\n快速打印"
+    ID_FILE_PRINT_PREVIEW   "显示整页\n打印预览"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_APP_ABOUT            "显示程序信息、版本号和版权\n关于"
+    ID_APP_EXIT             "退出应用程序；提示保存文档\n退出"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_FILE_MRU_FILE1       "打开此文档"
+    ID_FILE_MRU_FILE2       "打开此文档"
+    ID_FILE_MRU_FILE3       "打开此文档"
+    ID_FILE_MRU_FILE4       "打开此文档"
+    ID_FILE_MRU_FILE5       "打开此文档"
+    ID_FILE_MRU_FILE6       "打开此文档"
+    ID_FILE_MRU_FILE7       "打开此文档"
+    ID_FILE_MRU_FILE8       "打开此文档"
+    ID_FILE_MRU_FILE9       "打开此文档"
+    ID_FILE_MRU_FILE10      "打开此文档"
+    ID_FILE_MRU_FILE11      "打开此文档"
+    ID_FILE_MRU_FILE12      "打开此文档"
+    ID_FILE_MRU_FILE13      "打开此文档"
+    ID_FILE_MRU_FILE14      "打开此文档"
+    ID_FILE_MRU_FILE15      "打开此文档"
+    ID_FILE_MRU_FILE16      "打开此文档"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_NEXT_PANE            "切换到下一个窗格\n下一窗格"
+    ID_PREV_PANE            "切换回上一个窗格\n上一窗格"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_WINDOW_SPLIT         "将活动窗口拆分为多个窗格\n拆分"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_EDIT_CLEAR           "清除选定内容\n清除"
+    ID_EDIT_CLEAR_ALL       "清除全部内容\n全部清除"
+    ID_EDIT_COPY            "复制选定内容并将其放到剪贴板上\n复制"
+    ID_EDIT_CUT             "剪切选定内容并将其放到剪贴板上\n剪切"
+    ID_EDIT_FIND            "查找指定的文本\n查找"
+    ID_EDIT_PASTE           "插入剪贴板内容\n粘贴"
+    ID_EDIT_REPEAT          "重复上一操作\n重复"
+    ID_EDIT_REPLACE         "用其他文本替换特定的文本\n替换"
+    ID_EDIT_SELECT_ALL      "选定整个文档\n全选"
+    ID_EDIT_UNDO            "撤消上一操作\n撤消"
+    ID_EDIT_REDO            "恢复上次撤消的操作\n重做"
+END
+
+STRINGTABLE 
+BEGIN
+    ID_VIEW_STATUS_BAR      "显示或隐藏状态栏\n切换状态栏"
+END
+
+STRINGTABLE 
+BEGIN
+    AFX_IDS_SCSIZE          "更改窗口大小"
+    AFX_IDS_SCMOVE          "更改窗口位置"
+    AFX_IDS_SCMINIMIZE      "将窗口缩小为图标"
+    AFX_IDS_SCMAXIMIZE      "使窗口最大化显示"
+    AFX_IDS_SCNEXTWINDOW    "切换到下一个文档窗口"
+    AFX_IDS_SCPREVWINDOW    "切换到前一个文档窗口"
+    AFX_IDS_SCCLOSE         "关闭活动窗口并提示保存文档"
+END
+
+STRINGTABLE 
+BEGIN
+    AFX_IDS_SCRESTORE       "将窗口恢复到正常大小"
+    AFX_IDS_SCTASKLIST      "激活任务列表"
+END
+
+STRINGTABLE 
+BEGIN
+    AFX_IDS_PREVIEW_CLOSE   "关闭打印预览模式\n取消预览"
+END
+
+#endif    // 中文(中华人民共和国) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+LANGUAGE 4, 2
+#pragma code_page(936)
+#include "res\WebBrowser.rc2"  // 非 Microsoft Visual C++ 编辑的资源
+#include "l.CHS\afxres.rc"          // 标准组件
+#include "l.CHS\afxprint.rc"        // 打印/打印预览资源
+#endif
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
