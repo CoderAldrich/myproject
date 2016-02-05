@@ -22,7 +22,6 @@ UINT nHtmlMsg = ::RegisterWindowMessage(_T("WM_HTML_GETOBJECT"));
 BEGIN_MESSAGE_MAP(CWebBrowserApp, CWinApp)
 END_MESSAGE_MAP()
 
-#include ".\浏览器保护\BrowserProtect.h"
 // CWebBrowserApp 构造
 CWebBrowserApp::CWebBrowserApp()
 {
