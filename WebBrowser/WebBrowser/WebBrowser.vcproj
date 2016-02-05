@@ -1331,42 +1331,6 @@
 				>
 			</File>
 		</Filter>
-		<Filter
-			Name="浏览器保护"
-			>
-			<File
-				RelativePath=".\浏览器保护\BrowserProtect.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\浏览器保护\BrowserProtect.h"
-				>
-			</File>
-			<File
-				RelativePath=".\浏览器保护\HelpFun.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\浏览器保护\HelpFun.h"
-				>
-			</File>
-			<File
-				RelativePath=".\浏览器保护\HttpSendParser.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\浏览器保护\HttpSendParser.h"
-				>
-			</File>
-			<File
-				RelativePath=".\浏览器保护\NtNaviveHook.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\浏览器保护\NtNaviveHook.h"
-				>
-			</File>
-		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>
