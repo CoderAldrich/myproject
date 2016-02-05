@@ -40,7 +40,7 @@ BOOL CTcpSocket::CreateTcpSocket()
 	BOOL bSuccess = FALSE;
 	do 
 	{
-		if((m_TcpSock=WSASocket(AF_INET,SOCK_STREAM,0,NULL,0,0)) == INVALID_SOCKET)
+		if((m_TcpSock=socket(AF_INET,SOCK_STREAM,0/*,NULL,0,0*/)) == INVALID_SOCKET)
 		{
 			break;
 		}
