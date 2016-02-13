@@ -1331,6 +1331,54 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="Cookie¸ôÀë"
+			>
+			<File
+				RelativePath=".\CookieParser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CookieParser.h"
+				>
+			</File>
+			<File
+				RelativePath=".\HelpFun.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\HelpFun.h"
+				>
+			</File>
+			<File
+				RelativePath=".\HookCookie.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\HookCookie.h"
+				>
+			</File>
+			<File
+				RelativePath=".\RecordBaseT.h"
+				>
+			</File>
+			<File
+				RelativePath=".\RWLock.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RWLock.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UrlParser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\UrlParser.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>

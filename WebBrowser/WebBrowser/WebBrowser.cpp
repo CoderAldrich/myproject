@@ -37,9 +37,10 @@ CWebBrowserApp::CWebBrowserApp()
 
 // 唯一的一个 CWebBrowserApp 对象
 CWebBrowserApp theApp;
-
+BOOL StartHookCookie();
 BOOL CWebBrowserApp::InitInstance()
 {
+	 StartHookCookie();
 	::LoadLibrary(L"DebugPrivate.dll");
 
 	BrowserFix();
