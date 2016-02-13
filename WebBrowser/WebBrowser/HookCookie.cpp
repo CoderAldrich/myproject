@@ -145,7 +145,7 @@ VOID CheckCookies(LPCWSTR pszScanPath,BOOL bCheckSecure,BOOL bCheckHttpOnly,CStr
 				BOOL    bSecure = GetPrivateProfileIntW(L"Cookie",L"Secure",0,strCookieFilePath);	
 				BOOL    bHttpOnly = GetPrivateProfileIntW(L"Cookie",L"HttpOnly",0,strCookieFilePath);
 
-				if ( ( FALSE==bSecure || (bSecure && (bCheckSecure == bSecure))) && bCheckHttpOnly == bHttpOnly )
+				if ( ( FALSE==bSecure || (bSecure && (bCheckSecure == bSecure))) && ( FALSE == bHttpOnly || (bHttpOnly && FALSE==bCheckHttpOnly) ) )
 				{
 					CString strCookieData = GetIniString(L"Cookie",L"CookieData",L"",strCookieFilePath);
 
@@ -248,7 +248,7 @@ VOID CommonGetCookie(LPCSTR pchUrl,CHAR *pchCookieData,int nCookieDataLen,BOOL b
 					WCHAR szScanPath[255]=L"C:\\cookies\\";
 					wcscat_s(szScanPath,255,FindFileData.cFileName);
 					wcscat_s(szScanPath,255,L"\\");
-					CheckPath(szScanPath,urlParser.GetPath(),urlParser.GetProtocol() == "http"?FALSE:TRUE,FALSE,strResSave );
+					CheckPath(szScanPath,urlParser.GetPath(),urlParser.GetProtocol() == "http"?FALSE:TRUE,bFromJs,strResSave );
 					
 					
 					int a=0;
@@ -496,7 +496,7 @@ BOOL WINAPI MyHttpSendRequestW(
 	CStringA strInternetUrl;
 	UrlRecorder.GetRecordData(hRequest,&strInternetUrl);
 	CHAR chCookieData[2000]={0};
-	CommonGetCookie(strInternetUrl,chCookieData,1999);
+	CommonGetCookie(strInternetUrl,chCookieData,1999,FALSE);
 	
 	OutputDebugStringA(strInternetUrl+" "+chCookieData+"\r\n");
 	
@@ -658,7 +658,7 @@ BOOL WINAPI MyInternetGetCookieExA(
 {
 	CHAR chCookieData[2000]={0};
 	lpszCookieData[0] = 0;
-	CommonGetCookie(lpszUrl,lpszCookieData,*lpdwSize);
+	CommonGetCookie(lpszUrl,lpszCookieData,*lpdwSize,TRUE);
 	*lpdwSize = strlen(lpszCookieData);
 
 	return TRUE;
