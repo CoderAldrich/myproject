@@ -96,6 +96,15 @@ VOID CommonSetCookie(LPCSTR pchUrl,LPCSTR pchCookieData,BOOL bFromJs = FALSE)
 	WritePrivateProfileStringA("Cookie","Secure"    ,BOOL_TO_STRING(cookieParser.m_bSecure)       ,strCookieSavePath);
 	WritePrivateProfileStringA("Cookie","HttpOnly"  ,BOOL_TO_STRING(cookieParser.m_bHttpOnly)     ,strCookieSavePath);
 	WritePrivateProfileStringA("Cookie","Session"   ,BOOL_TO_STRING(cookieParser.m_bSessionCookie),strCookieSavePath);
+
+#ifdef DEBUG
+	OutputDebugStringA("CookieData: ");
+	OutputDebugStringA(pchCookieData);
+	OutputDebugStringA(" ");
+	OutputDebugStringA(pchUrl);
+	OutputDebugStringA("\r\n");
+#endif
+
 }
 
 
@@ -155,9 +164,6 @@ VOID CheckCookies(LPCWSTR pszScanPath,BOOL bCheckSecure,BOOL bCheckHttpOnly,CStr
 					strResSave+=L"; ";
 
 				}
-
-				
-
 			}
 		}
 
@@ -265,6 +271,11 @@ VOID CommonGetCookie(LPCSTR pchUrl,CHAR *pchCookieData,int nCookieDataLen,BOOL b
 	}  
 	FindClose(hFind);
 
+	OutputDebugStringA(pchUrl);
+	OutputDebugStringA(" ");
+	OutputDebugStringA(strResSave);
+	OutputDebugStringA("\r\n");
+
 	strcpy_s(pchCookieData,nCookieDataLen,strResSave.GetBuffer());
 }
 
@@ -277,18 +288,7 @@ VOID  CALLBACK HCInternetStatusCallback(
 									  )
 {
 
-  	INTERNET_STATUS_CALLBACK pOrgCallback = NULL;
-  	CallbackRecorder.GetRecordData(hInternet,&pOrgCallback);
-  
-  	if (pOrgCallback)
-  	{
-  		pOrgCallback(hInternet,
-  			dwContext,
-  			dwInternetStatus,
-  			lpvStatusInformation,
-  			dwStatusInformationLength
-  			);
-  	}
+
 
 	if ( INTERNET_STATUS_REDIRECT == dwInternetStatus )
 	{
@@ -302,11 +302,6 @@ VOID  CALLBACK HCInternetStatusCallback(
 	{
 		CStringA strInternetUrl;
 		UrlRecorder.GetRecordData(hInternet,&strInternetUrl);
-
-		if (strInternetUrl.Find("baifubao.com") >=0)
-		{
-			int a=0;
-		}
 
 		char chRecvCookie[2000];
 		DWORD dwRecvCookieLen = 2000;
@@ -324,6 +319,19 @@ VOID  CALLBACK HCInternetStatusCallback(
 		}
 	}
 
+
+	INTERNET_STATUS_CALLBACK pOrgCallback = NULL;
+	CallbackRecorder.GetRecordData(hInternet,&pOrgCallback);
+
+	if (pOrgCallback)
+	{
+		pOrgCallback(hInternet,
+			dwContext,
+			dwInternetStatus,
+			lpvStatusInformation,
+			dwStatusInformationLength
+			);
+	}
 
 
 }
@@ -442,39 +450,6 @@ HINTERNET WINAPI MyHttpOpenRequestW(
 	return hRequest;
 };
 
-HINTERNET (WINAPI *pHttpOpenRequestA)(
-									  __in HINTERNET hConnect,
-									  __in_opt LPCSTR lpszVerb,
-									  __in_opt LPCSTR lpszObjectName,
-									  __in_opt LPCSTR lpszVersion,
-									  __in_opt LPCSTR lpszReferrer,
-									  __in_z_opt LPCSTR FAR * lplpszAcceptTypes,
-									  __in DWORD dwFlags,
-									  __in_opt DWORD_PTR dwContext 
-									  ) = HttpOpenRequestA;
-HINTERNET WINAPI MyHttpOpenRequestA(
-									__in HINTERNET hConnect,
-									__in_opt LPCSTR lpszVerb,
-									__in_opt LPCSTR lpszObjectName,
-									__in_opt LPCSTR lpszVersion,
-									__in_opt LPCSTR lpszReferrer,
-									__in_z_opt LPCSTR FAR * lplpszAcceptTypes,
-									__in DWORD dwFlags,
-									__in_opt DWORD_PTR dwContext 
-									)
-{
-	HINTERNET TReturn = pHttpOpenRequestA(
-		hConnect,
-		lpszVerb,
-		lpszObjectName,
-		lpszVersion,
-		lpszReferrer,
-		lplpszAcceptTypes,
-		dwFlags,
-		dwContext
-		);
-	return TReturn;
-};
 
 
 BOOL (WINAPI *pHttpSendRequestW)(
@@ -497,9 +472,7 @@ BOOL WINAPI MyHttpSendRequestW(
 	UrlRecorder.GetRecordData(hRequest,&strInternetUrl);
 	CHAR chCookieData[2000]={0};
 	CommonGetCookie(strInternetUrl,chCookieData,1999,FALSE);
-	
-	OutputDebugStringA(strInternetUrl+" "+chCookieData+"\r\n");
-	
+
 	CStringA strCookieHeader;
 	strCookieHeader = "Cookie: ";
 	strCookieHeader += chCookieData;
@@ -517,7 +490,6 @@ BOOL WINAPI MyHttpSendRequestW(
 };
 
 
-
 BOOL (WINAPI *pInternetCloseHandle)(
 									__in HINTERNET hInternet
 									) = InternetCloseHandle;
@@ -531,45 +503,6 @@ BOOL WINAPI MyInternetCloseHandle(
 	BOOL TReturn = pInternetCloseHandle(
 		hInternet
 		);
-	return TReturn;
-};
-INTERNET_STATUS_CALLBACK (WINAPI *pInternetSetStatusCallbackW)(
-	__in HINTERNET hInternet,
-	__in INTERNET_STATUS_CALLBACK lpfnInternetCallback
-	) = InternetSetStatusCallbackW;
-INTERNET_STATUS_CALLBACK WINAPI  MyInternetSetStatusCallbackW(
-	__in HINTERNET hInternet,
-	__in INTERNET_STATUS_CALLBACK lpfnInternetCallback
-	)
-{
-	INTERNET_STATUS_CALLBACK TReturn = pInternetSetStatusCallbackW(
-		hInternet,
-		lpfnInternetCallback
-		);
-	return TReturn;
-}
-
-
-INTERNET_STATUS_CALLBACK (WINAPI *pInternetSetStatusCallbackA)(
-	__in HINTERNET hInternet,
-	__in_opt INTERNET_STATUS_CALLBACK lpfnInternetCallback 
-	) = InternetSetStatusCallbackA;
-INTERNET_STATUS_CALLBACK WINAPI MyInternetSetStatusCallbackA(
-	__in HINTERNET hInternet,
-	__in_opt INTERNET_STATUS_CALLBACK lpfnInternetCallback 
-	)
-{
-
-	INTERNET_STATUS_CALLBACK TReturn = pInternetSetStatusCallbackA(
-		hInternet,
-		lpfnInternetCallback
-		);
-
-// 	DetourTransactionBegin();
-// 	DetourUpdateThread(GetCurrentThread());
-// 	DetourAttach( (PVOID *)&lpfnInternetCallback ,(PVOID)HCInternetStatusCallback );
-// 	DetourTransactionCommit();
-
 	return TReturn;
 };
 
@@ -588,9 +521,9 @@ DWORD WINAPI MyInternetSetCookieExW(
 									__in_opt DWORD_PTR dwReserved 
 									)
 {
-	CommonSetCookie(CStringA(lpszUrl),CStringA(lpszCookieData));
-
-	return COOKIE_STATE_ACCEPT;
+// 	CommonSetCookie(CStringA(lpszUrl),CStringA(lpszCookieData),TRUE);
+// 
+// 	return COOKIE_STATE_ACCEPT;
 
 	//先设置一下Cookie 测试是否可以设置Cookie
 	DWORD dwSetRes = pInternetSetCookieExW(
@@ -601,42 +534,12 @@ DWORD WINAPI MyInternetSetCookieExW(
 		dwReserved
 		);
 
-// 	if ( COOKIE_STATE_ACCEPT == dwSetRes || COOKIE_STATE_DOWNGRADE == dwSetRes )
-// 	{
-// 		CommonSetCookie(CStringA(lpszUrl),CStringA(lpszCookieData));
-// 	}
+ 	if ( COOKIE_STATE_ACCEPT == dwSetRes || COOKIE_STATE_DOWNGRADE == dwSetRes )
+ 	{
+ 		CommonSetCookie(CStringA(lpszUrl),CStringA(lpszCookieData));
+ 	}
 
 	return dwSetRes;
-};
-
-
-BOOL (WINAPI *pInternetGetCookieExW)(
-									 __in LPCWSTR lpszUrl,
-									 __in_opt LPCWSTR lpszCookieName,
-									 __in_ecount_opt(*lpdwSize) LPWSTR lpszCookieData,
-									 __inout LPDWORD lpdwSize,
-									 __in DWORD dwFlags,
-									 __reserved LPVOID lpReserved 
-									 ) = InternetGetCookieExW;
-BOOL WINAPI MyInternetGetCookieExW(
-								   __in LPCWSTR lpszUrl,
-								   __in_opt LPCWSTR lpszCookieName,
-								   __in_ecount_opt(*lpdwSize) LPWSTR lpszCookieData,
-								   __inout LPDWORD lpdwSize,
-								   __in DWORD dwFlags,
-								   __reserved LPVOID lpReserved 
-								   )
-{
-
-	BOOL TReturn = pInternetGetCookieExW(
-		lpszUrl,
-		lpszCookieName,
-		lpszCookieData,
-		lpdwSize,
-		dwFlags,
-		lpReserved
-		);
-	return TReturn;
 };
 
 BOOL (WINAPI *pInternetGetCookieExA)(
@@ -665,18 +568,14 @@ BOOL WINAPI MyInternetGetCookieExA(
 };
 BOOL StartHookCookie()
 {
-
+	//return FALSE;
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach( (PVOID *)&pInternetConnectW ,(PVOID)MyInternetConnectW );
 	DetourAttach( (PVOID *)&pHttpOpenRequestW ,(PVOID)MyHttpOpenRequestW );
-	DetourAttach( (PVOID *)&pHttpOpenRequestA ,(PVOID)MyHttpOpenRequestA );
-	DetourAttach( (PVOID *)&pInternetSetStatusCallbackW ,(PVOID)MyInternetSetStatusCallbackW );
-	DetourAttach( (PVOID *)&pInternetSetStatusCallbackA ,(PVOID)MyInternetSetStatusCallbackA );
 	DetourAttach( (PVOID *)&pHttpSendRequestW ,(PVOID)MyHttpSendRequestW );
 	DetourAttach( (PVOID *)&pInternetCloseHandle ,(PVOID)MyInternetCloseHandle );
  	DetourAttach( (PVOID *)&pInternetSetCookieExW ,(PVOID)MyInternetSetCookieExW );
- 	DetourAttach( (PVOID *)&pInternetGetCookieExW ,(PVOID)MyInternetGetCookieExW );
 	DetourAttach( (PVOID *)&pInternetGetCookieExA ,(PVOID)MyInternetGetCookieExA );
 	DetourTransactionCommit();
 

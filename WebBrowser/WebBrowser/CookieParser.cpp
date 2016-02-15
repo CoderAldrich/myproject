@@ -9,6 +9,7 @@ CCookieParser::CCookieParser()
 	m_bSecure = FALSE;
 	m_bHttpOnly = FALSE;
 	m_bSessionCookie = TRUE;
+	ZeroMemory(&m_tmExpires,sizeof(m_tmExpires));
 }
 CCookieParser::~CCookieParser(void)
 {
@@ -107,7 +108,7 @@ BOOL CCookieParser::ParseExpiresTime(LPCSTR pchExpires,SYSTEMTIME *ptmExpires)
 		int     nCurIndex = 0;
 		CStringA strNode;
 		int curPos = 0;
-		strNode= strExpires.Tokenize(": , -",curPos);
+		strNode= strExpires.Tokenize("\t !\"#$%&'()*+,-./;<=>?@[\\]^_`{|}~:",curPos);
 		while (strNode != _T(""))
 		{
 			if (nCurIndex >= _countof(strExpiresParts))
@@ -116,11 +117,12 @@ BOOL CCookieParser::ParseExpiresTime(LPCSTR pchExpires,SYSTEMTIME *ptmExpires)
 			}
 			strExpiresParts[nCurIndex] = strNode;
 			nCurIndex++;
-			strNode = strExpires.Tokenize(": , -", curPos);
+			strNode = strExpires.Tokenize("\t !\"#$%&'()*+,-./;<=>?@[\\]^_`{|}~:", curPos);
 		};
 
 		if ( nCurIndex != 8 )
 		{
+			//ASSERT(FALSE);
 			break;
 		}
 
@@ -177,8 +179,30 @@ BOOL CCookieParser::ParserCookieString(LPCSTR pchUrl,LPCSTR pszCookie)
 
 	for (int i=0;i<nPartCount;i++)
 	{
+		if( strArrayCookieParts[i].GetLength() == 0 )
+		{
+			continue;
+		}
+
 		CStringA strArrayParts[2];
 		DivisionStringA("=",strArrayCookieParts[i].Trim(),strArrayParts,2);
+
+
+		if( 0 == i )
+		{
+			if ( m_strCookieName.GetLength() == 0 )
+			{
+				int nCookieNameEnd = strArrayCookieParts[i].Find("=");
+				ASSERT(nCookieNameEnd > 0);
+				if ( nCookieNameEnd > 0 )
+				{
+					m_strCookieName = strArrayCookieParts[i].Left(nCookieNameEnd);
+					m_strCookieValue = strArrayCookieParts[i].Right(strArrayCookieParts[i].GetLength() - nCookieNameEnd-1);
+					//ASSERT( m_strCookieName.GetLength() > 0 && m_strCookieValue.GetLength() > 0 );
+				}
+				continue;
+			}
+		}
 
 		if (strArrayParts[0].CompareNoCase("domain") == 0)
 		{
@@ -208,6 +232,9 @@ BOOL CCookieParser::ParserCookieString(LPCSTR pchUrl,LPCSTR pszCookie)
 			strExpires=strArrayParts[1];
 
 			BOOL bRes = ParseExpiresTime(strExpires,&m_tmExpires);
+
+			//ASSERT(bRes);
+
 			if( bRes )
 			{
 				m_bSessionCookie = FALSE;
@@ -220,16 +247,18 @@ BOOL CCookieParser::ParserCookieString(LPCSTR pchUrl,LPCSTR pszCookie)
 			m_bHttpOnly = TRUE;
 			continue;
 		}
-
-		if ( m_strCookieName.GetLength() == 0 )
+	
+		if (strArrayParts[0].CompareNoCase("Max-Age") == 0)
 		{
-			int nCookieNameEnd = strArrayCookieParts[i].Find("=");
-			if ( nCookieNameEnd > 0 )
-			{
-				m_strCookieName = strArrayCookieParts[i].Left(nCookieNameEnd);
-				m_strCookieValue = strArrayCookieParts[i].Right(strArrayCookieParts[i].GetLength() - nCookieNameEnd-1);
-			}
+			continue;
 		}
+
+		if (strArrayParts[0].CompareNoCase("Version") == 0)
+		{
+			continue;
+		}
+
+		ASSERT(FALSE);
 	}
 
 	CUrlParser urlParser;

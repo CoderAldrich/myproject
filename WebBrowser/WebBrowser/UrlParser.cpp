@@ -26,6 +26,14 @@ BOOL CUrlParser::ParseUrl(LPCSTR pchUrl)
 	if (nStart > 0)
 	{
 		m_strHost = strTempStrs1[1].Left(nStart);
+
+		CStringA strHostParts[2];
+		if(DivisionStringA(":",m_strHost,strHostParts,2) == 2)
+		{
+			m_strHost = strHostParts[0];
+			m_strPort = strHostParts[1];
+		}
+
 		m_strPath = strTempStrs1[1].Right(strTempStrs1[1].GetLength() - nStart);
 
 		int nPathEnd = m_strPath.ReverseFind(L'/');
@@ -139,6 +147,11 @@ CStringA CUrlParser::GetDomain()
 {
 	return m_strHost;
 }
+CStringA CUrlParser::GetPortStr()
+{
+	return m_strPort;
+}
+
 CStringA CUrlParser::GetPath()
 {
 	return m_strPath;

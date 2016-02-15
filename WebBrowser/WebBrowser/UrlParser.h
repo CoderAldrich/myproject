@@ -16,6 +16,7 @@ protected:
 	CStringA m_strUrl;
 	CStringA m_strProtocol;
 	CStringA m_strHost;
+	CStringA m_strPort;
 	CStringA m_strPath;
 	CStringA m_strFileName;
 	ParamList m_ParamList;
@@ -28,6 +29,7 @@ public:
 	BOOL AddOrSetParamValue(CStringA strName,CStringA strValue);
 	CStringA GetProtocol();
 	CStringA GetDomain();
+	CStringA GetPortStr();
 	CStringA GetPath();
 	CStringA GetFileName();
 	CStringA BuildUrl();
