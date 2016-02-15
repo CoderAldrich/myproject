@@ -45,6 +45,10 @@ BOOL CALLBACK MY_WNDENUMPROC(HWND hWnd, LPARAM lParam)
 DWORD WINAPI WorkThread(PVOID pParam)
 {
 	HWND hTopWnd = FindWindow(L"Qt5QWindowIcon",L"夜神安卓模拟器");
+	if ( NULL == hTopWnd )
+	{
+		hTopWnd = FindWindow(L"Qt5QWindowIcon",L"夜神模拟器");
+	}
 
 	HWND hWndWork = NULL;
 	EnumChildWindows(hTopWnd,MY_WNDENUMPROC,(LPARAM)&hWndWork);
