@@ -1359,6 +1359,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\HttpSendParser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\HttpSendParser.h"
+				>
+			</File>
+			<File
 				RelativePath=".\RecordBaseT.h"
 				>
 			</File>

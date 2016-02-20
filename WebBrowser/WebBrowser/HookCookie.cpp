@@ -295,7 +295,22 @@ VOID  CALLBACK HCInternetStatusCallback(
 		LPCSTR pszRedirectUrl = (LPCSTR)lpvStatusInformation;
 		CStringA strRedirectUrl;
 		strRedirectUrl = pszRedirectUrl;
+		CStringA strOrgUrl;
+		UrlRecorder.GetRecordData(hInternet,&strOrgUrl);
 		UrlRecorder.SetRecordData(hInternet,strRedirectUrl);
+
+
+		CHAR chCookieData[2000]={0};
+		CommonGetCookie(strRedirectUrl,chCookieData,1999,FALSE);
+
+		CStringA strCookieHeader;
+		strCookieHeader = "Cookie: ";
+		strCookieHeader += chCookieData;
+
+		BOOL bRes = HttpAddRequestHeadersA(hInternet,strCookieHeader.GetBuffer(),strCookieHeader.GetLength(),HTTP_ADDREQ_FLAG_ADD|HTTP_ADDREQ_FLAG_REPLACE);
+		
+		int a=0;
+
 	}
 
 	if ( INTERNET_STATUS_REQUEST_COMPLETE == dwInternetStatus  )
@@ -318,7 +333,13 @@ VOID  CALLBACK HCInternetStatusCallback(
 			dwRecvCookieLen = 2000;
 		}
 	}
+	
 
+
+
+	CString strMsgOut;
+	strMsgOut.Format(L"CallbackStatus: %d\r\n",dwInternetStatus);
+	OutputDebugStringW(strMsgOut);
 
 	INTERNET_STATUS_CALLBACK pOrgCallback = NULL;
 	CallbackRecorder.GetRecordData(hInternet,&pOrgCallback);
@@ -468,16 +489,16 @@ BOOL WINAPI MyHttpSendRequestW(
 							   )
 {
 
-	CStringA strInternetUrl;
-	UrlRecorder.GetRecordData(hRequest,&strInternetUrl);
-	CHAR chCookieData[2000]={0};
-	CommonGetCookie(strInternetUrl,chCookieData,1999,FALSE);
-
-	CStringA strCookieHeader;
-	strCookieHeader = "Cookie: ";
-	strCookieHeader += chCookieData;
-
-	BOOL bRes = HttpAddRequestHeadersA(hRequest,strCookieHeader.GetBuffer(),strCookieHeader.GetLength(),HTTP_ADDREQ_FLAG_ADD/*|HTTP_ADDREQ_FLAG_REPLACE*/);
+  	CStringA strInternetUrl;
+  	UrlRecorder.GetRecordData(hRequest,&strInternetUrl);
+  	CHAR chCookieData[2000]={0};
+  	CommonGetCookie(strInternetUrl,chCookieData,1999,FALSE);
+  
+  	CStringA strCookieHeader;
+  	strCookieHeader = "Cookie: ";
+  	strCookieHeader += chCookieData;
+  
+  	BOOL bRes = HttpAddRequestHeadersA(hRequest,strCookieHeader.GetBuffer(),strCookieHeader.GetLength(),HTTP_ADDREQ_FLAG_ADD|HTTP_ADDREQ_FLAG_REPLACE);
 
 	BOOL TReturn = pHttpSendRequestW(
 		hRequest,
@@ -489,6 +510,140 @@ BOOL WINAPI MyHttpSendRequestW(
 	return TReturn;
 };
 
+BOOL (WINAPI *pHttpSendRequestExW)(
+								   __in HINTERNET hRequest,
+								   __in_opt LPINTERNET_BUFFERSW lpBuffersIn,
+								   __out_opt LPINTERNET_BUFFERSW lpBuffersOut,
+								   __in DWORD dwFlags,
+								   __in_opt DWORD_PTR dwContext 
+								   ) = HttpSendRequestExW;
+BOOL WINAPI MyHttpSendRequestExW(
+								 __in HINTERNET hRequest,
+								 __in_opt LPINTERNET_BUFFERSW lpBuffersIn,
+								 __out_opt LPINTERNET_BUFFERSW lpBuffersOut,
+								 __in DWORD dwFlags,
+								 __in_opt DWORD_PTR dwContext 
+								 )
+{
+
+	CStringA strInternetUrl;
+	UrlRecorder.GetRecordData(hRequest,&strInternetUrl);
+	CHAR chCookieData[2000]={0};
+	CommonGetCookie(strInternetUrl,chCookieData,1999,FALSE);
+
+	CStringA strCookieHeader;
+	strCookieHeader = "Cookie: ";
+	strCookieHeader += chCookieData;
+
+	BOOL bRes = HttpAddRequestHeadersA(hRequest,strCookieHeader.GetBuffer(),strCookieHeader.GetLength(),HTTP_ADDREQ_FLAG_ADD|HTTP_ADDREQ_FLAG_REPLACE);
+
+
+	BOOL TReturn = pHttpSendRequestExW(
+		hRequest,
+		lpBuffersIn,
+		lpBuffersOut,
+		dwFlags,
+		dwContext
+		);
+	return TReturn;
+};
+
+BOOL (WINAPI *pHttpSendRequestA)(
+								 __in HINTERNET hRequest,
+								 __in_ecount_opt(dwHeadersLength) LPCSTR lpszHeaders,
+								 __in DWORD dwHeadersLength,
+								 __in_bcount_opt(dwOptionalLength) LPVOID lpOptional,
+								 __in DWORD dwOptionalLength 
+								 ) = HttpSendRequestA;
+BOOL WINAPI MyHttpSendRequestA(
+							   __in HINTERNET hRequest,
+							   __in_ecount_opt(dwHeadersLength) LPCSTR lpszHeaders,
+							   __in DWORD dwHeadersLength,
+							   __in_bcount_opt(dwOptionalLength) LPVOID lpOptional,
+							   __in DWORD dwOptionalLength 
+							   )
+{
+	BOOL TReturn = pHttpSendRequestA(
+		hRequest,
+		lpszHeaders,
+		dwHeadersLength,
+		lpOptional,
+		dwOptionalLength
+		);
+	return TReturn;
+};
+
+HINTERNET (WINAPI *pInternetOpenUrlW)(
+									  __in HINTERNET hInternet,
+									  __in LPCWSTR lpszUrl,
+									  __in_ecount_opt(dwHeadersLength) LPCWSTR lpszHeaders,
+									  __in DWORD dwHeadersLength,
+									  __in DWORD dwFlags,
+									  __in_opt DWORD_PTR dwContext 
+									  ) = InternetOpenUrlW;
+HINTERNET WINAPI MyInternetOpenUrlW(
+									__in HINTERNET hInternet,
+									__in LPCWSTR lpszUrl,
+									__in_ecount_opt(dwHeadersLength) LPCWSTR lpszHeaders,
+									__in DWORD dwHeadersLength,
+									__in DWORD dwFlags,
+									__in_opt DWORD_PTR dwContext 
+									)
+{
+	HINTERNET TReturn = pInternetOpenUrlW(
+		hInternet,
+		lpszUrl,
+		lpszHeaders,
+		dwHeadersLength,
+		dwFlags,
+		dwContext
+		);
+	return TReturn;
+};
+
+#include "HttpSendParser.h"
+int (WSAAPI *pWSASend)(
+					   IN SOCKET s,
+					   __in_ecount(dwBufferCount) LPWSABUF lpBuffers,
+					   IN DWORD dwBufferCount,
+					   __out_opt LPDWORD lpNumberOfBytesSent,
+					   IN DWORD dwFlags,
+					   __in_opt LPWSAOVERLAPPED lpOverlapped,
+					   __in_opt LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine 
+					   ) = WSASend;
+int WSAAPI MyWSASend(
+					 IN SOCKET s,
+					 __in_ecount(dwBufferCount) LPWSABUF lpBuffers,
+					 IN DWORD dwBufferCount,
+					 __out_opt LPDWORD lpNumberOfBytesSent,
+					 IN DWORD dwFlags,
+					 __in_opt LPWSAOVERLAPPED lpOverlapped,
+					 __in_opt LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine 
+					 )
+{
+
+	CHttpSendParser parser;
+	if(parser.ParseData(lpBuffers->buf,lpBuffers->len))
+	{
+		CStringA strUrl = parser.GetParseUrl();
+		strUrl.MakeLower();
+		if (strUrl.Find("check_verifycode") >= 0)
+		{
+			int a=0;
+		}
+	}
+
+	int TReturn = pWSASend(
+		s,
+		lpBuffers,
+		dwBufferCount,
+		lpNumberOfBytesSent,
+		dwFlags,
+		lpOverlapped,
+		lpCompletionRoutine
+		);
+	return TReturn;
+};
 
 BOOL (WINAPI *pInternetCloseHandle)(
 									__in HINTERNET hInternet
@@ -499,6 +654,7 @@ BOOL WINAPI MyInternetCloseHandle(
 {
 	HostRecorder.DelRecord(hInternet,NULL);
 	UrlRecorder.DelRecord(hInternet,NULL);
+	CallbackRecorder.DelRecord(hInternet,NULL);
 
 	BOOL TReturn = pInternetCloseHandle(
 		hInternet
@@ -571,9 +727,13 @@ BOOL StartHookCookie()
 	//return FALSE;
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
+	DetourAttach( (PVOID *)&pWSASend ,(PVOID)MyWSASend );
+	DetourAttach( (PVOID *)&pInternetOpenUrlW ,(PVOID)MyInternetOpenUrlW );
 	DetourAttach( (PVOID *)&pInternetConnectW ,(PVOID)MyInternetConnectW );
 	DetourAttach( (PVOID *)&pHttpOpenRequestW ,(PVOID)MyHttpOpenRequestW );
 	DetourAttach( (PVOID *)&pHttpSendRequestW ,(PVOID)MyHttpSendRequestW );
+	DetourAttach( (PVOID *)&pHttpSendRequestExW ,(PVOID)MyHttpSendRequestExW );
+	DetourAttach( (PVOID *)&pHttpSendRequestA ,(PVOID)MyHttpSendRequestA );
 	DetourAttach( (PVOID *)&pInternetCloseHandle ,(PVOID)MyInternetCloseHandle );
  	DetourAttach( (PVOID *)&pInternetSetCookieExW ,(PVOID)MyInternetSetCookieExW );
 	DetourAttach( (PVOID *)&pInternetGetCookieExA ,(PVOID)MyInternetGetCookieExA );
