@@ -680,16 +680,18 @@ DWORD WINAPI MyInternetSetCookieExW(
 
  	CommonSetCookie(CStringA(lpszUrl),CStringA(lpszCookieData),TRUE);
 
-	//先设置一下Cookie 测试是否可以设置Cookie
-	DWORD dwSetRes = pInternetSetCookieExW(
-		lpszUrl,
-		lpszCookieName,
-		lpszCookieData,
-		dwFlags,
-		dwReserved
-		);
+	return COOKIE_STATE_ACCEPT;
 
-	return dwSetRes;
+	//先设置一下Cookie 测试是否可以设置Cookie
+// 	DWORD dwSetRes = pInternetSetCookieExW(
+// 		lpszUrl,
+// 		lpszCookieName,
+// 		lpszCookieData,
+// 		dwFlags,
+// 		dwReserved
+// 		);
+// 
+// 	return dwSetRes;
 };
 
 BOOL (WINAPI *pInternetGetCookieExA)(
