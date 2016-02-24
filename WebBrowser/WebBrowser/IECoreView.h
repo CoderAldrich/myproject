@@ -50,6 +50,7 @@ private:
 	BOOL m_bCanForward;
 	BOOL bInit;
 	INT  m_nCurZoom;
+	static BOOL bInternalHook;
  public:
  	DWORD m_dwCookie;
 public:

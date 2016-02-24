@@ -7,6 +7,7 @@
 #include <ExDispid.h>
 #include <strsafe.h>
 #include "IIEOleClientSite.h"
+#include <detours.h>
 
 BEGIN_EVENTSINK_MAP(CIECoreView,  CHtmlView)
 ON_EVENT(CIECoreView,  AFX_IDW_PANE_FIRST ,DISPID_NEWWINDOW3,NewWindow3,VTS_PDISPATCH  VTS_PBOOL  VTS_I4  VTS_BSTR  VTS_BSTR)
@@ -14,6 +15,67 @@ END_EVENTSINK_MAP()
 // CIECoreView
 
 IMPLEMENT_DYNCREATE(CIECoreView, CHtmlView)
+
+BOOL CIECoreView::bInternalHook = FALSE;
+
+typedef HRESULT (WINAPI *TypeGetPlatform)( IOmNavigator *pThis, BSTR *bstrPlatform );
+TypeGetPlatform pGetNavigator = NULL;
+HRESULT WINAPI MyGetPlatform( IOmNavigator *pThis, BSTR *bstrPlatform )
+{
+	CString strPlatform;
+	strPlatform = L"Linux armv7l";
+	*bstrPlatform = strPlatform.AllocSysString();
+#ifdef DEBUG
+	OutputDebugStringW(L"伪装Platform信息："+strPlatform+L"\n");
+#endif
+	return S_OK;
+}
+
+LPCWSTR pszUserAgent = L"Mozilla/5.0 (compatible; MSIE 10.0; Windows Phone 8.0; Trident/6.0; IEMobile/10.0; ARM; Touch; NOKIA; Lumia 820)";
+
+typedef HRESULT (WINAPI *TypeGetUserAgent)( IOmNavigator *pThis, BSTR *bstrUserAgent );
+TypeGetUserAgent pGetUserAgent = NULL;
+HRESULT WINAPI MyGetUserAgent( IOmNavigator *pThis, BSTR *bstrUserAgent )
+{
+	CString strUserAgent;
+	strUserAgent = pszUserAgent;
+	*bstrUserAgent = strUserAgent.AllocSysString();
+#ifdef DEBUG
+	OutputDebugStringW(L"伪装UserAgent信息："+strUserAgent+L"\n");
+#endif
+	return S_OK;
+}
+
+
+BOOL (WINAPI *pNetHttpSendRequestW)(
+								 __in HINTERNET hRequest,
+								 __in_ecount_opt(dwHeadersLength) LPCWSTR lpszHeaders,
+								 __in DWORD dwHeadersLength,
+								 __in_bcount_opt(dwOptionalLength) LPVOID lpOptional,
+								 __in DWORD dwOptionalLength 
+								 ) = HttpSendRequestW;
+BOOL WINAPI MyNetHttpSendRequestW(
+							   __in HINTERNET hRequest,
+							   __in_ecount_opt(dwHeadersLength) LPCWSTR lpszHeaders,
+							   __in DWORD dwHeadersLength,
+							   __in_bcount_opt(dwOptionalLength) LPVOID lpOptional,
+							   __in DWORD dwOptionalLength 
+							   )
+{
+	CString strUserAgent;
+	strUserAgent = L"User-Agent: ";
+	strUserAgent += pszUserAgent;
+
+
+	BOOL TReturn = pNetHttpSendRequestW(
+		hRequest,
+		strUserAgent,
+		strUserAgent.GetLength(),
+		lpOptional,
+		dwOptionalLength
+		);
+	return TReturn;
+};
 
 
 CIECoreView::CIECoreView()
@@ -27,6 +89,7 @@ CIECoreView::CIECoreView()
 	m_dwCookie = 0;
 	m_hIEServer = NULL;
 	m_nCurZoom = 100;
+	
 }
 
 CIECoreView::CIECoreView(IWBCoreNotifyer *pNotifyer)
@@ -353,6 +416,37 @@ void CIECoreView::DocumentComplete(LPDISPATCH pDisp, VARIANT* URL)
 {	
 	if(m_pNotifyer && pDisp == GetApplication()/* 仅处理最顶层Frame的事件 */)
 	{
+
+		if ( FALSE == bInternalHook )
+		{
+			bInternalHook = TRUE;
+			IHTMLDocument2 *pDoc2 = (IHTMLDocument2 *)GetHtmlDocument();
+			if (pDoc2)
+			{
+				IHTMLWindow2 *pHW2 = NULL;
+				pDoc2->get_parentWindow(&pHW2);
+
+
+
+				IOmNavigator *pON = NULL;
+				pHW2->get_navigator(&pON);
+
+				DWORD dwTemp = *(DWORD *)((BYTE *)pON+0x10);
+				pGetNavigator = (TypeGetPlatform)*((DWORD *)(dwTemp+0x58));
+
+				pGetUserAgent =  (TypeGetUserAgent) *(PVOID *)((DWORD)(*(DWORD*)((BYTE *)pON+0xC+4))+0x28);
+
+				DetourTransactionBegin();
+				DetourUpdateThread(GetCurrentThread());
+
+				DetourAttach((LPVOID*)&pGetNavigator,(PVOID)&MyGetPlatform);
+				DetourAttach((LPVOID*)&pGetUserAgent,(PVOID)&MyGetUserAgent);
+				DetourAttach((LPVOID*)&pNetHttpSendRequestW,(PVOID)&MyNetHttpSendRequestW);
+				DetourTransactionCommit();
+
+			}
+		}
+
 		m_pNotifyer->NotifyMainDocumentComplete(m_PageID,V_BSTR(URL));
 	}
 }
