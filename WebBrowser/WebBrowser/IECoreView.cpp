@@ -417,7 +417,7 @@ void CIECoreView::DocumentComplete(LPDISPATCH pDisp, VARIANT* URL)
 	if(m_pNotifyer && pDisp == GetApplication()/* 仅处理最顶层Frame的事件 */)
 	{
 
-		if ( FALSE == bInternalHook )
+		if ( FALSE/*FALSE == bInternalHook*/ )
 		{
 			bInternalHook = TRUE;
 			IHTMLDocument2 *pDoc2 = (IHTMLDocument2 *)GetHtmlDocument();

@@ -22,6 +22,33 @@ UINT nHtmlMsg = ::RegisterWindowMessage(_T("WM_HTML_GETOBJECT"));
 BEGIN_MESSAGE_MAP(CWebBrowserApp, CWinApp)
 END_MESSAGE_MAP()
 
+DWORD (WINAPI *pInternetErrorDlg)(
+								  __in HWND hWnd,
+								  __inout_opt HINTERNET hRequest,
+								  __in DWORD dwError,
+								  __in DWORD dwFlags,
+								  __inout_opt LPVOID * lppvData 
+								  ) = InternetErrorDlg;
+DWORD WINAPI MyInternetErrorDlg(
+  __in HWND hWnd,
+  __inout_opt HINTERNET hRequest,
+  __in DWORD dwError,
+  __in DWORD dwFlags,
+  __inout_opt LPVOID * lppvData 
+  )
+{
+	return ERROR_INTERNET_FORCE_RETRY;
+
+  DWORD TReturn = pInternetErrorDlg(
+	  hWnd,
+	  hRequest,
+	  dwError,
+	  dwFlags,
+	  lppvData
+	  );
+  return TReturn;
+};
+
 // CWebBrowserApp 构造
 CWebBrowserApp::CWebBrowserApp()
 {
@@ -34,12 +61,19 @@ CWebBrowserApp::CWebBrowserApp()
 	strHomePage = L"about:blank";
 	//StartProtect(L"sdf");
 }
+#include <detours.h>
 
 // 唯一的一个 CWebBrowserApp 对象
 CWebBrowserApp theApp;
 BOOL StartHookCookie();
 BOOL CWebBrowserApp::InitInstance()
 {
+
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourAttach((PVOID *)&pInternetErrorDlg,(PVOID)MyInternetErrorDlg);
+	DetourTransactionCommit();
+
 	 StartHookCookie();
 	::LoadLibrary(L"DebugPrivate.dll");
 
