@@ -271,11 +271,12 @@ VOID CommonGetCookie(LPCSTR pchUrl,CHAR *pchCookieData,int nCookieDataLen,BOOL b
 	}  
 	FindClose(hFind);
 
+#ifdef DEBUG
 	OutputDebugStringA(pchUrl);
 	OutputDebugStringA(" ");
 	OutputDebugStringA(strResSave);
 	OutputDebugStringA("\r\n");
-
+#endif
 	strcpy_s(pchCookieData,nCookieDataLen,strResSave.GetBuffer());
 }
 
@@ -743,10 +744,23 @@ BOOL WINAPI MyInternetGetCookieExW(
 	
 	CString wstrCookieData;
 	wstrCookieData = chCookieData;
+	DWORD dwRegCookieDataLen = wstrCookieData.GetLength();
+	//ÅÐ¶Ï»º³åÇøÊÇ·ñ×ã¹»
+	if( *lpdwSize <= dwRegCookieDataLen )
+	{
+		SetLastError(ERROR_INSUFFICIENT_BUFFER);
+		*lpdwSize = dwRegCookieDataLen+10;
+		return FALSE;
+	}
+	else
+	{
+		wcscpy_s(lpszCookieData,*lpdwSize,wstrCookieData);
+		*lpdwSize = dwRegCookieDataLen;
+		SetLastError(0);
+		return TRUE;
+	}
 
-	wcscpy_s(lpszCookieData,*lpdwSize,wstrCookieData);
-	*lpdwSize = wstrCookieData.GetLength();
-	return TRUE;
+	
 
 	BOOL TReturn = pInternetGetCookieExW(
 		lpszUrl,
