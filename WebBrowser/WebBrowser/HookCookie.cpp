@@ -13,6 +13,7 @@ typedef CRecordBaseT<HINTERNET,CStringA>                 CInternetUrlRecord,CInt
 CInternetCallbackRecord CallbackRecorder;
 CInternetUrlRecord      UrlRecorder;
 CInternetHostRecord     HostRecorder;
+CString                 g_strCookieSavePath;
 
 
 //分割字符串
@@ -68,7 +69,7 @@ VOID CommonSetCookie(LPCSTR pchUrl,LPCSTR pchCookieData,BOOL bFromJs = FALSE)
 	cookieParser.ParserCookieString(pchUrl,pchCookieData);
 
 	CStringA strCookieSavePath;
-	strCookieSavePath = "C:\\cookies\\";
+	strCookieSavePath = g_strCookieSavePath;
 	strCookieSavePath += cookieParser.m_strDomain;
 	strCookieSavePath +="\\";
 
@@ -229,7 +230,7 @@ VOID CommonGetCookie(LPCSTR pchUrl,CHAR *pchCookieData,int nCookieDataLen,BOOL b
 
 
 	WIN32_FIND_DATA FindFileData;
-	HANDLE hFind=::FindFirstFile(L"C:\\cookies\\*.*",&FindFileData);  
+	HANDLE hFind=::FindFirstFile(g_strCookieSavePath+L"*.*",&FindFileData);  
 	if(INVALID_HANDLE_VALUE == hFind)
 	{
 		return;
@@ -251,7 +252,8 @@ VOID CommonGetCookie(LPCSTR pchUrl,CHAR *pchCookieData,int nCookieDataLen,BOOL b
 				if (strCheckDomain.Find(strStoryDomain) == 0)
 				{
 					
-					WCHAR szScanPath[255]=L"C:\\cookies\\";
+					WCHAR szScanPath[255];
+					wcscpy_s(szScanPath,MAX_PATH,g_strCookieSavePath);
 					wcscat_s(szScanPath,255,FindFileData.cFileName);
 					wcscat_s(szScanPath,255,L"\\");
 					CheckPath(szScanPath,urlParser.GetPath(),urlParser.GetProtocol() == "http"?FALSE:TRUE,bFromJs,strResSave );
@@ -334,13 +336,6 @@ VOID  CALLBACK HCInternetStatusCallback(
 			dwRecvCookieLen = 2000;
 		}
 	}
-	
-
-
-
-// 	CString strMsgOut;
-// 	strMsgOut.Format(L"CallbackStatus: %d\r\n",dwInternetStatus);
-// 	OutputDebugStringW(strMsgOut);
 
 	INTERNET_STATUS_CALLBACK pOrgCallback = NULL;
 	CallbackRecorder.GetRecordData(hInternet,&pOrgCallback);
@@ -775,7 +770,19 @@ BOOL WINAPI MyInternetGetCookieExW(
 
 BOOL StartHookCookie()
 {
-	CreateDirectoryW(L"C:\\cookies",NULL);
+	//获取当前路径
+	WCHAR szLocalPath[MAX_PATH]={0};
+	GetModuleFileNameW(NULL,szLocalPath,MAX_PATH);
+	WCHAR *pPathEnd = (WCHAR *)szLocalPath+wcslen(szLocalPath);
+	while (pPathEnd != szLocalPath && *pPathEnd != L'\\') pPathEnd--;
+	*(pPathEnd+1) = 0;
+
+	g_strCookieSavePath = szLocalPath;
+	g_strCookieSavePath +=L"Cookies\\";
+
+	CreateDirectoryW(g_strCookieSavePath,NULL);
+
+
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach( (PVOID *)&pWSASend ,(PVOID)MyWSASend );
