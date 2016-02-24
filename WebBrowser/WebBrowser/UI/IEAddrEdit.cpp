@@ -107,7 +107,7 @@ CString CIEAddrEdit::FormatUrl(CString strOrgUrl)
 		&& strOrgUrl.Right(3)!=TEXT(".js")
 		)
 	{
-		strOrgUrl=strOrgUrl+strTail;//+TEXT("/");
+		strOrgUrl=strOrgUrl+strTail+TEXT("/");
 	}
 	if(strTempHead!=strTemplate1)
 	{

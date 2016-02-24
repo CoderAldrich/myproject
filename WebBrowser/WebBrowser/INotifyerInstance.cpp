@@ -450,7 +450,7 @@ unsigned long INotifyerInstance::NotifyFrameClose(BOOL *pbCanClose)
 #ifdef DEBUG
 		OutputDebugStringW(L"***********Frame线程不能退出********\n");
 #endif
-		Sleep(10);
+		Sleep(100);
 		::PostMessage(hMainFrame,WM_CLOSE,0,0);
 	}
 #ifdef DEBUG

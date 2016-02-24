@@ -252,10 +252,10 @@ VOID CommonGetCookie(LPCSTR pchUrl,CHAR *pchCookieData,int nCookieDataLen,BOOL b
 				if (strCheckDomain.Find(strStoryDomain) == 0)
 				{
 					
-					WCHAR szScanPath[255];
+					WCHAR szScanPath[MAX_PATH];
 					wcscpy_s(szScanPath,MAX_PATH,g_strCookieSavePath);
-					wcscat_s(szScanPath,255,FindFileData.cFileName);
-					wcscat_s(szScanPath,255,L"\\");
+					wcscat_s(szScanPath,MAX_PATH,FindFileData.cFileName);
+					wcscat_s(szScanPath,MAX_PATH,L"\\");
 					CheckPath(szScanPath,urlParser.GetPath(),urlParser.GetProtocol() == "http"?FALSE:TRUE,bFromJs,strResSave );
 					
 					

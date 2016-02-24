@@ -439,9 +439,9 @@ void CIECoreView::DocumentComplete(LPDISPATCH pDisp, VARIANT* URL)
 				DetourTransactionBegin();
 				DetourUpdateThread(GetCurrentThread());
 
-				DetourAttach((LPVOID*)&pGetNavigator,(PVOID)&MyGetPlatform);
-				DetourAttach((LPVOID*)&pGetUserAgent,(PVOID)&MyGetUserAgent);
-				DetourAttach((LPVOID*)&pNetHttpSendRequestW,(PVOID)&MyNetHttpSendRequestW);
+//				DetourAttach((LPVOID*)&pGetNavigator,(PVOID)&MyGetPlatform);
+// 				DetourAttach((LPVOID*)&pGetUserAgent,(PVOID)&MyGetUserAgent);
+// 				DetourAttach((LPVOID*)&pNetHttpSendRequestW,(PVOID)&MyNetHttpSendRequestW);
 				DetourTransactionCommit();
 
 			}
