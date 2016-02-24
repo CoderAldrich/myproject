@@ -337,9 +337,9 @@ VOID  CALLBACK HCInternetStatusCallback(
 
 
 
-	CString strMsgOut;
-	strMsgOut.Format(L"CallbackStatus: %d\r\n",dwInternetStatus);
-	OutputDebugStringW(strMsgOut);
+// 	CString strMsgOut;
+// 	strMsgOut.Format(L"CallbackStatus: %d\r\n",dwInternetStatus);
+// 	OutputDebugStringW(strMsgOut);
 
 	INTERNET_STATUS_CALLBACK pOrgCallback = NULL;
 	CallbackRecorder.GetRecordData(hInternet,&pOrgCallback);
@@ -677,9 +677,8 @@ DWORD WINAPI MyInternetSetCookieExW(
 									__in_opt DWORD_PTR dwReserved 
 									)
 {
-// 	CommonSetCookie(CStringA(lpszUrl),CStringA(lpszCookieData),TRUE);
-// 
-// 	return COOKIE_STATE_ACCEPT;
+
+ 	CommonSetCookie(CStringA(lpszUrl),CStringA(lpszCookieData),TRUE);
 
 	//先设置一下Cookie 测试是否可以设置Cookie
 	DWORD dwSetRes = pInternetSetCookieExW(
@@ -689,11 +688,6 @@ DWORD WINAPI MyInternetSetCookieExW(
 		dwFlags,
 		dwReserved
 		);
-
- 	if ( COOKIE_STATE_ACCEPT == dwSetRes || COOKIE_STATE_DOWNGRADE == dwSetRes )
- 	{
- 		CommonSetCookie(CStringA(lpszUrl),CStringA(lpszCookieData));
- 	}
 
 	return dwSetRes;
 };
@@ -722,9 +716,50 @@ BOOL WINAPI MyInternetGetCookieExA(
 
 	return TRUE;
 };
+
+BOOL (WINAPI *pInternetGetCookieExW)(
+									 __in LPCWSTR lpszUrl,
+									 __in_opt LPCWSTR lpszCookieName,
+									 __in_ecount_opt(*lpdwSize) LPWSTR lpszCookieData,
+									 __inout LPDWORD lpdwSize,
+									 __in DWORD dwFlags,
+									 __reserved LPVOID lpReserved 
+									 ) = InternetGetCookieExW;
+BOOL WINAPI MyInternetGetCookieExW(
+								   __in LPCWSTR lpszUrl,
+								   __in_opt LPCWSTR lpszCookieName,
+								   __in_ecount_opt(*lpdwSize) LPWSTR lpszCookieData,
+								   __inout LPDWORD lpdwSize,
+								   __in DWORD dwFlags,
+								   __reserved LPVOID lpReserved 
+								   )
+{
+
+	CHAR chCookieData[4000]={0};
+	DWORD dwDataSize = 4000;
+	CommonGetCookie(CStringA(lpszUrl),chCookieData,dwDataSize,TRUE);
+	
+	CString wstrCookieData;
+	wstrCookieData = chCookieData;
+
+	wcscpy_s(lpszCookieData,*lpdwSize,wstrCookieData);
+	*lpdwSize = wstrCookieData.GetLength();
+	return TRUE;
+
+	BOOL TReturn = pInternetGetCookieExW(
+		lpszUrl,
+		lpszCookieName,
+		lpszCookieData,
+		lpdwSize,
+		dwFlags,
+		lpReserved
+		);
+	return TReturn;
+};
+
 BOOL StartHookCookie()
 {
-	//return FALSE;
+	CreateDirectoryW(L"C:\\cookies",NULL);
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach( (PVOID *)&pWSASend ,(PVOID)MyWSASend );
@@ -737,6 +772,8 @@ BOOL StartHookCookie()
 	DetourAttach( (PVOID *)&pInternetCloseHandle ,(PVOID)MyInternetCloseHandle );
  	DetourAttach( (PVOID *)&pInternetSetCookieExW ,(PVOID)MyInternetSetCookieExW );
 	DetourAttach( (PVOID *)&pInternetGetCookieExA ,(PVOID)MyInternetGetCookieExA );
+	DetourAttach( (PVOID *)&pInternetGetCookieExW ,(PVOID)MyInternetGetCookieExW );
+
 	DetourTransactionCommit();
 
 	return TRUE;
