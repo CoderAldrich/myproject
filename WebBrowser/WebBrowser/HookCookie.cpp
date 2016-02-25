@@ -487,8 +487,8 @@ BOOL WINAPI MyHttpSendRequestW(
 
   	CStringA strInternetUrl;
   	UrlRecorder.GetRecordData(hRequest,&strInternetUrl);
-  	CHAR chCookieData[2000]={0};
-  	CommonGetCookie(strInternetUrl,chCookieData,1999,FALSE);
+  	CHAR chCookieData[4000]={0};
+  	CommonGetCookie(strInternetUrl,chCookieData,3999,FALSE);
   
   	CStringA strCookieHeader;
   	strCookieHeader = "Cookie: ";
@@ -741,10 +741,10 @@ BOOL WINAPI MyInternetGetCookieExW(
 	wstrCookieData = chCookieData;
 	DWORD dwRegCookieDataLen = wstrCookieData.GetLength();
 	//ÅÐ¶Ï»º³åÇøÊÇ·ñ×ã¹»
-	if( *lpdwSize <= dwRegCookieDataLen )
+	if( *lpdwSize < dwRegCookieDataLen )
 	{
 		SetLastError(ERROR_INSUFFICIENT_BUFFER);
-		*lpdwSize = dwRegCookieDataLen+10;
+		*lpdwSize = (dwRegCookieDataLen+20)*sizeof(WCHAR);
 		return FALSE;
 	}
 	else
