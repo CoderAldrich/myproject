@@ -53,7 +53,6 @@ DWORD WINAPI MyInternetErrorDlg(
 CWebBrowserApp::CWebBrowserApp()
 {
 	m_dwFrameCount = 0;
-	m_nBaseStyle = 8;
 	m_bMutiTab = TRUE;
 	m_bMenuBar = TRUE;
 	m_bToolBar = TRUE;

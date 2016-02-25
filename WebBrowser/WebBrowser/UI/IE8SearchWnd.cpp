@@ -14,7 +14,7 @@ IMPLEMENT_DYNAMIC(CIE8SearchWnd, CControlBar)
 CIE8SearchWnd::CIE8SearchWnd()
 {
 	m_defaultfont.Attach((HFONT)::GetStockObject(DEFAULT_GUI_FONT));
-	m_hicoSearch = LoadIconW(AfxGetInstanceHandle(),MAKEINTRESOURCE(IDI_IE9_SEARCH));
+	m_hicoSearch = NULL;//LoadIconW(AfxGetInstanceHandle(),MAKEINTRESOURCE(IDI_IE9_SEARCH));
 	int a=0;
 }
 

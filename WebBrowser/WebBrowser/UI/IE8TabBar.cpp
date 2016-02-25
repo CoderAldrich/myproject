@@ -47,7 +47,7 @@ CIETabBar::CIETabBar(UINT nBottomHeight,UINT nMaxWidth,UINT nMinWidht)
 	textBottom = 0;
 	m_defaultfont.Attach((HFONT)::GetStockObject(DEFAULT_GUI_FONT));
 	m_hDefaultIcon=LoadIcon(AfxGetInstanceHandle(),MAKEINTRESOURCE(IDI_IE8_TAB_DEFAULT));
-	m_icoAddTab = LoadIconW(AfxGetInstanceHandle(),MAKEINTRESOURCE(IDI_IE9_ADD_TAB));
+	m_icoAddTab = NULL;//LoadIconW(AfxGetInstanceHandle(),MAKEINTRESOURCE(IDI_IE9_ADD_TAB));
 	m_nAddTabStatus = 0;
 	m_bWatching = false;
 	m_Pen.CreatePen(PS_SOLID,1,RGB(163,167,172));

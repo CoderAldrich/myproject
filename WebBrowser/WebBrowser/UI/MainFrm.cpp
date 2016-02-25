@@ -65,9 +65,8 @@ static UINT indicators[] =
 
 // CMainFrame 构造/析构
 
-CMainFrame::CMainFrame(UINT UIType,BOOL bMutiTab,BOOL bMenuBar,BOOL bToolBar,BOOL bCommandBar)
+CMainFrame::CMainFrame(BOOL bMutiTab,BOOL bMenuBar,BOOL bToolBar,BOOL bCommandBar)
 {
-	m_UIType = UIType;
 	g_UIMutiTabShow = bMutiTab;
 	g_UIMenuBarShow = bMenuBar;
 	g_UIToolBarShow = bToolBar;
@@ -81,7 +80,6 @@ CMainFrame::CMainFrame(UINT UIType,BOOL bMutiTab,BOOL bMenuBar,BOOL bToolBar,BOO
 }
 CMainFrame::CMainFrame()
 {
-	m_UIType = 8;
 	g_UIMutiTabShow = TRUE;
 	g_UIMenuBarShow = TRUE;
 	g_UIToolBarShow = TRUE;
@@ -151,83 +149,25 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_IEMenuBar.ModifyStyle(CBRS_BORDER_TOP,0,SWP_FRAMECHANGED);
 
 
-	if (m_UIType == 6)
+
+	//////////////////////////////////////////////////////////////////////////
+	//IE8UI
+	m_wndNaviBar.Create(NULL,NULL,WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN,CRect(0,0,1000,34),this ,0);
+	if (g_UIMutiTabShow)
 	{
-		//////////////////////////////////////////////////////////////////////////
-		//IE6UI
-		m_IE6ToolBar.CreateEx(this,TBSTYLE_TRANSPARENT|TBSTYLE_FLAT|TBSTYLE_LIST,WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN|CBRS_ALIGN_TOP,CRect(0,0,0,0));
-		m_IE6Addr.Create(WS_VISIBLE|WS_CHILD|CBS_DROPDOWN|CBS_AUTOHSCROLL|WS_CLIPCHILDREN,CRect(0,0,400,400),this,0);
-
-		m_IE6GotoBtn.CreateEx(this,TBSTYLE_TRANSPARENT|TBSTYLE_LIST|TBSTYLE_FLAT);
-		m_IE6GotoBtn.AddButton(0,ID_GOTO_URL,TBBS_BUTTON|TBBS_AUTOSIZE,TBSTATE_ENABLED,0);
-		m_IE6GotoBtn.SetImageList(IDB_IE6_GOTO,20,20);
-		m_IE6GotoBtn.SetButtonText(0,TEXT("转到"));
-		m_IE6GotoBtn.GetToolBarCtrl().SetButtonSize(CSize(55,26));
-		m_IE6GotoBtn.SetButtonBorder(true);
-
-
-		m_pCurAddr = (CComboBox *)&m_IE6Addr;
-
-		m_wndRebar.AddBar(&m_IEMenuBar,NULL,NULL,(DWORD)0/*RBBS_NOGRIPPER*/);
-		m_wndRebar.AddBar(&m_IE6ToolBar,NULL,NULL,RBBS_NOGRIPPER|RBBS_BREAK|RBBS_USECHEVRON);
-		m_wndRebar.AddBar(&m_IE6Addr,(LPCTSTR)TEXT("地址(&D)"),NULL,(DWORD)/*RBBS_NOGRIPPER|*/RBBS_BREAK);
-		m_wndRebar.AddBar(&m_IE6GotoBtn,NULL,NULL,RBBS_NOGRIPPER);
-		
-
-		const int height = 27;
- 		REBARBANDINFO rbi;
- 		rbi.cbSize = sizeof(rbi);
- 		rbi.fMask = RBBIM_CHILDSIZE|RBBIM_COLORS;
- 		rbi.cxMinChild=0;
- 		rbi.cyMinChild=height;
- 		rbi.cyChild=height;
- 		rbi.cyMaxChild=height;
- 		rbi.cyIntegral=height;
- 		rbi.clrBack = ::GetSysColor(COLOR_BTNFACE);
- 		rbi.clrFore = ::GetSysColor(COLOR_BTNFACE);
- 		m_wndRebar.GetReBarCtrl().SetBandInfo(2,&rbi);
-
- 		rbi.fMask = RBBIM_IDEALSIZE;
- 		rbi.cxIdeal = 500;
- 		m_wndRebar.GetReBarCtrl().SetBandInfo(1,&rbi);
-
-		m_wndRebar.GetReBarCtrl().SetBandWidth(3,50);
+		m_wndTabBar.Create(NULL,NULL,WS_VISIBLE|WS_CHILD|TCS_FIXEDWIDTH|WS_CLIPCHILDREN,CRect(0,0,30,30),this,123);
 	}
-	else if(m_UIType == 8)
+	m_pCurAddr = (CComboBox *)m_wndNaviBar.GetAddrBarPtr();
+
+	m_wndRebar.AddBar(&m_wndNaviBar,NULL,NULL,RBBS_NOGRIPPER);
+
+	if (g_UIMutiTabShow)
 	{
-		//////////////////////////////////////////////////////////////////////////
-		//IE8UI
-		m_wndNaviBar.Create(NULL,NULL,WS_CHILD|WS_VISIBLE|WS_CLIPCHILDREN,CRect(0,0,1000,34),this ,0);
-		if (g_UIMutiTabShow)
-		{
-			m_wndTabBar.Create(NULL,NULL,WS_VISIBLE|WS_CHILD|TCS_FIXEDWIDTH|WS_CLIPCHILDREN,CRect(0,0,30,30),this,123);
-		}
-		m_pCurAddr = (CComboBox *)m_wndNaviBar.GetAddrBarPtr();
-
-		m_wndRebar.AddBar(&m_wndNaviBar,NULL,NULL,RBBS_NOGRIPPER);
-
-		if (g_UIMutiTabShow)
-		{
-			m_wndRebar.AddBar(&m_wndTabBar,NULL,NULL,RBBS_NOGRIPPER|RBBS_BREAK);
-		}
-
-		m_wndRebar.AddBar(&m_IEMenuBar,NULL,NULL,RBBS_NOGRIPPER|RBBS_BREAK);
+		m_wndRebar.AddBar(&m_wndTabBar,NULL,NULL,RBBS_NOGRIPPER|RBBS_BREAK);
 	}
-	else if(m_UIType == 9)
-	{
 
-		//IE9UI
-		m_IE9BGWnd.Create(NULL,NULL,WS_VISIBLE|WS_CHILD|WS_CLIPCHILDREN,CRect(0,0,30,30),this,0);
+	m_wndRebar.AddBar(&m_IEMenuBar,NULL,NULL,RBBS_NOGRIPPER|RBBS_BREAK);
 
-		if ( FALSE == g_UIMutiTabShow )
-		{
-			m_IE9BGWnd.HideTabBar();
-		}
-		m_pCurAddr = (CComboBox *)m_IE9BGWnd.GetAddrBarPtr();
-		
-		m_wndRebar.AddBar(&m_IE9BGWnd,NULL,NULL,RBBS_NOGRIPPER);
-		m_wndRebar.AddBar(&m_IEMenuBar,NULL,NULL,RBBS_NOGRIPPER|RBBS_BREAK);
-	}
 
 	if ( FALSE == g_UIMenuBarShow )
 	{
@@ -250,40 +190,14 @@ LRESULT CMainFrame::OnTabSelChange( WPARAM wParam,LPARAM lParam )
 }
 LRESULT CMainFrame::OnKeyTabChange(WPARAM wParam,LPARAM lParam )
 {
-	switch (m_UIType)
+	if (g_UIMutiTabShow)
 	{
-	case 6:
+		CIETabBar *pTabBar = m_wndTabBar.GetTabCtrl();
+		if (pTabBar)
 		{
-			//this->SetWindowText(strTitle);
+			pTabBar->SetNextSel();
 		}
-		break;
-	case 8:
-		{
-			if (g_UIMutiTabShow)
-			{
-				CIETabBar *pTabBar = m_wndTabBar.GetTabCtrl();
-				if (pTabBar)
-				{
-					pTabBar->SetNextSel();
-				}
-			}
-
-		}
-		break;
-	case 9:
-		{
-			if (g_UIMutiTabShow)
-			{
-				CIETabBar *pTabBar = m_IE9BGWnd.GetTabBarPtr();
-				if (pTabBar)
-				{
-					pTabBar->SetNextSel();
-				}
-			}
-		}
-		break;
 	}
-
 	return 0;
 }
 LRESULT CMainFrame::OnTabClose( WPARAM wParam,LPARAM lParam )
@@ -444,38 +358,14 @@ LRESULT CMainFrame::OnAsyncUrlChange(WPARAM wParam,LPARAM lParam)
 {
 	PAGEID nPageID = (PAGEID)wParam;
 	LPCWSTR pszNewUrl = (LPCWSTR)lParam;
-	switch (m_UIType)
-	{
-	case 6:
-		{
-			//this->SetWindowText(strTitle);
-		}
-		break;
-	case 8:
-		{
-			if (g_UIMutiTabShow)
-			{
-				CIETabBar *pTabBar = m_wndTabBar.GetTabCtrl();
-				if (pTabBar)
-				{
-					pTabBar->UpdateTabItemUrl((PVOID)nPageID,pszNewUrl);
-				}
-			}
 
-		}
-		break;
-	case 9:
+	if (g_UIMutiTabShow)
+	{
+		CIETabBar *pTabBar = m_wndTabBar.GetTabCtrl();
+		if (pTabBar)
 		{
-			if (g_UIMutiTabShow)
-			{
-				CIETabBar *pTabBar = m_IE9BGWnd.GetTabBarPtr();
-				if (pTabBar)
-				{
-					pTabBar->UpdateTabItemUrl((PVOID)nPageID,pszNewUrl);
-				}
-			}
+			pTabBar->UpdateTabItemUrl((PVOID)nPageID,pszNewUrl);
 		}
-		break;
 	}
 
 	delete pszNewUrl;
@@ -491,38 +381,13 @@ LRESULT CMainFrame::OnAsyncTitleChange(WPARAM wParam,LPARAM lParam)
 	strTitle = pszNewTitle;
 	strTitle = strTitle+TEXT(" - 网吧专用浏览器");
 
-	switch (m_UIType)
+	if (g_UIMutiTabShow)
 	{
-	case 6:
+		CIETabBar *pTabBar = m_wndTabBar.GetTabCtrl();
+		if (pTabBar)
 		{
-			this->SetWindowText(strTitle);
+			pTabBar->UpdateTabItemTitle((PVOID)nPageID,pszNewTitle);
 		}
-		break;
-	case 8:
-		{
-			if (g_UIMutiTabShow)
-			{
-				CIETabBar *pTabBar = m_wndTabBar.GetTabCtrl();
-				if (pTabBar)
-				{
-					pTabBar->UpdateTabItemTitle((PVOID)nPageID,pszNewTitle);
-				}
-			}
-
-		}
-		break;
-	case 9:
-		{
-			if (g_UIMutiTabShow)
-			{
-				CIETabBar *pTabBar = m_IE9BGWnd.GetTabBarPtr();
-				if (pTabBar)
-				{
-					pTabBar->UpdateTabItemTitle((PVOID)nPageID,pszNewTitle);
-				}
-			}
-		}
-		break;
 	}
 
 	delete pszNewTitle;
@@ -545,32 +410,11 @@ LRESULT CMainFrame::OnAsyncStatusTextChange(WPARAM wParam,LPARAM lParam)
 LRESULT CMainFrame::OnAsyncFrameAddrChange(WPARAM wParam,LPARAM lParam)
 {
 	LPCWSTR pszNewAddr = (LPCWSTR)wParam;
-	switch (m_UIType)
-	{
-	case 6:
-		{
-			m_IE6Addr.AddOrChoiceUrlItem(pszNewAddr);
-		}
-		break;
-	case 8:
-		{
-			CIEComboBoxEx *pAddr = (CIEComboBoxEx *)m_wndNaviBar.GetAddrBarPtr();
-			if (pAddr)
-			{
-				pAddr->AddOrChoiceUrlItem(pszNewAddr);
-			}
-		}
-		break;
-	case 9:
-		{
-			CMyComboBox *pAddr = (CMyComboBox *)m_IE9BGWnd.GetAddrBarPtr();
-			if (pAddr)
-			{
-				pAddr->AddOrChoiceItem(pszNewAddr);
 
-			}
-		}
-		break;
+	CIEComboBoxEx *pAddr = (CIEComboBoxEx *)m_wndNaviBar.GetAddrBarPtr();
+	if (pAddr)
+	{
+		pAddr->AddOrChoiceUrlItem(pszNewAddr);
 	}
 
 	delete pszNewAddr;
@@ -604,35 +448,15 @@ LRESULT CMainFrame::OnAsyncAddTab(WPARAM wParam,LPARAM lParam)
 		return 0;
 	}
 
-	switch (m_UIType)
+	if (g_UIMutiTabShow)
 	{
-	case 6:
+		CIETabBar *pTabBar = m_wndTabBar.GetTabCtrl();
+		if (pTabBar)
 		{
-
+			pTabBar->AddTabItem((PVOID)nPageID,pAddTabParam->pszUrl,pAddTabParam->pszTitle);
 		}
-		break;
-	case 8:
-		{
-			if (g_UIMutiTabShow)
-			{
-				CIETabBar *pTabBar = m_wndTabBar.GetTabCtrl();
-				if (pTabBar)
-				{
-					pTabBar->AddTabItem((PVOID)nPageID,pAddTabParam->pszUrl,pAddTabParam->pszTitle);
-				}
-			}
-		}
-		break;
-	case 9:
-		{
-			CIETabBar *pTabBar = m_IE9BGWnd.GetTabBarPtr();
-			if (pTabBar)
-			{
-				pTabBar->AddTabItem((PVOID)nPageID,pAddTabParam->pszUrl,pAddTabParam->pszTitle);
-			}
-		}
-		break;
 	}
+	
 
 	delete pAddTabParam->pszUrl;
 	delete pAddTabParam->pszTitle;
@@ -655,38 +479,16 @@ LRESULT CMainFrame::OnAsyncDelTab(WPARAM wParam,LPARAM lParam)
 		return 0;
 	}
 	PAGEID nNewPageID = 0;
-	switch (m_UIType)
-	{
-	case 6:
-		{
 
-		}
-		break;
-	case 8:
+	if (g_UIMutiTabShow)
+	{
+		CIETabBar *pTabBar = m_wndTabBar.GetTabCtrl();
+		if (pTabBar)
 		{
-			if (g_UIMutiTabShow)
-			{
-				CIETabBar *pTabBar = m_wndTabBar.GetTabCtrl();
-				if (pTabBar)
-				{
-					nNewPageID = (PAGEID)pTabBar->RemoveTabItem((PVOID)nPageID);
-				}
-			}
+			nNewPageID = (PAGEID)pTabBar->RemoveTabItem((PVOID)nPageID);
 		}
-		break;
-	case 9:
-		{
-			if (g_UIMutiTabShow)
-			{
-				CIETabBar *pTabBar = m_IE9BGWnd.GetTabBarPtr();
-				if (pTabBar)
-				{
-					nNewPageID = (PAGEID)pTabBar->RemoveTabItem((PVOID)nPageID);
-				}
-			}
-		}
-		break;
 	}
+	
 	*(pDelParam->pFocusPageID) = nNewPageID;
 	SetEvent(pDelParam->hEvent);
 
@@ -702,38 +504,15 @@ LRESULT CMainFrame::OnAsyncSetFocusTab(WPARAM wParam,LPARAM lParam)
 		return 0;
 	}
 
-	switch (m_UIType)
+	if (g_UIMutiTabShow)
 	{
-	case 6:
+		CIETabBar *pTabBar = m_wndTabBar.GetTabCtrl();
+		if (pTabBar)
 		{
-
+			pTabBar->ChangeFocusTabItem((PVOID)nPageID);
 		}
-		break;
-	case 8:
-		{
-			if (g_UIMutiTabShow)
-			{
-				CIETabBar *pTabBar = m_wndTabBar.GetTabCtrl();
-				if (pTabBar)
-				{
-					pTabBar->ChangeFocusTabItem((PVOID)nPageID);
-				}
-			}
-		}
-		break;
-	case 9:
-		{
-			if (g_UIMutiTabShow)
-			{
-				CIETabBar *pTabBar = m_IE9BGWnd.GetTabBarPtr();
-				if (pTabBar)
-				{
-					pTabBar->ChangeFocusTabItem((PVOID)nPageID);
-				}
-			}
-		}
-		break;
 	}
+
 	return 0;
 }
 bool CMainFrame::SetNofiyerPoint( IUINotifyer *pNotifyer )
@@ -866,39 +645,16 @@ unsigned long CMainFrame::ControlDelTab( PAGEID nPageID )
 		return 0;
 	}
 	PAGEID nNewPageID = 0;
-	switch (m_UIType)
+
+	if (g_UIMutiTabShow)
 	{
-	case 6:
+		CIETabBar *pTabBar = m_wndTabBar.GetTabCtrl();
+		if (pTabBar)
 		{
-
+			nNewPageID = (PAGEID)pTabBar->RemoveTabItem((PVOID)nPageID);
 		}
-		break;
-	case 8:
-		{
-			if (g_UIMutiTabShow)
-			{
-				CIETabBar *pTabBar = m_wndTabBar.GetTabCtrl();
-				if (pTabBar)
-				{
-					nNewPageID = (PAGEID)pTabBar->RemoveTabItem((PVOID)nPageID);
-				}
-			}
-		}
-		break;
-	case 9:
-		{
-			if (g_UIMutiTabShow)
-			{
-				CIETabBar *pTabBar = m_IE9BGWnd.GetTabBarPtr();
-				if (pTabBar)
-				{
-					nNewPageID = (PAGEID)pTabBar->RemoveTabItem((PVOID)nPageID);
-				}
-			}
-		}
-		break;
 	}
-
+	
 // 	*(pDelParam->pFocusPageID) = nNewPageID;
 // 	SetEvent(pDelParam->hEvent);
 // 

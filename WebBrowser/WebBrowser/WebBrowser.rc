@@ -72,8 +72,6 @@ END
 // remains consistent on all systems.
 IDR_MAINFRAME           ICON                    "res\\WebBrowser.ico"
 IDR_WebBrowserTYPE      ICON                    "res\\WebBrowserDoc.ico"
-IDI_IE9_ADD_TAB         ICON                    "res\\ieframe_31073.ico"
-IDI_IE9_SEARCH          ICON                    "res\\iexplore_32538.ico"
 IDI_ADDR_BAR_DEFAULT    ICON                    "res\\iexplore_32545.ico"
 IDI_STATUS_STATIC       ICON                    "res\\iexplore_32542.ico"
 IDI_IE8_TAB_DEFAULT     ICON                    "res\\TabDefault.ico"
@@ -98,16 +96,6 @@ IDB_SEARCH_HOT_XP       BITMAP                  "res\\SEARCH_HOT_XP_120.BMP.bmp"
 IDB_SEARCH_PRESSED      BITMAP                  "res\\SEARCH_PRESSED_XP_120.BMP.bmp"
 IDB_SEARCH_XP           BITMAP                  "res\\SEARCH_XP_120.BMP.bmp"
 IDB_IE8_CMD             BITMAP                  "res\\ieframe_699.bmp"
-IDB_IE9_CMD_NORMAL      BITMAP                  "res\\ieframe_CONTROL_ENABLED.BMP.bmp"
-IDB_IE9_CMD_HOT         BITMAP                  "res\\ieframe_CONTROL_HOT.BMP.bmp"
-IDB_IE9_CMD_PRESS       BITMAP                  "res\\ieframe_CONTROL_PRESSED.BMP.bmp"
-IDB_IE9_NAVI_NORMAL     BITMAP                  "res\\ieframe_TRAVEL_DISABLED_CLIENTCAPTION.BMP.bmp"
-IDB_IE9_NAVI_HOT        BITMAP                  "res\\ieframe_TRAVEL_HOT_CLIENTCAPTION.BMP.bmp"
-IDB_IE9_NAVI_CMD_NORMAL BITMAP                  "res\\ieframe_ADDRESS_MINIE_GLASS.BMP.bmp"
-IDB_IE9_NAVI_CMD_HOT    BITMAP                  "res\\ieframe_ADDRESS_MINIE_HOT_GLASS.BMP.bmp"
-IDB_IE9_NAVI_CMD_PRESS  BITMAP                  "res\\ieframe_ADDRESS_MINIE_PRESSED_GLASS.BMP.bmp"
-IDB_IE6_TOOLBAR         BITMAP                  "res\\shell32_204.bmp"
-IDB_IE6_GOTO            BITMAP                  "res\\shell32_230_1.bmp"
 IDB_TAB_NORMAL          BITMAP                  "res\\TAB_NORMAL.bmp"
 IDB_TAB_HOT             BITMAP                  "res\\TAB_HOT_NORMAL.bmp"
 IDB_TAB_BASE            BITMAP                  "res\\TAB_BASE.bmp"
@@ -498,8 +486,7 @@ LANGUAGE 4, 2
 #include "l.CHS\afxres.rc"          // 标准组件
 #include "l.CHS\afxprint.rc"        // 打印/打印预览资源
 #endif
-
-
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

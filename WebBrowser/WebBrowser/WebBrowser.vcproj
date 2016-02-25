@@ -1175,14 +1175,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\UI\IE6ToolBar.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\UI\IE6ToolBar.h"
-				>
-			</File>
-			<File
 				RelativePath=".\UI\IE8NaviBar.cpp"
 				>
 			</File>
@@ -1244,22 +1236,6 @@
 			</File>
 			<File
 				RelativePath=".\UI\IE8TabBarBGWnd.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UI\IE9AddrBar.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\UI\IE9AddrBar.h"
-				>
-			</File>
-			<File
-				RelativePath=".\UI\IE9BGWnd.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\UI\IE9BGWnd.h"
 				>
 			</File>
 			<File

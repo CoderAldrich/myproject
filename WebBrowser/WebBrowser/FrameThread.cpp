@@ -12,7 +12,6 @@ IMPLEMENT_DYNCREATE(CFrameThread, CStrongWinThread)
 
 CFrameThread::CFrameThread()
 {
-	m_UIType = 6;
 	pWnd = NULL;
 	ppUIControler = NULL;
 	pUINotifyer = NULL;
@@ -42,7 +41,7 @@ BOOL CFrameThread::InitInstance()
 	int   nLeft = (nFullWidth-nWidth)/2;
 	int   nTop = (nFullHeight-nHeight)/2;
 
-	CWnd *pMainWnd = new CMainFrame(m_UIType,m_bMutiTab,m_bMenuBar,m_bToolBar,m_bCommandBar);
+	CWnd *pMainWnd = new CMainFrame(m_bMutiTab,m_bMenuBar,m_bToolBar,m_bCommandBar);
 
 	((CMainFrame *)pMainWnd)->CreateEx(WS_EX_WINDOWEDGE,NULL,NULL,WS_OVERLAPPEDWINDOW,CRect( nLeft , nTop , nLeft + nWidth,nTop + nHeight),NULL,0);
 

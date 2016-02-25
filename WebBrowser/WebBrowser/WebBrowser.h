@@ -26,7 +26,6 @@ public:
 	
 	CString strHomePage;
 	CString strSearchID;
-	UINT m_nBaseStyle;
 	BOOL m_bMutiTab;
 	BOOL m_bMenuBar;
 	BOOL m_bToolBar;

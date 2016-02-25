@@ -502,7 +502,7 @@ unsigned long INotifyerInstance::NotifyNewWindow(PVOID *ppPageRef,LPCTSTR pszUrl
 	m_pUIControler->ControlQueryClientRect(&rcClient);
 	m_pUIControler->ControlQueryQueryMainFrame(&hMainFrame);
 
-	if(theApp.m_nBaseStyle != 6 && !bNewFrame && theApp.m_bMutiTab )
+	if( !bNewFrame && theApp.m_bMutiTab )
 	{
 		NewBrowserInstance(m_pUIControler,ppPageRef,pszUrl,nNewPageID);
 	}

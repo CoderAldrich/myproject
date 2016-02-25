@@ -9,8 +9,6 @@
 #include "IE8ReBar.h"
 #include "IE8TabBarBGWnd.h"
 #include "IE8StatusBar.h"
-#include "IE9BGWnd.h"
-#include "IE6ToolBar.h"
 #include "..\IECoreView.h"
 
 
@@ -27,13 +25,11 @@ class CMainFrame : public CFrameWnd,public IUIControler
 {
 	
 public:
-	CMainFrame(UINT UIType,BOOL bMutiTab,BOOL bMenuBar,BOOL bToolBar,BOOL bCommandBar);
+	CMainFrame(BOOL bMutiTab,BOOL bMenuBar,BOOL bToolBar,BOOL bCommandBar);
 	CMainFrame();
 	virtual ~CMainFrame();
 	DECLARE_DYNCREATE(CMainFrame)
 protected:
-	UINT              m_UIType;
-
 
 	IUINotifyer      *m_pUINotifyer;
 
@@ -46,14 +42,6 @@ protected:
 	CIE8NaviBarBGWnd  m_wndNaviBar;	
 	CIE8TabBarBGWnd   m_wndTabBar;
 
-	//IE9
-	CIE9BGWnd         m_IE9BGWnd;
-
-	//IE6
-	CIE6ToolBar       m_IE6ToolBar;
-	CIEComboBoxEx     m_IE6Addr;
-	CEasyToolBar      m_IE6GotoBtn;
-	
 	//
 	CComboBox        *m_pCurAddr;
 

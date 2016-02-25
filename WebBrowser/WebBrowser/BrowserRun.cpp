@@ -5,7 +5,7 @@
 #include "PageThread.h"
 #include ".\UI\MainFrm.h"
 
-IUIControler * NewMainFrame( IUINotifyer *pUINotifyer,UINT UIType, HWND *phWnd,BOOL bMutiTab,BOOL bMenuBar,BOOL bToolBar,BOOL bCommandBar )
+IUIControler * NewMainFrame( IUINotifyer *pUINotifyer, HWND *phWnd,BOOL bMutiTab,BOOL bMenuBar,BOOL bToolBar,BOOL bCommandBar )
 {
 	CWinThread *pThread = AfxBeginThread(RUNTIME_CLASS(CFrameThread),THREAD_PRIORITY_NORMAL,0,CREATE_SUSPENDED);
 	
@@ -14,7 +14,6 @@ IUIControler * NewMainFrame( IUINotifyer *pUINotifyer,UINT UIType, HWND *phWnd,B
 	HWND hWnd = NULL;
 	IUIControler *pUIControler = NULL;
 
-	pFrameThread->m_UIType = UIType;
 	pFrameThread->m_bMutiTab = bMutiTab;
 	pFrameThread->m_bMenuBar = bMenuBar;
 	pFrameThread->m_bToolBar = bToolBar;
@@ -85,7 +84,7 @@ bool NewBrowserInstance(IUIControler *pUIControl,PVOID *ppPageRef,CString strUrl
 	if( pUIControl == NULL )
 	{
 		//创建一个新框架
-		pUIControl = NewMainFrame(NULL,theApp.m_nBaseStyle,NULL,theApp.m_bMutiTab,theApp.m_bMenuBar,theApp.m_bToolBar,theApp.m_bCommandBar);
+		pUIControl = NewMainFrame(NULL,NULL,theApp.m_bMutiTab,theApp.m_bMenuBar,theApp.m_bToolBar,theApp.m_bCommandBar);
 
 		//创建一个新的UI和浏览器内核通知实例
 		pUINotify = new INotifyerInstance(pUIControl);

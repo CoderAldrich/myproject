@@ -12,7 +12,7 @@ public:
 	CFrameThread();           // 动态创建所使用的受保护的构造函数
 	virtual ~CFrameThread();
 
-	UINT  m_UIType;
+
 	BOOL  m_bMutiTab;
 	BOOL  m_bMenuBar;
 	BOOL  m_bToolBar;
