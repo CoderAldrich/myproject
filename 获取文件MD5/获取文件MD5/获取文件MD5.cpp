@@ -109,11 +109,6 @@ BOOL GetMd5(LPCWSTR FileDirectory,char *pchFileMd5,int nBufLen)
 		delete pbHash;
 	}
 
-	if (hFile)
-	{
-		CloseHandle(hFile);
-	}
-
 	if(hHash)          //Ïú»Ùhash¶ÔÏó
 	{
 		CryptDestroyHash(hHash);
@@ -129,9 +124,14 @@ BOOL GetMd5(LPCWSTR FileDirectory,char *pchFileMd5,int nBufLen)
 		UnmapViewOfFile(pFileMapBuf);
 	}
 
-	if( NULL == hFileMap ||  INVALID_HANDLE_VALUE == hFileMap)
+	if( NULL != hFileMap &&  INVALID_HANDLE_VALUE != hFileMap)
 	{
 		CloseHandle(hFileMap);
+	}
+
+	if (hFile)
+	{
+		CloseHandle(hFile);
 	}
 
 	return bRes;
