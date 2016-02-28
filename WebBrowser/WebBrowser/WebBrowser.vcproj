@@ -73,7 +73,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				RegisterOutput="true"
-				OutputFile="$(OutDir)\$(ProjectName).exe"
+				OutputFile="$(OutDir)\iexplore.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(OutDir)\;..\..\¹«¹²¾²Ì¬¿â\lib"
 				GenerateDebugInformation="true"

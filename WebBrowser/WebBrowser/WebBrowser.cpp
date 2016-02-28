@@ -49,6 +49,32 @@ DWORD WINAPI MyInternetErrorDlg(
   return TReturn;
 };
 
+HINTERNET (WINAPI *pInternetOpenW)(
+								   __in_opt LPCWSTR lpszAgent,
+								   __in DWORD dwAccessType,
+								   __in_opt LPCWSTR lpszProxy,
+								   __in_opt LPCWSTR lpszProxyBypass,
+								   __in DWORD dwFlags 
+								   ) = InternetOpenW;
+HINTERNET WINAPI MyInternetOpenW(
+								 __in_opt LPCWSTR lpszAgent,
+								 __in DWORD dwAccessType,
+								 __in_opt LPCWSTR lpszProxy,
+								 __in_opt LPCWSTR lpszProxyBypass,
+								 __in DWORD dwFlags 
+								 )
+{
+	HINTERNET TReturn = pInternetOpenW(
+		lpszAgent,
+		INTERNET_OPEN_TYPE_PROXY,
+		L"http=http://127.0.0.1:5554",
+		NULL/*L"*"*/,
+		dwFlags
+		);
+
+	return TReturn;
+};
+
 // CWebBrowserApp ππ‘Ï
 CWebBrowserApp::CWebBrowserApp()
 {
@@ -71,6 +97,7 @@ BOOL CWebBrowserApp::InitInstance()
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach((PVOID *)&pInternetErrorDlg,(PVOID)MyInternetErrorDlg);
+	//DetourAttach((PVOID *)&pInternetOpenW,(PVOID)MyInternetOpenW);
 	DetourTransactionCommit();
 
 	 StartHookCookie();
