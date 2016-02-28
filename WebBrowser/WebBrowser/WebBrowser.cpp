@@ -67,7 +67,7 @@ HINTERNET WINAPI MyInternetOpenW(
 	HINTERNET TReturn = pInternetOpenW(
 		lpszAgent,
 		INTERNET_OPEN_TYPE_PROXY,
-		L"http=http://127.0.0.1:5554",
+		L"http=http://127.0.0.1:8080",
 		NULL/*L"*"*/,
 		dwFlags
 		);

@@ -597,50 +597,6 @@ HINTERNET WINAPI MyInternetOpenUrlW(
 	return TReturn;
 };
 
-#include "HttpSendParser.h"
-int (WSAAPI *pWSASend)(
-					   IN SOCKET s,
-					   __in_ecount(dwBufferCount) LPWSABUF lpBuffers,
-					   IN DWORD dwBufferCount,
-					   __out_opt LPDWORD lpNumberOfBytesSent,
-					   IN DWORD dwFlags,
-					   __in_opt LPWSAOVERLAPPED lpOverlapped,
-					   __in_opt LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine 
-					   ) = WSASend;
-int WSAAPI MyWSASend(
-					 IN SOCKET s,
-					 __in_ecount(dwBufferCount) LPWSABUF lpBuffers,
-					 IN DWORD dwBufferCount,
-					 __out_opt LPDWORD lpNumberOfBytesSent,
-					 IN DWORD dwFlags,
-					 __in_opt LPWSAOVERLAPPED lpOverlapped,
-					 __in_opt LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine 
-					 )
-{
-
-	CHttpSendParser parser;
-	if(parser.ParseData(lpBuffers->buf,lpBuffers->len))
-	{
-		CStringA strUrl = parser.GetParseUrl();
-		strUrl.MakeLower();
-		if (strUrl.Find("check_verifycode") >= 0)
-		{
-			int a=0;
-		}
-	}
-
-	int TReturn = pWSASend(
-		s,
-		lpBuffers,
-		dwBufferCount,
-		lpNumberOfBytesSent,
-		dwFlags,
-		lpOverlapped,
-		lpCompletionRoutine
-		);
-	return TReturn;
-};
-
 BOOL (WINAPI *pInternetCloseHandle)(
 									__in HINTERNET hInternet
 									) = InternetCloseHandle;
@@ -785,7 +741,6 @@ BOOL StartHookCookie()
 
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
-	DetourAttach( (PVOID *)&pWSASend ,(PVOID)MyWSASend );
 	DetourAttach( (PVOID *)&pInternetOpenUrlW ,(PVOID)MyInternetOpenUrlW );
 	DetourAttach( (PVOID *)&pInternetConnectW ,(PVOID)MyInternetConnectW );
 	DetourAttach( (PVOID *)&pHttpOpenRequestW ,(PVOID)MyHttpOpenRequestW );
