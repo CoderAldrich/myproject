@@ -98,13 +98,13 @@ VOID CommonSetCookie(LPCSTR pchUrl,LPCSTR pchCookieData,BOOL bFromJs = FALSE)
 	WritePrivateProfileStringA("Cookie","HttpOnly"  ,BOOL_TO_STRING(cookieParser.m_bHttpOnly)     ,strCookieSavePath);
 	WritePrivateProfileStringA("Cookie","Session"   ,BOOL_TO_STRING(cookieParser.m_bSessionCookie),strCookieSavePath);
 
-#ifdef DEBUG
-	OutputDebugStringA("CookieData: ");
-	OutputDebugStringA(pchCookieData);
-	OutputDebugStringA(" ");
-	OutputDebugStringA(pchUrl);
-	OutputDebugStringA("\r\n");
-#endif
+// #ifdef DEBUG
+// 	OutputDebugStringA("CookieData: ");
+// 	OutputDebugStringA(pchCookieData);
+// 	OutputDebugStringA(" ");
+// 	OutputDebugStringA(pchUrl);
+// 	OutputDebugStringA("\r\n");
+// #endif
 
 }
 
@@ -273,12 +273,12 @@ VOID CommonGetCookie(LPCSTR pchUrl,CHAR *pchCookieData,int nCookieDataLen,BOOL b
 	}  
 	FindClose(hFind);
 
-#ifdef DEBUG
-	OutputDebugStringA(pchUrl);
-	OutputDebugStringA(" ");
-	OutputDebugStringA(strResSave);
-	OutputDebugStringA("\r\n");
-#endif
+// #ifdef DEBUG
+// 	OutputDebugStringA(pchUrl);
+// 	OutputDebugStringA(" ");
+// 	OutputDebugStringA(strResSave);
+// 	OutputDebugStringA("\r\n");
+// #endif
 	strcpy_s(pchCookieData,nCookieDataLen,strResSave.GetBuffer());
 }
 

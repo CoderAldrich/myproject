@@ -122,15 +122,18 @@ BOOL CCookieParser::ParseExpiresTime(LPCSTR pchExpires,SYSTEMTIME *ptmExpires)
 
 		if ( nCurIndex != 8 )
 		{
-			//ASSERT(FALSE);
+			ASSERT(FALSE);
 			break;
 		}
 
 
 		BOOL bWeekOk = FALSE;
+		CStringA strShortWeek;
+		strShortWeek = strExpiresParts[0].Left(3);
+
 		for (int i=0;i<_countof(pchArrWeek);i++)
 		{
-			if (strExpiresParts[0].CompareNoCase(pchArrWeek[i]) == 0 )
+			if (strShortWeek.CompareNoCase(pchArrWeek[i]) == 0 )
 			{
 				bWeekOk = TRUE;
 				ptmExpires->wDayOfWeek = i;
@@ -138,7 +141,11 @@ BOOL CCookieParser::ParseExpiresTime(LPCSTR pchExpires,SYSTEMTIME *ptmExpires)
 			}
 		}
 
-		if(FALSE == bWeekOk) break;
+		ASSERT(bWeekOk);
+		if(FALSE == bWeekOk) 
+		{
+			break;
+		}
 
 
 		ptmExpires->wDay = atoi(strExpiresParts[1]);
@@ -154,15 +161,25 @@ BOOL CCookieParser::ParseExpiresTime(LPCSTR pchExpires,SYSTEMTIME *ptmExpires)
 			}
 		}
 
-		if(FALSE == bMonthOk) break;
+		ASSERT(bMonthOk);
+		if(FALSE == bMonthOk) 
+		{
+			break;
+		}
 
-		ptmExpires->wYear = atoi(strExpiresParts[3]);
-		ptmExpires->wHour = atoi(strExpiresParts[4]);
-		ptmExpires->wMinute = atoi(strExpiresParts[5]);
-		ptmExpires->wSecond = atoi(strExpiresParts[6]);
+		ptmExpires->wYear = atoi( strExpiresParts[3].GetLength()==2?"20"+strExpiresParts[3]:strExpiresParts[3] );
+		ptmExpires->wHour = atoi( strExpiresParts[4]   );
+		ptmExpires->wMinute = atoi( strExpiresParts[5] );
+		ptmExpires->wSecond = atoi( strExpiresParts[6] );
 		ptmExpires->wMilliseconds = 0;
 
-		bParserRes = strExpiresParts[7].CompareNoCase("GMT")==0;
+		bParserRes = strExpiresParts[7].CompareNoCase("GMT")==0 || strExpiresParts[7].CompareNoCase("UTC")==0;
+		
+		ASSERT(bParserRes);
+
+		//OutputDebugStringA(strExpires+"\r\n");
+
+		WritePrivateProfileStringA("Expires",strExpires,"1","C:\\expires.txt");
 
 	} while (FALSE);
 
@@ -233,8 +250,11 @@ BOOL CCookieParser::ParserCookieString(LPCSTR pchUrl,LPCSTR pszCookie)
 
 			BOOL bRes = ParseExpiresTime(strExpires,&m_tmExpires);
 
-			//ASSERT(bRes);
+			ASSERT(bRes);
 
+			GetLocalTime();
+			GetSystemTime();
+			CTime
 			if( bRes )
 			{
 				m_bSessionCookie = FALSE;
@@ -276,53 +296,4 @@ BOOL CCookieParser::ParserCookieString(LPCSTR pchUrl,LPCSTR pszCookie)
 	}
 
 	return TRUE;
-}
-BOOL CCookieParser::CheckUrlMatch(LPCSTR pchUrl,BOOL bJsCheck)
-{
-	BOOL bMatch = FALSE;
-	do 
-	{
-		// get domain
-		CUrlParser urlParser;
-		urlParser.ParseUrl(pchUrl);
-
-
-		CStringA strDomain = urlParser.GetDomain();
-		CStringA strOrgDomain = m_strDomain;
-		CStringA strPath = urlParser.GetPath();
-		CStringA strProtocol = urlParser.GetProtocol();
-
-		strDomain = "."+strDomain;
-		strDomain.MakeReverse();
-		strOrgDomain.MakeReverse();
-		
-		if (strDomain.Find(strOrgDomain) != 0)
-		{
-			//域名不匹配
-			break;
-		}
-
-		if(strPath.Find(m_strPath) != 0 )
-		{
-			//路径不匹配
-			break;
-		}
-		
-		if ( ( m_bSecure && strProtocol.CompareNoCase("https") != 0 ) ||  ( FALSE == m_bSecure  && strProtocol.CompareNoCase("https") == 0 ) )
-		{
-			//安全属性不匹配
-			break;
-		}
-		
-		if ( m_bHttpOnly && bJsCheck )
-		{
-			// HttpOnly属性不匹配
-			break;
-		}
-
-		bMatch = TRUE;
-
-	} while (FALSE);
-
-	return bMatch;
 }
