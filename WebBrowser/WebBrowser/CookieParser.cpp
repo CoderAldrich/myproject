@@ -252,9 +252,6 @@ BOOL CCookieParser::ParserCookieString(LPCSTR pchUrl,LPCSTR pszCookie)
 
 			ASSERT(bRes);
 
-			GetLocalTime();
-			GetSystemTime();
-			CTime
 			if( bRes )
 			{
 				m_bSessionCookie = FALSE;

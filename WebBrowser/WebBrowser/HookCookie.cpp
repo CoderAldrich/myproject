@@ -2,10 +2,10 @@
 #include "RecordBaseT.h"
 #include "CookieParser.h"
 #include "UrlParser.h"
-
+#include "sqlite/sqlite3.h"
 #include <detours.h>
 #pragma comment(lib,"detours.lib")
-
+#pragma comment(lib,"sqlite\\sqlite3.lib")
 
 typedef CRecordBaseT<HINTERNET,INTERNET_STATUS_CALLBACK> CInternetCallbackRecord;
 typedef CRecordBaseT<HINTERNET,CStringA>                 CInternetUrlRecord,CInternetHostRecord;
@@ -569,33 +569,6 @@ BOOL WINAPI MyHttpSendRequestA(
 	return TReturn;
 };
 
-HINTERNET (WINAPI *pInternetOpenUrlW)(
-									  __in HINTERNET hInternet,
-									  __in LPCWSTR lpszUrl,
-									  __in_ecount_opt(dwHeadersLength) LPCWSTR lpszHeaders,
-									  __in DWORD dwHeadersLength,
-									  __in DWORD dwFlags,
-									  __in_opt DWORD_PTR dwContext 
-									  ) = InternetOpenUrlW;
-HINTERNET WINAPI MyInternetOpenUrlW(
-									__in HINTERNET hInternet,
-									__in LPCWSTR lpszUrl,
-									__in_ecount_opt(dwHeadersLength) LPCWSTR lpszHeaders,
-									__in DWORD dwHeadersLength,
-									__in DWORD dwFlags,
-									__in_opt DWORD_PTR dwContext 
-									)
-{
-	HINTERNET TReturn = pInternetOpenUrlW(
-		hInternet,
-		lpszUrl,
-		lpszHeaders,
-		dwHeadersLength,
-		dwFlags,
-		dwContext
-		);
-	return TReturn;
-};
 
 BOOL (WINAPI *pInternetCloseHandle)(
 									__in HINTERNET hInternet
@@ -738,10 +711,21 @@ BOOL StartHookCookie()
 
 	CreateDirectoryW(g_strCookieSavePath,NULL);
 
+	CString strSqlDb;
+	char* errmsg;
+	strSqlDb = szLocalPath;
+	strSqlDb +=L"Cookies.db";
+	sqlite3 *pDB = NULL;
+	int nRes = sqlite3_open16(strSqlDb,&pDB);
+	const char *pmsg = sqlite3_errmsg(pDB);
+	 nRes= sqlite3_exec(pDB,"create table cookiedata(cookiename text)",NULL,NULL,&errmsg);
+	
+	sqlite3_close(pDB);
+
+	int a=0;
 
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
-	DetourAttach( (PVOID *)&pInternetOpenUrlW ,(PVOID)MyInternetOpenUrlW );
 	DetourAttach( (PVOID *)&pInternetConnectW ,(PVOID)MyInternetConnectW );
 	DetourAttach( (PVOID *)&pHttpOpenRequestW ,(PVOID)MyHttpOpenRequestW );
 	DetourAttach( (PVOID *)&pHttpSendRequestW ,(PVOID)MyHttpSendRequestW );
