@@ -64,111 +64,31 @@ int DivisionString(CString strSeparate, CString strSourceString, CString * pStri
 	return nCount;
 }
 
-int check_record_callback(void* pParam ,int nCount,char** pValue,char** pName)
-{
-	if (pParam)
-	{
-		char chValue = ((char *)(*pValue))[0];
-		*(bool *)pParam =  chValue!= '0';
-	}
-	return 0;
-}
-
-BOOL CheckRecordExits(LPCSTR pchDomain,LPCSTR pchPath,LPCSTR pchCookieName)
-{
-	CStringA strSqlCmd;
-
-	strSqlCmd.Format("select count(*) from cookiedata where domain=\"%s\" and path=\"%s\" and cookiename=\"%s\"",pchDomain
-		,pchPath
-		,pchCookieName);
-	BOOL bRecordExist = FALSE;
-	char *pcherrmsg = NULL;
-	int nRes = sqlite3_exec(g_pDB,strSqlCmd,check_record_callback,&bRecordExist,&pcherrmsg);
-
-	return bRecordExist;
-}
-
 VOID CommonSetCookie(LPCSTR pchUrl,LPCSTR pchCookieData,BOOL bFromJs = FALSE)
 {
 	CCookieParser cookieParser;
 	cookieParser.ParserCookieString(pchUrl,pchCookieData);
-
-	CStringA strCookieSavePath;
-	strCookieSavePath = g_strCookieSavePath;
-	strCookieSavePath += cookieParser.m_strDomain;
-	strCookieSavePath +="\\";
-
-	if (!PathFileExistsA(strCookieSavePath))
-	{
-		CreateDirectoryA(strCookieSavePath,NULL);
-	}
-
-	CString strPathFileName;
-	strPathFileName = cookieParser.m_strPath;
-	strPathFileName.Replace(L"/",L"#");
-
-	strCookieSavePath += strPathFileName;
-	strCookieSavePath +="\\";
-	if (!PathFileExistsA(strCookieSavePath))
-	{
-		CreateDirectoryA(strCookieSavePath,NULL);
-	}
-
-	strCookieSavePath += cookieParser.m_strCookieName;
-
-#define BOOL_TO_STRING( a )  (a?"1":"0")
-
-	WritePrivateProfileStringA("Cookie","CookieData","\""+cookieParser.m_strCookieValue+"\""      ,strCookieSavePath);
-	WritePrivateProfileStringA("Cookie","Secure"    ,BOOL_TO_STRING(cookieParser.m_bSecure)       ,strCookieSavePath);
-	WritePrivateProfileStringA("Cookie","HttpOnly"  ,BOOL_TO_STRING(cookieParser.m_bHttpOnly)     ,strCookieSavePath);
-	WritePrivateProfileStringA("Cookie","Session"   ,BOOL_TO_STRING(cookieParser.m_bSessionCookie),strCookieSavePath);
-
-
+	
 	if (g_pDB)
 	{
 		char *pcherrmsg = NULL;
 		CStringA strSqlCmd;
-		
-		BOOL bRecordExist = CheckRecordExits(cookieParser.m_strDomain
+
+		strSqlCmd.Format("replace into cookiedata (domain,path,cookiename,cookievalue,secure,httponly,session) values(\"%s\",\"%s\",\"%s\",\"%s\",%d,%d,%d)"
+			,cookieParser.m_strDomain
 			,cookieParser.m_strPath
-			,cookieParser.m_strCookieName);
-		if (bRecordExist)
+			,cookieParser.m_strCookieName
+			,cookieParser.m_strCookieValue
+			,cookieParser.m_bSecure
+			,cookieParser.m_bHttpOnly
+			,cookieParser.m_bSessionCookie);
+		int nRes = sqlite3_exec(g_pDB,strSqlCmd,NULL,NULL,&pcherrmsg);
+		if (nRes != 0)
 		{
-			strSqlCmd.Format("update cookiedata  set cookievalue=\"%s\" where domain=\"%s\" and path=\"%s\" and cookiename=\"%s\""
-				,cookieParser.m_strCookieValue
-				,cookieParser.m_strDomain
-				,cookieParser.m_strPath
-				,cookieParser.m_strCookieName
-			);
-
-			sqlite3_exec(g_pDB,strSqlCmd,NULL,NULL,&pcherrmsg);
+			int a=0;
 		}
-		else
-		{
-			strSqlCmd.Format("insert into cookiedata (domain,path,cookiename,cookievalue,secure,httponly,session) values(\"%s\",\"%s\",\"%s\",\"%s\",%d,%d,%d)"
-				,cookieParser.m_strDomain
-				,cookieParser.m_strPath
-				,cookieParser.m_strCookieName
-				,cookieParser.m_strCookieValue
-				,cookieParser.m_bSecure
-				,cookieParser.m_bHttpOnly
-				,cookieParser.m_bSessionCookie);
-
-			sqlite3_exec(g_pDB,strSqlCmd,NULL,NULL,&pcherrmsg);
-		}
-
-
-
-
 	}
 
-// #ifdef DEBUG
-// 	OutputDebugStringA("CookieData: ");
-// 	OutputDebugStringA(pchCookieData);
-// 	OutputDebugStringA(" ");
-// 	OutputDebugStringA(pchUrl);
-// 	OutputDebugStringA("\r\n");
-// #endif
 
 }
 
@@ -193,92 +113,24 @@ CString GetIniString(
 	return strTemp;
 }
 
-VOID CheckCookies(LPCWSTR pszScanPath,BOOL bCheckSecure,BOOL bCheckHttpOnly,CStringA &strResSave)
+int query_cookie_callback(void* pParam ,int nCount,char** pValue,char** pName)
 {
-	WIN32_FIND_DATA FindFileData;
-	HANDLE hFind=::FindFirstFile(CString(pszScanPath)+L"*.*",&FindFileData);  
-	if(INVALID_HANDLE_VALUE == hFind)
+	CStringA *pstrCookieResult = (CStringA *)pParam;
+
+	if(pstrCookieResult->GetLength() == 0)
 	{
-		return;
+		(*pstrCookieResult)=pValue[0];
+	}
+	else
+	{
+		(*pstrCookieResult)+=pValue[0];
 	}
 
-	while(TRUE)
-	{
-		if( !( StrCmpIW(FindFileData.cFileName,L".") == 0 || StrCmpIW(FindFileData.cFileName,L"..") == 0 ))
-		{
-			if( !(FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
-			{
-				CStringA strStoryCookieName;
-				strStoryCookieName = FindFileData.cFileName;
-				
-				CString strCookieFilePath;
-				strCookieFilePath = pszScanPath;
-				strCookieFilePath +=FindFileData.cFileName;
+	(*pstrCookieResult)+="=";
+	(*pstrCookieResult)+=pValue[1];
+	(*pstrCookieResult)+="; ";
 
-
-				BOOL    bSecure = GetPrivateProfileIntW(L"Cookie",L"Secure",0,strCookieFilePath);	
-				BOOL    bHttpOnly = GetPrivateProfileIntW(L"Cookie",L"HttpOnly",0,strCookieFilePath);
-
-				if ( ( FALSE==bSecure || (bSecure && (bCheckSecure == bSecure))) && ( FALSE == bHttpOnly || (bHttpOnly && FALSE==bCheckHttpOnly) ) )
-				{
-					CString strCookieData = GetIniString(L"Cookie",L"CookieData",L"",strCookieFilePath);
-
-					strResSave+= strStoryCookieName;
-					strResSave+=L"=";
-					strResSave+=strCookieData;
-					strResSave+=L"; ";
-
-				}
-			}
-		}
-
-		if(!FindNextFile(hFind,&FindFileData))
-		{
-			DWORD dwErrorCode  = GetLastError();
-			break;
-		}
-	}  
-	FindClose(hFind);
-	
-}
-
-VOID CheckPath(LPCWSTR pszScanPath,LPCSTR pchCheckPath,BOOL bCheckSecure,BOOL bCheckHttpOnly,CStringA &strResSave)
-{
-	CStringA strCheckPath;
-	strCheckPath = pchCheckPath;
-
-	WIN32_FIND_DATA FindFileData;
-	HANDLE hFind=::FindFirstFile(CString(pszScanPath)+L"*.*",&FindFileData);  
-	if(INVALID_HANDLE_VALUE == hFind)
-	{
-		return;
-	}
-
-	while(TRUE)
-	{
-		if( !( StrCmpIW(FindFileData.cFileName,L".") == 0 || StrCmpIW(FindFileData.cFileName,L"..") == 0 ))
-		{
-			if( FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
-			{
-				CStringA strStoryPath;
-				strStoryPath = FindFileData.cFileName;
-				strStoryPath.Replace("#","/");
-
-				if ( strCheckPath.Find(strStoryPath) == 0 )
-				{
-					CheckCookies(CString(pszScanPath)+FindFileData.cFileName+L"\\",bCheckSecure,bCheckHttpOnly,strResSave);
-				}
-
-			}
-		}
-
-		if(!FindNextFile(hFind,&FindFileData))
-		{
-			DWORD dwErrorCode  = GetLastError();
-			break;
-		}
-	}  
-	FindClose(hFind);
+	return 0;
 }
 
 VOID CommonGetCookie(LPCSTR pchUrl,CHAR *pchCookieData,int nCookieDataLen,BOOL bFromJs = FALSE)
@@ -290,60 +142,28 @@ VOID CommonGetCookie(LPCSTR pchUrl,CHAR *pchCookieData,int nCookieDataLen,BOOL b
 	CStringA strCheckDomain;
 	strCheckDomain = urlParser.GetDomain();
 	strCheckDomain = "."+strCheckDomain;
-	strCheckDomain.MakeReverse();
+
+ 	CStringA strSqlCmd;
 
 
-	WIN32_FIND_DATA FindFileData;
-	HANDLE hFind=::FindFirstFile(g_strCookieSavePath+L"*.*",&FindFileData);  
-	if(INVALID_HANDLE_VALUE == hFind)
+	strSqlCmd.Format("select cookiename,cookievalue from cookiedata where \"%s\" like \"%%\"||domain and \"%s\" like path||\"%%\" %s %s "
+		,strCheckDomain
+		,urlParser.GetPath()
+		,bFromJs?"and httponly=0":""
+		,urlParser.GetProtocol().CompareNoCase("https") == 0?"and secure=1":"and secure=0"
+		);
+
+	CStringA strCookieResult;
+
+	char *pcherrmsg = NULL;
+ 	int nRes = sqlite3_exec(g_pDB,strSqlCmd,query_cookie_callback,&strCookieResult,&pcherrmsg);
+	if (nRes != 0 )
 	{
-		return;
+		int a=0;
 	}
+	strcpy_s(pchCookieData,nCookieDataLen,strCookieResult.GetBuffer());
+	
 
-	CStringA strResSave;
-
-	while(TRUE)
-	{
-		if( !( StrCmpIW(FindFileData.cFileName,L".") == 0 || StrCmpIW(FindFileData.cFileName,L"..") == 0 ))
-		{
-			if( FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
-			{
-				CStringA strStoryDomain;
-				strStoryDomain = FindFileData.cFileName;
-				strStoryDomain.MakeReverse();
-				
-				//domain ∆•≈‰
-				if (strCheckDomain.Find(strStoryDomain) == 0)
-				{
-					
-					WCHAR szScanPath[MAX_PATH];
-					wcscpy_s(szScanPath,MAX_PATH,g_strCookieSavePath);
-					wcscat_s(szScanPath,MAX_PATH,FindFileData.cFileName);
-					wcscat_s(szScanPath,MAX_PATH,L"\\");
-					CheckPath(szScanPath,urlParser.GetPath(),urlParser.GetProtocol() == "http"?FALSE:TRUE,bFromJs,strResSave );
-					
-					
-					int a=0;
-				}
-
-			}
-		}
-
-		if(!FindNextFile(hFind,&FindFileData))
-		{
-			DWORD dwErrorCode  = GetLastError();
-			break;
-		}
-	}  
-	FindClose(hFind);
-
-// #ifdef DEBUG
-// 	OutputDebugStringA(pchUrl);
-// 	OutputDebugStringA(" ");
-// 	OutputDebugStringA(strResSave);
-// 	OutputDebugStringA("\r\n");
-// #endif
-	strcpy_s(pchCookieData,nCookieDataLen,strResSave.GetBuffer());
 }
 
 VOID  CALLBACK HCInternetStatusCallback(

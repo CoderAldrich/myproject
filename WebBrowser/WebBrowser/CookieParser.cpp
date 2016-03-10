@@ -292,5 +292,10 @@ BOOL CCookieParser::ParserCookieString(LPCSTR pchUrl,LPCSTR pszCookie)
 		m_strPath = urlParser.GetPath();
 	}
 
+	if ( urlParser.GetProtocol().CompareNoCase("https") == 0 )
+	{
+		m_bSecure = TRUE;
+	}
+
 	return TRUE;
 }
