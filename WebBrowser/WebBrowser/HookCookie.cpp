@@ -15,6 +15,7 @@ CInternetUrlRecord      UrlRecorder;
 CInternetHostRecord     HostRecorder;
 CString                 g_strCookieSavePath;
 
+sqlite3 *g_pDB = NULL;
 
 //·Ö¸î×Ö·û´®
 int DivisionString(CString strSeparate, CString strSourceString, CString * pStringArray, int nArrayCount)
@@ -63,6 +64,30 @@ int DivisionString(CString strSeparate, CString strSourceString, CString * pStri
 	return nCount;
 }
 
+int check_record_callback(void* pParam ,int nCount,char** pValue,char** pName)
+{
+	if (pParam)
+	{
+		char chValue = ((char *)(*pValue))[0];
+		*(bool *)pParam =  chValue!= '0';
+	}
+	return 0;
+}
+
+BOOL CheckRecordExits(LPCSTR pchDomain,LPCSTR pchPath,LPCSTR pchCookieName)
+{
+	CStringA strSqlCmd;
+
+	strSqlCmd.Format("select count(*) from cookiedata where domain=\"%s\" and path=\"%s\" and cookiename=\"%s\"",pchDomain
+		,pchPath
+		,pchCookieName);
+	BOOL bRecordExist = FALSE;
+	char *pcherrmsg = NULL;
+	int nRes = sqlite3_exec(g_pDB,strSqlCmd,check_record_callback,&bRecordExist,&pcherrmsg);
+
+	return bRecordExist;
+}
+
 VOID CommonSetCookie(LPCSTR pchUrl,LPCSTR pchCookieData,BOOL bFromJs = FALSE)
 {
 	CCookieParser cookieParser;
@@ -97,6 +122,45 @@ VOID CommonSetCookie(LPCSTR pchUrl,LPCSTR pchCookieData,BOOL bFromJs = FALSE)
 	WritePrivateProfileStringA("Cookie","Secure"    ,BOOL_TO_STRING(cookieParser.m_bSecure)       ,strCookieSavePath);
 	WritePrivateProfileStringA("Cookie","HttpOnly"  ,BOOL_TO_STRING(cookieParser.m_bHttpOnly)     ,strCookieSavePath);
 	WritePrivateProfileStringA("Cookie","Session"   ,BOOL_TO_STRING(cookieParser.m_bSessionCookie),strCookieSavePath);
+
+
+	if (g_pDB)
+	{
+		char *pcherrmsg = NULL;
+		CStringA strSqlCmd;
+		
+		BOOL bRecordExist = CheckRecordExits(cookieParser.m_strDomain
+			,cookieParser.m_strPath
+			,cookieParser.m_strCookieName);
+		if (bRecordExist)
+		{
+			strSqlCmd.Format("update cookiedata  set cookievalue=\"%s\" where domain=\"%s\" and path=\"%s\" and cookiename=\"%s\""
+				,cookieParser.m_strCookieValue
+				,cookieParser.m_strDomain
+				,cookieParser.m_strPath
+				,cookieParser.m_strCookieName
+			);
+
+			sqlite3_exec(g_pDB,strSqlCmd,NULL,NULL,&pcherrmsg);
+		}
+		else
+		{
+			strSqlCmd.Format("insert into cookiedata (domain,path,cookiename,cookievalue,secure,httponly,session) values(\"%s\",\"%s\",\"%s\",\"%s\",%d,%d,%d)"
+				,cookieParser.m_strDomain
+				,cookieParser.m_strPath
+				,cookieParser.m_strCookieName
+				,cookieParser.m_strCookieValue
+				,cookieParser.m_bSecure
+				,cookieParser.m_bHttpOnly
+				,cookieParser.m_bSessionCookie);
+
+			sqlite3_exec(g_pDB,strSqlCmd,NULL,NULL,&pcherrmsg);
+		}
+
+
+
+
+	}
 
 // #ifdef DEBUG
 // 	OutputDebugStringA("CookieData: ");
@@ -715,12 +779,12 @@ BOOL StartHookCookie()
 	char* errmsg;
 	strSqlDb = szLocalPath;
 	strSqlDb +=L"Cookies.db";
-	sqlite3 *pDB = NULL;
-	int nRes = sqlite3_open16(strSqlDb,&pDB);
-	const char *pmsg = sqlite3_errmsg(pDB);
-	 nRes= sqlite3_exec(pDB,"create table cookiedata(cookiename text)",NULL,NULL,&errmsg);
 	
-	sqlite3_close(pDB);
+	int nRes = sqlite3_open16(strSqlDb,&g_pDB);
+	const char *pmsg = sqlite3_errmsg(g_pDB);
+	 nRes= sqlite3_exec(g_pDB,"create table cookiedata(domain text,path text,cookiename text,cookievalue text,secure bool,httponly bool,session bool,primary key(domain,path,cookiename))",NULL,NULL,&errmsg);
+	pmsg = sqlite3_errmsg(g_pDB);
+	//sqlite3_close(g_pDB);
 
 	int a=0;
 
