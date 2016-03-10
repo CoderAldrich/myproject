@@ -82,11 +82,25 @@ VOID CommonSetCookie(LPCSTR pchUrl,LPCSTR pchCookieData,BOOL bFromJs = FALSE)
 			,cookieParser.m_bSecure
 			,cookieParser.m_bHttpOnly
 			,cookieParser.m_bSessionCookie);
+
+		DWORD dwTickStart = GetTickCount();
+
+		sqlite3_exec(g_pDB, "begin;", 0,0, &pcherrmsg); 
 		int nRes = sqlite3_exec(g_pDB,strSqlCmd,NULL,NULL,&pcherrmsg);
 		if (nRes != 0)
 		{
 			int a=0;
 		}
+		nRes = sqlite3_exec(g_pDB, "commit;", 0, 0,&pcherrmsg); 
+
+		DWORD dwUseTime = GetTickCount() - dwTickStart;
+
+		CStringA strMsgout;
+		strMsgout.Format("插入Cookie 用时：%d\r\n",dwUseTime);
+		OutputDebugStringA(strMsgout);
+
+
+
 	}
 
 
@@ -154,13 +168,22 @@ VOID CommonGetCookie(LPCSTR pchUrl,CHAR *pchCookieData,int nCookieDataLen,BOOL b
 		);
 
 	CStringA strCookieResult;
-
 	char *pcherrmsg = NULL;
+
+	DWORD dwTickStart = GetTickCount();
+
  	int nRes = sqlite3_exec(g_pDB,strSqlCmd,query_cookie_callback,&strCookieResult,&pcherrmsg);
 	if (nRes != 0 )
 	{
 		int a=0;
 	}
+
+	DWORD dwUseTime = GetTickCount() - dwTickStart;
+
+	CStringA strMsgout;
+	strMsgout.Format("查询Cookie 用时：%d\r\n",dwUseTime);
+	OutputDebugStringA(strMsgout);
+
 	strcpy_s(pchCookieData,nCookieDataLen,strCookieResult.GetBuffer());
 	
 
