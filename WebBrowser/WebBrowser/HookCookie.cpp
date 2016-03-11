@@ -2,10 +2,10 @@
 #include "RecordBaseT.h"
 #include "CookieParser.h"
 #include "UrlParser.h"
-#include "sqlite/sqlite3.h"
+
 #include <detours.h>
 #pragma comment(lib,"detours.lib")
-#pragma comment(lib,"sqlite\\sqlite3.lib")
+
 
 typedef CRecordBaseT<HINTERNET,INTERNET_STATUS_CALLBACK> CInternetCallbackRecord;
 typedef CRecordBaseT<HINTERNET,CStringA>                 CInternetUrlRecord,CInternetHostRecord;
@@ -15,7 +15,6 @@ CInternetUrlRecord      UrlRecorder;
 CInternetHostRecord     HostRecorder;
 CString                 g_strCookieSavePath;
 
-sqlite3 *g_pDB = NULL;
 
 //分割字符串
 int DivisionString(CString strSeparate, CString strSourceString, CString * pStringArray, int nArrayCount)
@@ -68,41 +67,44 @@ VOID CommonSetCookie(LPCSTR pchUrl,LPCSTR pchCookieData,BOOL bFromJs = FALSE)
 {
 	CCookieParser cookieParser;
 	cookieParser.ParserCookieString(pchUrl,pchCookieData);
-	
-	if (g_pDB)
+
+	CStringA strCookieSavePath;
+	strCookieSavePath = g_strCookieSavePath;
+	strCookieSavePath += cookieParser.m_strDomain;
+	strCookieSavePath +="\\";
+
+	if (!PathFileExistsA(strCookieSavePath))
 	{
-		char *pcherrmsg = NULL;
-		CStringA strSqlCmd;
-
-		strSqlCmd.Format("replace into cookiedata (domain,path,cookiename,cookievalue,secure,httponly,session) values(\"%s\",\"%s\",\"%s\",\"%s\",%d,%d,%d)"
-			,cookieParser.m_strDomain
-			,cookieParser.m_strPath
-			,cookieParser.m_strCookieName
-			,cookieParser.m_strCookieValue
-			,cookieParser.m_bSecure
-			,cookieParser.m_bHttpOnly
-			,cookieParser.m_bSessionCookie);
-
-		DWORD dwTickStart = GetTickCount();
-
-		sqlite3_exec(g_pDB, "begin;", 0,0, &pcherrmsg); 
-		int nRes = sqlite3_exec(g_pDB,strSqlCmd,NULL,NULL,&pcherrmsg);
-		if (nRes != 0)
-		{
-			int a=0;
-		}
-		nRes = sqlite3_exec(g_pDB, "commit;", 0, 0,&pcherrmsg); 
-
-		DWORD dwUseTime = GetTickCount() - dwTickStart;
-
-		CStringA strMsgout;
-		strMsgout.Format("插入Cookie 用时：%d\r\n",dwUseTime);
-		OutputDebugStringA(strMsgout);
-
-
-
+		CreateDirectoryA(strCookieSavePath,NULL);
 	}
 
+	CString strPathFileName;
+	strPathFileName = cookieParser.m_strPath;
+	strPathFileName.Replace(L"/",L"#");
+
+	strCookieSavePath += strPathFileName;
+	strCookieSavePath +="\\";
+	if (!PathFileExistsA(strCookieSavePath))
+	{
+		CreateDirectoryA(strCookieSavePath,NULL);
+	}
+
+	strCookieSavePath += cookieParser.m_strCookieName;
+
+#define BOOL_TO_STRING( a )  (a?"1":"0")
+
+	WritePrivateProfileStringA("Cookie","CookieData","\""+cookieParser.m_strCookieValue+"\""      ,strCookieSavePath);
+	WritePrivateProfileStringA("Cookie","Secure"    ,BOOL_TO_STRING(cookieParser.m_bSecure)       ,strCookieSavePath);
+	WritePrivateProfileStringA("Cookie","HttpOnly"  ,BOOL_TO_STRING(cookieParser.m_bHttpOnly)     ,strCookieSavePath);
+	WritePrivateProfileStringA("Cookie","Session"   ,BOOL_TO_STRING(cookieParser.m_bSessionCookie),strCookieSavePath);
+
+	// #ifdef DEBUG
+	// 	OutputDebugStringA("CookieData: ");
+	// 	OutputDebugStringA(pchCookieData);
+	// 	OutputDebugStringA(" ");
+	// 	OutputDebugStringA(pchUrl);
+	// 	OutputDebugStringA("\r\n");
+	// #endif
 
 }
 
@@ -127,24 +129,92 @@ CString GetIniString(
 	return strTemp;
 }
 
-int query_cookie_callback(void* pParam ,int nCount,char** pValue,char** pName)
+VOID CheckCookies(LPCWSTR pszScanPath,BOOL bCheckSecure,BOOL bCheckHttpOnly,CStringA &strResSave)
 {
-	CStringA *pstrCookieResult = (CStringA *)pParam;
-
-	if(pstrCookieResult->GetLength() == 0)
+	WIN32_FIND_DATA FindFileData;
+	HANDLE hFind=::FindFirstFile(CString(pszScanPath)+L"*.*",&FindFileData);  
+	if(INVALID_HANDLE_VALUE == hFind)
 	{
-		(*pstrCookieResult)=pValue[0];
-	}
-	else
-	{
-		(*pstrCookieResult)+=pValue[0];
+		return;
 	}
 
-	(*pstrCookieResult)+="=";
-	(*pstrCookieResult)+=pValue[1];
-	(*pstrCookieResult)+="; ";
+	while(TRUE)
+	{
+		if( !( StrCmpIW(FindFileData.cFileName,L".") == 0 || StrCmpIW(FindFileData.cFileName,L"..") == 0 ))
+		{
+			if( !(FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
+			{
+				CStringA strStoryCookieName;
+				strStoryCookieName = FindFileData.cFileName;
 
-	return 0;
+				CString strCookieFilePath;
+				strCookieFilePath = pszScanPath;
+				strCookieFilePath +=FindFileData.cFileName;
+
+
+				BOOL    bSecure = GetPrivateProfileIntW(L"Cookie",L"Secure",0,strCookieFilePath);	
+				BOOL    bHttpOnly = GetPrivateProfileIntW(L"Cookie",L"HttpOnly",0,strCookieFilePath);
+
+				if ( ( FALSE==bSecure || (bSecure && (bCheckSecure == bSecure))) && ( FALSE == bHttpOnly || (bHttpOnly && FALSE==bCheckHttpOnly) ) )
+				{
+					CString strCookieData = GetIniString(L"Cookie",L"CookieData",L"",strCookieFilePath);
+
+					strResSave+= strStoryCookieName;
+					strResSave+=L"=";
+					strResSave+=strCookieData;
+					strResSave+=L"; ";
+
+				}
+			}
+		}
+
+		if(!FindNextFile(hFind,&FindFileData))
+		{
+			DWORD dwErrorCode  = GetLastError();
+			break;
+		}
+	}  
+	FindClose(hFind);
+
+}
+
+VOID CheckPath(LPCWSTR pszScanPath,LPCSTR pchCheckPath,BOOL bCheckSecure,BOOL bCheckHttpOnly,CStringA &strResSave)
+{
+	CStringA strCheckPath;
+	strCheckPath = pchCheckPath;
+
+	WIN32_FIND_DATA FindFileData;
+	HANDLE hFind=::FindFirstFile(CString(pszScanPath)+L"*.*",&FindFileData);  
+	if(INVALID_HANDLE_VALUE == hFind)
+	{
+		return;
+	}
+
+	while(TRUE)
+	{
+		if( !( StrCmpIW(FindFileData.cFileName,L".") == 0 || StrCmpIW(FindFileData.cFileName,L"..") == 0 ))
+		{
+			if( FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
+			{
+				CStringA strStoryPath;
+				strStoryPath = FindFileData.cFileName;
+				strStoryPath.Replace("#","/");
+
+				if ( strCheckPath.Find(strStoryPath) == 0 )
+				{
+					CheckCookies(CString(pszScanPath)+FindFileData.cFileName+L"\\",bCheckSecure,bCheckHttpOnly,strResSave);
+				}
+
+			}
+		}
+
+		if(!FindNextFile(hFind,&FindFileData))
+		{
+			DWORD dwErrorCode  = GetLastError();
+			break;
+		}
+	}  
+	FindClose(hFind);
 }
 
 VOID CommonGetCookie(LPCSTR pchUrl,CHAR *pchCookieData,int nCookieDataLen,BOOL bFromJs = FALSE)
@@ -156,46 +226,69 @@ VOID CommonGetCookie(LPCSTR pchUrl,CHAR *pchCookieData,int nCookieDataLen,BOOL b
 	CStringA strCheckDomain;
 	strCheckDomain = urlParser.GetDomain();
 	strCheckDomain = "."+strCheckDomain;
+	strCheckDomain.MakeReverse();
 
- 	CStringA strSqlCmd;
 
-
-	strSqlCmd.Format("select cookiename,cookievalue from cookiedata where \"%s\" like \"%%\"||domain and \"%s\" like path||\"%%\" %s %s "
-		,strCheckDomain
-		,urlParser.GetPath()
-		,bFromJs?"and httponly=0":""
-		,urlParser.GetProtocol().CompareNoCase("https") == 0?"and secure=1":"and secure=0"
-		);
-
-	CStringA strCookieResult;
-	char *pcherrmsg = NULL;
-
-	DWORD dwTickStart = GetTickCount();
-
- 	int nRes = sqlite3_exec(g_pDB,strSqlCmd,query_cookie_callback,&strCookieResult,&pcherrmsg);
-	if (nRes != 0 )
+	WIN32_FIND_DATA FindFileData;
+	HANDLE hFind=::FindFirstFile(g_strCookieSavePath+L"*.*",&FindFileData);  
+	if(INVALID_HANDLE_VALUE == hFind)
 	{
-		int a=0;
+		return;
 	}
 
-	DWORD dwUseTime = GetTickCount() - dwTickStart;
+	CStringA strResSave;
 
-	CStringA strMsgout;
-	strMsgout.Format("查询Cookie 用时：%d\r\n",dwUseTime);
-	OutputDebugStringA(strMsgout);
+	while(TRUE)
+	{
+		if( !( StrCmpIW(FindFileData.cFileName,L".") == 0 || StrCmpIW(FindFileData.cFileName,L"..") == 0 ))
+		{
+			if( FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
+			{
+				CStringA strStoryDomain;
+				strStoryDomain = FindFileData.cFileName;
+				strStoryDomain.MakeReverse();
 
-	strcpy_s(pchCookieData,nCookieDataLen,strCookieResult.GetBuffer());
-	
+				//domain 匹配
+				if (strCheckDomain.Find(strStoryDomain) == 0)
+				{
 
+					WCHAR szScanPath[MAX_PATH];
+					wcscpy_s(szScanPath,MAX_PATH,g_strCookieSavePath);
+					wcscat_s(szScanPath,MAX_PATH,FindFileData.cFileName);
+					wcscat_s(szScanPath,MAX_PATH,L"\\");
+					CheckPath(szScanPath,urlParser.GetPath(),urlParser.GetProtocol() == "http"?FALSE:TRUE,bFromJs,strResSave );
+
+
+					int a=0;
+				}
+
+			}
+		}
+
+		if(!FindNextFile(hFind,&FindFileData))
+		{
+			DWORD dwErrorCode  = GetLastError();
+			break;
+		}
+	}  
+	FindClose(hFind);
+
+	// #ifdef DEBUG
+	// 	OutputDebugStringA(pchUrl);
+	// 	OutputDebugStringA(" ");
+	// 	OutputDebugStringA(strResSave);
+	// 	OutputDebugStringA("\r\n");
+	// #endif
+	strcpy_s(pchCookieData,nCookieDataLen,strResSave.GetBuffer());
 }
 
 VOID  CALLBACK HCInternetStatusCallback(
-									  __in HINTERNET hInternet,
-									  __in_opt DWORD_PTR dwContext,
-									  __in DWORD dwInternetStatus,
-									  __in_opt LPVOID lpvStatusInformation,
-									  __in DWORD dwStatusInformationLength
-									  )
+										__in HINTERNET hInternet,
+										__in_opt DWORD_PTR dwContext,
+										__in DWORD dwInternetStatus,
+										__in_opt LPVOID lpvStatusInformation,
+										__in DWORD dwStatusInformationLength
+										)
 {
 
 
@@ -218,7 +311,7 @@ VOID  CALLBACK HCInternetStatusCallback(
 		strCookieHeader += chCookieData;
 
 		BOOL bRes = HttpAddRequestHeadersA(hInternet,strCookieHeader.GetBuffer(),strCookieHeader.GetLength(),HTTP_ADDREQ_FLAG_ADD|HTTP_ADDREQ_FLAG_REPLACE);
-		
+
 		int a=0;
 
 	}
@@ -364,12 +457,12 @@ HINTERNET WINAPI MyHttpOpenRequestW(
 			UrlRecorder.AddRecord(hRequest,strInternetUrl);
 		}
 	}
-	
-  	INTERNET_STATUS_CALLBACK pPreCallBack = InternetSetStatusCallbackA(hRequest,HCInternetStatusCallback);
-  	if ( pPreCallBack && HCInternetStatusCallback != pPreCallBack )
-  	{
-  		CallbackRecorder.AddRecord(hRequest,pPreCallBack);
-  	}
+
+	INTERNET_STATUS_CALLBACK pPreCallBack = InternetSetStatusCallbackA(hRequest,HCInternetStatusCallback);
+	if ( pPreCallBack && HCInternetStatusCallback != pPreCallBack )
+	{
+		CallbackRecorder.AddRecord(hRequest,pPreCallBack);
+	}
 
 	return hRequest;
 };
@@ -392,21 +485,21 @@ BOOL WINAPI MyHttpSendRequestW(
 							   )
 {
 
-  	CStringA strInternetUrl;
-  	UrlRecorder.GetRecordData(hRequest,&strInternetUrl);
-  	CHAR chCookieData[4000]={0};
-  	CommonGetCookie(strInternetUrl,chCookieData,3999,FALSE);
-  
-  	CStringA strCookieHeader;
-  	strCookieHeader = "Cookie: ";
-  	strCookieHeader += chCookieData;
-  
-  	BOOL bRes = HttpAddRequestHeadersA(hRequest,strCookieHeader.GetBuffer(),strCookieHeader.GetLength(),HTTP_ADDREQ_FLAG_ADD|HTTP_ADDREQ_FLAG_REPLACE);
+	CStringA strInternetUrl;
+	UrlRecorder.GetRecordData(hRequest,&strInternetUrl);
+	CHAR chCookieData[4000]={0};
+	CommonGetCookie(strInternetUrl,chCookieData,3999,FALSE);
+
+	CStringA strCookieHeader;
+	strCookieHeader = "Cookie: ";
+	strCookieHeader += chCookieData;
+
+	BOOL bRes = HttpAddRequestHeadersA(hRequest,strCookieHeader.GetBuffer(),strCookieHeader.GetLength(),HTTP_ADDREQ_FLAG_ADD|HTTP_ADDREQ_FLAG_REPLACE);
 
 	BOOL TReturn = pHttpSendRequestW(
 		hRequest,
- 		lpszHeaders,
- 		dwHeadersLength,
+		lpszHeaders,
+		dwHeadersLength,
 		lpOptional,
 		dwOptionalLength
 		);
@@ -476,6 +569,33 @@ BOOL WINAPI MyHttpSendRequestA(
 	return TReturn;
 };
 
+HINTERNET (WINAPI *pInternetOpenUrlW)(
+									  __in HINTERNET hInternet,
+									  __in LPCWSTR lpszUrl,
+									  __in_ecount_opt(dwHeadersLength) LPCWSTR lpszHeaders,
+									  __in DWORD dwHeadersLength,
+									  __in DWORD dwFlags,
+									  __in_opt DWORD_PTR dwContext 
+									  ) = InternetOpenUrlW;
+HINTERNET WINAPI MyInternetOpenUrlW(
+									__in HINTERNET hInternet,
+									__in LPCWSTR lpszUrl,
+									__in_ecount_opt(dwHeadersLength) LPCWSTR lpszHeaders,
+									__in DWORD dwHeadersLength,
+									__in DWORD dwFlags,
+									__in_opt DWORD_PTR dwContext 
+									)
+{
+	HINTERNET TReturn = pInternetOpenUrlW(
+		hInternet,
+		lpszUrl,
+		lpszHeaders,
+		dwHeadersLength,
+		dwFlags,
+		dwContext
+		);
+	return TReturn;
+};
 
 BOOL (WINAPI *pInternetCloseHandle)(
 									__in HINTERNET hInternet
@@ -510,20 +630,20 @@ DWORD WINAPI MyInternetSetCookieExW(
 									)
 {
 
- 	CommonSetCookie(CStringA(lpszUrl),CStringA(lpszCookieData),TRUE);
+	CommonSetCookie(CStringA(lpszUrl),CStringA(lpszCookieData),TRUE);
 
 	return COOKIE_STATE_ACCEPT;
 
 	//先设置一下Cookie 测试是否可以设置Cookie
-// 	DWORD dwSetRes = pInternetSetCookieExW(
-// 		lpszUrl,
-// 		lpszCookieName,
-// 		lpszCookieData,
-// 		dwFlags,
-// 		dwReserved
-// 		);
-// 
-// 	return dwSetRes;
+	// 	DWORD dwSetRes = pInternetSetCookieExW(
+	// 		lpszUrl,
+	// 		lpszCookieName,
+	// 		lpszCookieData,
+	// 		dwFlags,
+	// 		dwReserved
+	// 		);
+	// 
+	// 	return dwSetRes;
 };
 
 BOOL (WINAPI *pInternetGetCookieExA)(
@@ -572,7 +692,7 @@ BOOL WINAPI MyInternetGetCookieExW(
 	CHAR chCookieData[4000]={0};
 	DWORD dwDataSize = 4000;
 	CommonGetCookie(CStringA(lpszUrl),chCookieData,dwDataSize,TRUE);
-	
+
 	CString wstrCookieData;
 	wstrCookieData = chCookieData;
 	DWORD dwRegCookieDataLen = wstrCookieData.GetLength();
@@ -591,7 +711,7 @@ BOOL WINAPI MyInternetGetCookieExW(
 		return TRUE;
 	}
 
-	
+
 
 	BOOL TReturn = pInternetGetCookieExW(
 		lpszUrl,
@@ -618,28 +738,17 @@ BOOL StartHookCookie()
 
 	CreateDirectoryW(g_strCookieSavePath,NULL);
 
-	CString strSqlDb;
-	char* errmsg;
-	strSqlDb = szLocalPath;
-	strSqlDb +=L"Cookies.db";
-	
-	int nRes = sqlite3_open16(strSqlDb,&g_pDB);
-	const char *pmsg = sqlite3_errmsg(g_pDB);
-	 nRes= sqlite3_exec(g_pDB,"create table cookiedata(domain text,path text,cookiename text,cookievalue text,secure bool,httponly bool,session bool,primary key(domain,path,cookiename))",NULL,NULL,&errmsg);
-	pmsg = sqlite3_errmsg(g_pDB);
-	//sqlite3_close(g_pDB);
-
-	int a=0;
 
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
+	DetourAttach( (PVOID *)&pInternetOpenUrlW ,(PVOID)MyInternetOpenUrlW );
 	DetourAttach( (PVOID *)&pInternetConnectW ,(PVOID)MyInternetConnectW );
 	DetourAttach( (PVOID *)&pHttpOpenRequestW ,(PVOID)MyHttpOpenRequestW );
 	DetourAttach( (PVOID *)&pHttpSendRequestW ,(PVOID)MyHttpSendRequestW );
 	DetourAttach( (PVOID *)&pHttpSendRequestExW ,(PVOID)MyHttpSendRequestExW );
 	DetourAttach( (PVOID *)&pHttpSendRequestA ,(PVOID)MyHttpSendRequestA );
 	DetourAttach( (PVOID *)&pInternetCloseHandle ,(PVOID)MyInternetCloseHandle );
- 	DetourAttach( (PVOID *)&pInternetSetCookieExW ,(PVOID)MyInternetSetCookieExW );
+	DetourAttach( (PVOID *)&pInternetSetCookieExW ,(PVOID)MyInternetSetCookieExW );
 	DetourAttach( (PVOID *)&pInternetGetCookieExA ,(PVOID)MyInternetGetCookieExA );
 	DetourAttach( (PVOID *)&pInternetGetCookieExW ,(PVOID)MyInternetGetCookieExW );
 
@@ -647,4 +756,3 @@ BOOL StartHookCookie()
 
 	return TRUE;
 }
-
