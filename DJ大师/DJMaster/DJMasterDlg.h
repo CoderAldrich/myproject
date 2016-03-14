@@ -22,6 +22,7 @@ public:
 
 // 实现
 protected:
+	BOOL   m_bEnableEdit;
 	HICON m_hIcon;
 	CMusicDisplayWnd m_wndMusicDisplay;
 	// 生成的消息映射函数
@@ -34,4 +35,6 @@ public:
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedCancel();
 	afx_msg void OnDropFiles(HDROP hDropInfo);
+	afx_msg void OnBnClickedButton1();
+	afx_msg void OnSize(UINT nType, int cx, int cy);
 };

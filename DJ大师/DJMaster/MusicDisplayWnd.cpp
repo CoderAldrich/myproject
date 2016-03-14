@@ -18,6 +18,9 @@ CMusicDisplayWnd::CMusicDisplayWnd()
 	m_nBtnSelIndex = -1;
 	m_nDragTaggetIndexPre = -1;
 	m_nDragTaggetIndexNext = -1;
+
+	m_hMemDC = NULL;
+	m_hMemBmp = NULL;
 }
 
 CMusicDisplayWnd::~CMusicDisplayWnd()
@@ -32,12 +35,20 @@ BEGIN_MESSAGE_MAP(CMusicDisplayWnd, CWnd)
 	ON_WM_LBUTTONUP()
 	ON_WM_MOUSEMOVE()
 	ON_WM_RBUTTONUP()
+	ON_WM_SIZE()
+	ON_WM_CREATE()
+	ON_WM_VSCROLL()
 END_MESSAGE_MAP()
 
 
 
 BOOL CMusicDisplayWnd::AddMusic( LPCWSTR pszFilePath,LPCWSTR pszMusicDesc )
 {
+	if ( m_bLockEdit )
+	{
+		return FALSE;
+	}
+
 	const int nBtnHeight = 30;
 	CRect rcClient;
 	GetClientRect(&rcClient);
@@ -56,6 +67,11 @@ BOOL CMusicDisplayWnd::AddMusic( LPCWSTR pszFilePath,LPCWSTR pszMusicDesc )
 
 VOID CMusicDisplayWnd::DelMusic( int nIndex)
 {
+	if ( m_bLockEdit )
+	{
+		return;
+	}
+
 	if (nIndex < 0 || nIndex > m_lstButtons.size())
 	{
 		return;
@@ -98,6 +114,10 @@ VOID CMusicDisplayWnd::CalcBtnRect(int nIndex,CRect &rcBtn)
 
 VOID CMusicDisplayWnd::MoveButton(int nIndex,int nTargetIndexPre,int nTargetIndexNext)
 {
+	if ( m_bLockEdit )
+	{
+		return;
+	}
 
 	if ( nIndex < 0 || nIndex > m_lstButtons.size()|| nIndex == nTargetIndexPre || nIndex == nTargetIndexNext  || nTargetIndexNext - nTargetIndexPre != 1 )
 	{
@@ -176,6 +196,7 @@ CMusicDisplayWnd::LIST_MUSIC_BUTTON_PTR CMusicDisplayWnd::IndexToIterator(int nI
 
 BOOL CMusicDisplayWnd::OnEraseBkgnd(CDC* pDC)
 {
+	return TRUE;
 	CRect rcClient;
 	GetClientRect(&rcClient);
 
@@ -186,7 +207,16 @@ BOOL CMusicDisplayWnd::OnEraseBkgnd(CDC* pDC)
 
 void CMusicDisplayWnd::OnPaint()
 {
-	CPaintDC dc(this);
+	CPaintDC paintdc(this);
+
+	CRect rcClient;
+
+	GetClientRect(&rcClient);
+
+	CDC dc;
+	dc.Attach(m_hMemDC);
+
+	dc.Rectangle(rcClient);
 
 	dc.SetBkMode(TRANSPARENT);
 	dc.SelectObject(GetStockObject(DEFAULT_GUI_FONT));
@@ -196,6 +226,10 @@ void CMusicDisplayWnd::OnPaint()
 		CRect rcBtn;
 		CalcBtnRect(it->nIndex,rcBtn);
 		dc.Rectangle(rcBtn);
+		CRect rcTemp;
+		rcTemp = rcBtn;
+		rcTemp.DeflateRect(1,1,1,1);
+		dc.FillSolidRect(rcTemp,RGB(230,230,230));
 		dc.DrawTextEx(it->strMusicDesc,rcBtn,DT_CENTER|DT_VCENTER|DT_SINGLELINE,0);
 
 		CString strIndex;
@@ -215,6 +249,10 @@ void CMusicDisplayWnd::OnPaint()
 		dc.FillSolidRect(rcBtn,RGB(0,0,0));
 
 	}
+
+	paintdc.BitBlt(0,0,rcClient.Width(),rcClient.Height(),&dc,0,0,SRCCOPY);
+
+	dc.Detach();
 }
 
 void CMusicDisplayWnd::OnLButtonDown(UINT nFlags, CPoint point)
@@ -322,4 +360,85 @@ void CMusicDisplayWnd::OnRButtonUp(UINT nFlags, CPoint point)
 		
 	}
 	CWnd::OnRButtonUp(nFlags, point);
+}
+
+void CMusicDisplayWnd::OnSize(UINT nType, int cx, int cy)
+{
+	CWnd::OnSize(nType, cx, cy);
+
+	ReCreateMemDCIfNeed(cx,cy);
+
+	//ÉèÖÃ¹ö¶¯Ìõ·¶Î§  
+	SCROLLINFO si;  
+	si.cbSize = sizeof(si);  
+	si.fMask = SIF_RANGE | SIF_PAGE;  
+	si.nMin = 0;  
+	si.nMax = m_lstButtons.size()*30;//m_lstButtons.size()*30;  
+	si.nPage = cy;  
+	SetScrollInfo(SB_VERT,&si,TRUE);  
+
+//  	int icurxpos = GetScrollPos(SB_HORZ);  
+//  	int icurypos = GetScrollPos(SB_VERT);  
+//  
+//  	if (icurxpos < m_ixoldpos || icurypos < m_iyoldpos)  
+//  	{  
+//  		ScrollWindow(m_ixoldpos-icurxpos,0);  
+//  		ScrollWindow(0,m_iyoldpos-icurypos);  
+//  
+//  	}     
+// 	m_ixoldpos = icurxpos;  
+// 	m_iyoldpos = icurypos;  
+// 
+// 	Invalidate(TRUE);  
+
+}
+
+VOID CMusicDisplayWnd::ReCreateMemDCIfNeed(int cx, int cy)
+{
+	if (m_hMemDC)
+	{
+		::DeleteDC(m_hMemDC);
+	}
+
+	if (m_hMemBmp)
+	{
+		::DeleteObject(m_hMemBmp);
+	}
+
+	HDC hDC = GetDC()->m_hDC;
+	m_hMemDC = CreateCompatibleDC(hDC);
+	m_hMemBmp = CreateCompatibleBitmap(hDC,cx,cy);
+
+	SelectObject(m_hMemDC,m_hMemBmp);
+}
+
+int CMusicDisplayWnd::OnCreate(LPCREATESTRUCT lpCreateStruct)
+{
+	if (CWnd::OnCreate(lpCreateStruct) == -1)
+		return -1;
+
+	ReCreateMemDCIfNeed(lpCreateStruct->cx,lpCreateStruct->cy);
+
+	return 0;
+}
+
+VOID CMusicDisplayWnd::LockEdit(bool bLock)
+{
+	m_bLockEdit = bLock;
+	return VOID();
+}
+
+void CMusicDisplayWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+	if ( SB_THUMBPOSITION == nSBCode || SB_THUMBTRACK == nSBCode)
+	{
+		CString strDebug;
+		strDebug.Format(L"Pos %d\r\n",nPos);
+		OutputDebugStringW(strDebug);
+		SetScrollPos(SB_VERT, nSBCode);
+	}
+	
+	  
+
+	CWnd::OnVScroll(nSBCode, nPos, pScrollBar);
 }

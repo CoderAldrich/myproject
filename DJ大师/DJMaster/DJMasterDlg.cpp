@@ -51,6 +51,7 @@ CDJMasterDlg::CDJMasterDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CDJMasterDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_bEnableEdit = TRUE;
 }
 
 void CDJMasterDlg::DoDataExchange(CDataExchange* pDX)
@@ -66,6 +67,8 @@ BEGIN_MESSAGE_MAP(CDJMasterDlg, CDialog)
 	ON_BN_CLICKED(IDOK, &CDJMasterDlg::OnBnClickedOk)
 	ON_BN_CLICKED(IDCANCEL, &CDJMasterDlg::OnBnClickedCancel)
 	ON_WM_DROPFILES()
+	ON_BN_CLICKED(IDC_BUTTON1, &CDJMasterDlg::OnBnClickedButton1)
+	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
 
@@ -100,7 +103,7 @@ BOOL CDJMasterDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	m_wndMusicDisplay.Create(NULL,NULL,WS_VISIBLE|WS_CHILD|WS_CLIPCHILDREN|WS_CLIPSIBLINGS,CRect(10,10,200,500),this,0);
+	m_wndMusicDisplay.Create(NULL,NULL,WS_VISIBLE|WS_CHILD|WS_CLIPCHILDREN|WS_CLIPSIBLINGS|WS_VSCROLL,CRect(10,10,200,500),this,0);
 
 	m_wndMusicDisplay.AddMusic(L"",L"开场");
 	m_wndMusicDisplay.AddMusic(L"",L"主持人上场");
@@ -195,4 +198,29 @@ void CDJMasterDlg::OnDropFiles(HDROP hDropInfo)
 	DragFinish(hDropInfo);   //API函数
 
 	CDialog::OnDropFiles(hDropInfo);
+}
+
+void CDJMasterDlg::OnBnClickedButton1()
+{
+	if (m_bEnableEdit)
+	{
+		GetDlgItem(IDC_BUTTON1)->SetWindowText(L"启用编辑");
+	}
+	else
+	{
+		GetDlgItem(IDC_BUTTON1)->SetWindowText(L"禁止编辑");
+	}
+	
+	m_wndMusicDisplay.LockEdit(m_bEnableEdit);
+	m_bEnableEdit=!m_bEnableEdit;
+}
+
+void CDJMasterDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CDialog::OnSize(nType, cx, cy);
+
+	if ( ::IsWindow(m_wndMusicDisplay.m_hWnd))
+	{
+		m_wndMusicDisplay.MoveWindow(10,10,200,cy-20);
+	}
 }
