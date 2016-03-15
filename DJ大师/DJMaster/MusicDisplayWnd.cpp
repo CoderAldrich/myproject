@@ -18,6 +18,9 @@ CMusicDisplayWnd::CMusicDisplayWnd()
 	m_nBtnSelIndex = -1;
 	m_nDragTaggetIndexPre = -1;
 	m_nDragTaggetIndexNext = -1;
+	m_nMouseClkY = -1;
+
+	m_nSelIndex = -1;
 
 	m_hMemDC = NULL;
 	m_hMemBmp = NULL;
@@ -38,9 +41,10 @@ BEGIN_MESSAGE_MAP(CMusicDisplayWnd, CWnd)
 	ON_WM_SIZE()
 	ON_WM_CREATE()
 	ON_WM_VSCROLL()
+
+	ON_WM_SETFOCUS()
+	ON_WM_KEYDOWN()
 END_MESSAGE_MAP()
-
-
 
 BOOL CMusicDisplayWnd::AddMusic( LPCWSTR pszFilePath,LPCWSTR pszMusicDesc )
 {
@@ -112,16 +116,18 @@ VOID CMusicDisplayWnd::CalcBtnRect(int nIndex,CRect &rcBtn)
 	rcBtn.DeflateRect(2,2,2,2);
 }
 
-VOID CMusicDisplayWnd::MoveButton(int nIndex,int nTargetIndexPre,int nTargetIndexNext)
+int CMusicDisplayWnd::MoveButton(int nIndex,int nTargetIndexPre,int nTargetIndexNext)
 {
+	int nNewIndex = -1;
+
 	if ( m_bLockEdit )
 	{
-		return;
+		return -1;
 	}
 
 	if ( nIndex < 0 || nIndex > m_lstButtons.size()|| nIndex == nTargetIndexPre || nIndex == nTargetIndexNext  || nTargetIndexNext - nTargetIndexPre != 1 )
 	{
-		return ;
+		return  -1;
 	}
 	
 	//向前移动
@@ -131,7 +137,7 @@ VOID CMusicDisplayWnd::MoveButton(int nIndex,int nTargetIndexPre,int nTargetInde
 		{
 			if (it->nIndex == nIndex )
 			{
-				it->nIndex = nTargetIndexNext;
+				nNewIndex = it->nIndex = nTargetIndexNext;
 			}
 			else if (it->nIndex > nTargetIndexPre && it->nIndex < nIndex )
 			{
@@ -146,7 +152,7 @@ VOID CMusicDisplayWnd::MoveButton(int nIndex,int nTargetIndexPre,int nTargetInde
 		{
 			if (it->nIndex == nIndex )
 			{
-				it->nIndex = nTargetIndexPre;
+				nNewIndex = it->nIndex = nTargetIndexPre;
 			}
 			else if (it->nIndex > nIndex && it->nIndex < nTargetIndexNext )
 			{
@@ -154,6 +160,8 @@ VOID CMusicDisplayWnd::MoveButton(int nIndex,int nTargetIndexPre,int nTargetInde
 			}
 		}
 	}
+
+	return nNewIndex;
 
 }
 
@@ -221,6 +229,14 @@ void CMusicDisplayWnd::OnPaint()
 	dc.SetBkMode(TRANSPARENT);
 	dc.SelectObject(GetStockObject(DEFAULT_GUI_FONT));
 
+	if ( m_lstButtons.size() == 0 )
+	{
+		CRect rcTip;
+		rcTip = rcClient;
+		rcTip.bottom = rcTip.bottom/2;
+		dc.DrawTextEx(L"拖拽音乐文件或文件夹到此处...",rcTip,DT_CENTER|DT_VCENTER|DT_SINGLELINE,0);
+	}
+
 	for (LIST_MUSIC_BUTTON_PTR it = m_lstButtons.begin();it!=m_lstButtons.end();it++)
 	{
 		CRect rcBtn;
@@ -229,7 +245,17 @@ void CMusicDisplayWnd::OnPaint()
 		CRect rcTemp;
 		rcTemp = rcBtn;
 		rcTemp.DeflateRect(1,1,1,1);
-		dc.FillSolidRect(rcTemp,RGB(230,230,230));
+
+		if (m_nSelIndex == it->nIndex)
+		{
+			dc.FillSolidRect(rcTemp,RGB(210,210,210));
+		}
+		else
+		{
+			dc.FillSolidRect(rcTemp,RGB(230,230,230));
+		}
+
+		
 		dc.DrawTextEx(it->strMusicDesc,rcBtn,DT_CENTER|DT_VCENTER|DT_SINGLELINE,0);
 
 		CString strIndex;
@@ -257,9 +283,16 @@ void CMusicDisplayWnd::OnPaint()
 
 void CMusicDisplayWnd::OnLButtonDown(UINT nFlags, CPoint point)
 {
-	m_nBtnSelIndex = PointToIndex(&point);
+	SetFocus();
+
+	m_nSelIndex = m_nBtnSelIndex = PointToIndex(&point);
 	m_nDragTaggetIndexPre = -1;
 	m_nDragTaggetIndexNext = -1;
+	m_nMouseClkY = point.y;
+
+	CRect rcClient;
+	GetClientRect(&rcClient);
+	InvalidateRect(&rcClient);
 
 	CWnd::OnLButtonDown(nFlags, point);
 }
@@ -271,7 +304,7 @@ void CMusicDisplayWnd::OnLButtonUp(UINT nFlags, CPoint point)
 		//拖拽后释放鼠标
 		if( m_bDragingButton )
 		{
-			MoveButton(m_nBtnSelIndex,m_nDragTaggetIndexPre,m_nDragTaggetIndexNext);
+			m_nSelIndex = MoveButton(m_nBtnSelIndex,m_nDragTaggetIndexPre,m_nDragTaggetIndexNext);
 		}
 		else //点击了按钮
 		{
@@ -279,20 +312,21 @@ void CMusicDisplayWnd::OnLButtonUp(UINT nFlags, CPoint point)
 			if ( nIndexClick != -1 && nIndexClick == m_nBtnSelIndex )
 			{
 				LIST_MUSIC_BUTTON_PTR it = IndexToIterator(nIndexClick);
-				AfxMessageBox(it->strFilePath + L"  " + it->strMusicDesc);
+				//AfxMessageBox(it->strFilePath + L"  " + it->strMusicDesc);
 			}
 
 		}
-
-		m_bDragingButton = FALSE;
-		m_nBtnSelIndex = -1;
-		m_nDragTaggetIndexPre = -1;
-		m_nDragTaggetIndexNext = -1;
 
 		CRect rcClient;
 		GetClientRect(&rcClient);
 		InvalidateRect(&rcClient);
 	}
+
+	m_bDragingButton = FALSE;
+	m_nBtnSelIndex = -1;
+	m_nDragTaggetIndexPre = -1;
+	m_nDragTaggetIndexNext = -1;
+	m_nMouseClkY = -1;
 
 	CWnd::OnLButtonUp(nFlags, point);
 }
@@ -303,7 +337,7 @@ void CMusicDisplayWnd::OnMouseMove(UINT nFlags, CPoint point)
 	{
 		return;
 	}
-	if ( m_nBtnSelIndex >= 0 && m_nBtnSelIndex < m_lstButtons.size() )
+	if ( m_nBtnSelIndex >= 0 && m_nBtnSelIndex < m_lstButtons.size() && (abs(m_nMouseClkY-point.y) > 10 || m_bDragingButton) )
 	{
 		m_bDragingButton = TRUE;
 	}
@@ -367,30 +401,6 @@ void CMusicDisplayWnd::OnSize(UINT nType, int cx, int cy)
 	CWnd::OnSize(nType, cx, cy);
 
 	ReCreateMemDCIfNeed(cx,cy);
-
-	//设置滚动条范围  
-	SCROLLINFO si;  
-	si.cbSize = sizeof(si);  
-	si.fMask = SIF_RANGE | SIF_PAGE;  
-	si.nMin = 0;  
-	si.nMax = m_lstButtons.size()*30;//m_lstButtons.size()*30;  
-	si.nPage = cy;  
-	SetScrollInfo(SB_VERT,&si,TRUE);  
-
-//  	int icurxpos = GetScrollPos(SB_HORZ);  
-//  	int icurypos = GetScrollPos(SB_VERT);  
-//  
-//  	if (icurxpos < m_ixoldpos || icurypos < m_iyoldpos)  
-//  	{  
-//  		ScrollWindow(m_ixoldpos-icurxpos,0);  
-//  		ScrollWindow(0,m_iyoldpos-icurypos);  
-//  
-//  	}     
-// 	m_ixoldpos = icurxpos;  
-// 	m_iyoldpos = icurypos;  
-// 
-// 	Invalidate(TRUE);  
-
 }
 
 VOID CMusicDisplayWnd::ReCreateMemDCIfNeed(int cx, int cy)
@@ -428,17 +438,57 @@ VOID CMusicDisplayWnd::LockEdit(bool bLock)
 	return VOID();
 }
 
-void CMusicDisplayWnd::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
-{
-	if ( SB_THUMBPOSITION == nSBCode || SB_THUMBTRACK == nSBCode)
-	{
-		CString strDebug;
-		strDebug.Format(L"Pos %d\r\n",nPos);
-		OutputDebugStringW(strDebug);
-		SetScrollPos(SB_VERT, nSBCode);
-	}
-	
-	  
 
-	CWnd::OnVScroll(nSBCode, nPos, pScrollBar);
+void CMusicDisplayWnd::OnSetFocus(CWnd* pOldWnd)
+{
+	CWnd::OnSetFocus(pOldWnd);
+
+	// TODO: 在此处添加消息处理程序代码
+}
+
+void CMusicDisplayWnd::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+
+	CWnd::OnKeyDown(nChar, nRepCnt, nFlags);
+}
+
+BOOL CMusicDisplayWnd::PreTranslateMessage(MSG* pMsg)
+{
+	if (pMsg->hwnd == m_hWnd )
+	{
+		if ( WM_KEYDOWN == pMsg->message || WM_KEYUP == pMsg->message )
+		{
+			if (WM_KEYDOWN == pMsg->message)
+			{
+				if (VK_UP == pMsg->wParam )
+				{
+					m_nSelIndex--;
+					if (m_nSelIndex < 0 )
+					{
+						m_nSelIndex = 0;
+					}
+						
+					CRect rcClient;
+					GetClientRect(&rcClient);
+					InvalidateRect(&rcClient);
+				}
+				else if( VK_DOWN == pMsg->wParam )
+				{
+					m_nSelIndex++;
+					if (m_nSelIndex >= m_lstButtons.size())
+					{
+						m_nSelIndex = m_lstButtons.size()-1;
+					}
+					CRect rcClient;
+					GetClientRect(&rcClient);
+					InvalidateRect(&rcClient);
+
+				}
+			}
+			return TRUE;
+		}
+	}
+
+	return CWnd::PreTranslateMessage(pMsg);
 }

@@ -6,6 +6,8 @@
 #include "DJMaster.h"
 #include "DJMasterDlg.h"
 #include "AddMusicDlg.h"
+#include "HelpFun.h"
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -57,6 +59,7 @@ CDJMasterDlg::CDJMasterDlg(CWnd* pParent /*=NULL*/)
 void CDJMasterDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_SLIDER1, m_wndVolumeCtrl);
 }
 
 BEGIN_MESSAGE_MAP(CDJMasterDlg, CDialog)
@@ -69,6 +72,7 @@ BEGIN_MESSAGE_MAP(CDJMasterDlg, CDialog)
 	ON_WM_DROPFILES()
 	ON_BN_CLICKED(IDC_BUTTON1, &CDJMasterDlg::OnBnClickedButton1)
 	ON_WM_SIZE()
+	ON_NOTIFY(TRBN_THUMBPOSCHANGING, IDC_SLIDER1, &CDJMasterDlg::OnTRBNThumbPosChangingSlider1)
 END_MESSAGE_MAP()
 
 
@@ -103,15 +107,23 @@ BOOL CDJMasterDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	m_wndMusicDisplay.Create(NULL,NULL,WS_VISIBLE|WS_CHILD|WS_CLIPCHILDREN|WS_CLIPSIBLINGS|WS_VSCROLL,CRect(10,10,200,500),this,0);
+	CMenu *pMainMenu = new CMenu;
+	pMainMenu->LoadMenu(IDR_MAIN_MENU);
+	SetMenu(pMainMenu);
 
-	m_wndMusicDisplay.AddMusic(L"",L"开场");
-	m_wndMusicDisplay.AddMusic(L"",L"主持人上场");
-	m_wndMusicDisplay.AddMusic(L"",L"嘉宾上场");
-	m_wndMusicDisplay.AddMusic(L"",L"主持人互动");
-	m_wndMusicDisplay.AddMusic(L"",L"团队展示");
-	m_wndMusicDisplay.AddMusic(L"",L"团队下场");
+	m_wndMusicDisplay.Create(NULL,NULL,WS_VISIBLE|WS_CHILD|WS_CLIPCHILDREN|WS_CLIPSIBLINGS|WS_TABSTOP,CRect(10,10,200,500),this,0);
+
+// 	for(int i=0;i<10;i++)
+// 	{
+// 		CString strItemText;
+// 		strItemText.Format(L"项目测试%d",i);
+// 		m_wndMusicDisplay.AddMusic(L"",strItemText);
+// 	}
 	
+	
+	CRect rcClient;
+	GetClientRect(&rcClient);
+	RelayoutChild(rcClient.Width(),rcClient.Height());
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -181,19 +193,12 @@ void CDJMasterDlg::OnDropFiles(HDROP hDropInfo)
 	UINT unFileCount;            
 	WCHAR szFilePath[200];              
 	unFileCount = DragQueryFile(hDropInfo, 0xFFFFFFFF, NULL, 0);   //系统的API函数         
-	for( int i=0;i < unFileCount;i++)             
+	for( UINT i=0;i < unFileCount;i++)             
 	{  
 		int pathLen = DragQueryFileW(hDropInfo, i, szFilePath, _countof(szFilePath));  //API函数 
 
-		CAddMusicDlg addDlg;
-		addDlg.InitDisplay(szFilePath);
-		if ( IDOK == addDlg.DoModal() )
-		{
-			CString strMusicDesc;
-			strMusicDesc = addDlg.GetMusicDescription();
+		AddMusicFile(szFilePath);
 
-			m_wndMusicDisplay.AddMusic(szFilePath,strMusicDesc);
-		}
 	}
 	DragFinish(hDropInfo);   //API函数
 
@@ -219,8 +224,70 @@ void CDJMasterDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialog::OnSize(nType, cx, cy);
 
+	RelayoutChild(cx,cy);
+}
+
+void CDJMasterDlg::RelayoutChild(int cx, int cy)
+{
 	if ( ::IsWindow(m_wndMusicDisplay.m_hWnd))
 	{
-		m_wndMusicDisplay.MoveWindow(10,10,200,cy-20);
+		m_wndMusicDisplay.MoveWindow(10,10,300,cy-20);
 	}
+
+	if ( ::IsWindow(m_wndVolumeCtrl.m_hWnd))
+	{
+		m_wndVolumeCtrl.MoveWindow(cx-45,0,45,200);
+	}
+}
+
+void CDJMasterDlg::OnTRBNThumbPosChangingSlider1(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	// 此功能要求 Windows Vista 或更高版本。
+	// _WIN32_WINNT 符号必须 >= 0x0600。
+	NMTRBTHUMBPOSCHANGING *pNMTPC = reinterpret_cast<NMTRBTHUMBPOSCHANGING *>(pNMHDR);
+	
+	CString strDebug;
+	strDebug.Format(L"滑块位置：%d\r\n",pNMTPC->dwPos);
+
+	OutputDebugStringW(strDebug);
+
+	*pResult = 0;
+}
+
+BOOL WINAPI FileFindCallBack( LPCWSTR pszFileFullPath , PVOID pParam)
+{
+	CDJMasterDlg *pThis = (CDJMasterDlg*)pParam;
+	if (pThis)
+	{
+		pThis->AddMusicFile(pszFileFullPath);
+	}
+
+	return TRUE;
+}
+
+BOOL WINAPI DirectFindCallBack( LPCWSTR pszDirFullPath , PVOID pParam )
+{
+	return TRUE;
+}
+
+BOOL CDJMasterDlg::AddMusicFile(LPCWSTR pszFilePath)
+{
+	if(GetFileAttributesW(pszFilePath)&FILE_ATTRIBUTE_DIRECTORY)
+	{
+		FindPath(pszFilePath,L"*.*",FileFindCallBack,this,DirectFindCallBack,this);
+	}
+	else
+	{
+		CAddMusicDlg addDlg;
+		addDlg.InitDisplay(pszFilePath);
+		if ( IDOK == addDlg.DoModal() )
+		{
+			CString strMusicDesc;
+			strMusicDesc = addDlg.GetMusicDescription();
+
+			m_wndMusicDisplay.AddMusic(pszFilePath,strMusicDesc);
+		}
+	}
+
+	return 0;
 }

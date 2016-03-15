@@ -198,6 +198,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\HelpFun.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\MusicButton.cpp"
 				>
 			</File>
@@ -241,6 +245,10 @@
 			</File>
 			<File
 				RelativePath=".\DJMasterDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\HelpFun.h"
 				>
 			</File>
 			<File

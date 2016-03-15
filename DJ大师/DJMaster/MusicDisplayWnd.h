@@ -12,7 +12,7 @@ private:
 	int   m_nBtnSelIndex;
 	int   m_nDragTaggetIndexPre;
 	int   m_nDragTaggetIndexNext;
-
+	int   m_nMouseClkY;
 public:
 	typedef struct tagBUTTON_INFO
 	{
@@ -27,6 +27,7 @@ public:
 protected:
 	LIST_MUSIC_BUTTON m_lstButtons;
 
+	int  m_nSelIndex;
 	HDC  m_hMemDC;
 	HBITMAP m_hMemBmp;
 
@@ -36,12 +37,11 @@ public:
 
 protected:
 	DECLARE_MESSAGE_MAP()
-
 public:
 	BOOL AddMusic( LPCWSTR pszFilePath,LPCWSTR pszMusicDesc );
 	VOID DelMusic( int nIndex);
 	VOID CalcBtnRect(int nIndex,CRect &rcBtn);
-	VOID MoveButton(int nIndex,int nTargetIndexPre,int nTargetIndexNext);
+	int MoveButton(int nIndex,int nTargetIndexPre,int nTargetIndexNext);
 	int  PointToIndex( int nX,int nY );
 	int  PointToIndex( LPPOINT pptCheck );
 	LIST_MUSIC_BUTTON_PTR IndexToIterator(int nIndex);
@@ -55,7 +55,10 @@ public:
 	VOID ReCreateMemDCIfNeed(int cx, int cy);
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	VOID LockEdit(bool bLock);
-	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+
+	afx_msg void OnSetFocus(CWnd* pOldWnd);
+	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 };
 
 

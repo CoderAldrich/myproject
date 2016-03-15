@@ -5,6 +5,7 @@
 #pragma once
 
 #include "MusicDisplayWnd.h"
+#include "afxcmn.h"
 
 // CDJMasterDlg ¶Ô»°¿ò
 class CDJMasterDlg : public CDialog
@@ -37,4 +38,8 @@ public:
 	afx_msg void OnDropFiles(HDROP hDropInfo);
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
+	CSliderCtrl m_wndVolumeCtrl;
+	void RelayoutChild(int cx, int cy);
+	afx_msg void OnTRBNThumbPosChangingSlider1(NMHDR *pNMHDR, LRESULT *pResult);
+	BOOL AddMusicFile(LPCWSTR pszFilePath);
 };
