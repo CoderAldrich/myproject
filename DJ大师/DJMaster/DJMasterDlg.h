@@ -7,6 +7,9 @@
 #include "MusicDisplayWnd.h"
 #include "afxcmn.h"
 
+#include "MCI.h"
+#include "VolumeCtrl.h"
+
 // CDJMasterDlg 对话框
 class CDJMasterDlg : public CDialog
 {
@@ -23,9 +26,12 @@ public:
 
 // 实现
 protected:
-	BOOL   m_bEnableEdit;
-	HICON m_hIcon;
+	BOOL             m_bEnableEdit;
+	HICON            m_hIcon;
 	CMusicDisplayWnd m_wndMusicDisplay;
+	CVolumeCtrl      m_wndVolumeCtrl;
+	CMCI             m_Mci;
+
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
@@ -38,8 +44,7 @@ public:
 	afx_msg void OnDropFiles(HDROP hDropInfo);
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
-	CSliderCtrl m_wndVolumeCtrl;
+	
 	void RelayoutChild(int cx, int cy);
-	afx_msg void OnTRBNThumbPosChangingSlider1(NMHDR *pNMHDR, LRESULT *pResult);
 	BOOL AddMusicFile(LPCWSTR pszFilePath);
 };

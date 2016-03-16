@@ -13,41 +13,6 @@
 #endif
 
 
-// 用于应用程序“关于”菜单项的 CAboutDlg 对话框
-
-class CAboutDlg : public CDialog
-{
-public:
-	CAboutDlg();
-
-// 对话框数据
-	enum { IDD = IDD_ABOUTBOX };
-
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
-
-// 实现
-protected:
-	DECLARE_MESSAGE_MAP()
-};
-
-CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
-{
-}
-
-void CAboutDlg::DoDataExchange(CDataExchange* pDX)
-{
-	CDialog::DoDataExchange(pDX);
-}
-
-BEGIN_MESSAGE_MAP(CAboutDlg, CDialog)
-END_MESSAGE_MAP()
-
-
-// CDJMasterDlg 对话框
-
-
-
 
 CDJMasterDlg::CDJMasterDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CDJMasterDlg::IDD, pParent)
@@ -59,7 +24,6 @@ CDJMasterDlg::CDJMasterDlg(CWnd* pParent /*=NULL*/)
 void CDJMasterDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_SLIDER1, m_wndVolumeCtrl);
 }
 
 BEGIN_MESSAGE_MAP(CDJMasterDlg, CDialog)
@@ -72,7 +36,6 @@ BEGIN_MESSAGE_MAP(CDJMasterDlg, CDialog)
 	ON_WM_DROPFILES()
 	ON_BN_CLICKED(IDC_BUTTON1, &CDJMasterDlg::OnBnClickedButton1)
 	ON_WM_SIZE()
-	ON_NOTIFY(TRBN_THUMBPOSCHANGING, IDC_SLIDER1, &CDJMasterDlg::OnTRBNThumbPosChangingSlider1)
 END_MESSAGE_MAP()
 
 
@@ -112,33 +75,27 @@ BOOL CDJMasterDlg::OnInitDialog()
 	SetMenu(pMainMenu);
 
 	m_wndMusicDisplay.Create(NULL,NULL,WS_VISIBLE|WS_CHILD|WS_CLIPCHILDREN|WS_CLIPSIBLINGS|WS_TABSTOP,CRect(10,10,200,500),this,0);
+	m_wndVolumeCtrl.Create(NULL,NULL,WS_VISIBLE|WS_CHILD|WS_CLIPCHILDREN|WS_CLIPSIBLINGS|WS_TABSTOP,CRect(10,10,200,500),this,0);
 
-// 	for(int i=0;i<10;i++)
-// 	{
-// 		CString strItemText;
-// 		strItemText.Format(L"项目测试%d",i);
-// 		m_wndMusicDisplay.AddMusic(L"",strItemText);
-// 	}
-	
 	
 	CRect rcClient;
 	GetClientRect(&rcClient);
 	RelayoutChild(rcClient.Width(),rcClient.Height());
+
+	m_Mci.Open(L"D:\\搜狗高速下载\\Right Here Waiting.mp3");
+	m_Mci.SetVolume(500);
+	m_Mci.Play();
+
+	
+// 	m_wndVolumeCtrl.SetRange(0,1000);
+// 	m_wndVolumeCtrl.SetPos(1000);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
 void CDJMasterDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
-	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
-	{
-		CAboutDlg dlgAbout;
-		dlgAbout.DoModal();
-	}
-	else
-	{
-		CDialog::OnSysCommand(nID, lParam);
-	}
+	CDialog::OnSysCommand(nID, lParam);
 }
 
 // 如果向对话框添加最小化按钮，则需要下面的代码
@@ -238,20 +195,6 @@ void CDJMasterDlg::RelayoutChild(int cx, int cy)
 	{
 		m_wndVolumeCtrl.MoveWindow(cx-45,0,45,200);
 	}
-}
-
-void CDJMasterDlg::OnTRBNThumbPosChangingSlider1(NMHDR *pNMHDR, LRESULT *pResult)
-{
-	// 此功能要求 Windows Vista 或更高版本。
-	// _WIN32_WINNT 符号必须 >= 0x0600。
-	NMTRBTHUMBPOSCHANGING *pNMTPC = reinterpret_cast<NMTRBTHUMBPOSCHANGING *>(pNMHDR);
-	
-	CString strDebug;
-	strDebug.Format(L"滑块位置：%d\r\n",pNMTPC->dwPos);
-
-	OutputDebugStringW(strDebug);
-
-	*pResult = 0;
 }
 
 BOOL WINAPI FileFindCallBack( LPCWSTR pszFileFullPath , PVOID pParam)

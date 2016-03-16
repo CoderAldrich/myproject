@@ -3,7 +3,6 @@
 // Used by DJMaster.rc
 //
 #define IDM_ABOUTBOX                    0x0010
-#define IDD_ABOUTBOX                    100
 #define IDS_ABOUTBOX                    101
 #define IDD_DJMASTER_DIALOG             102
 #define IDR_MAINFRAME                   128
@@ -14,7 +13,6 @@
 #define IDR_MAIN_MENU                   131
 #define IDC_EDIT1                       1001
 #define IDC_STATIC_FILENAME             1002
-#define IDC_SLIDER1                     1003
 #define IDC_BUTTON1                     1004
 #define ID_ROOT_32771                   32771
 #define ID_ROOT_32772                   32772
