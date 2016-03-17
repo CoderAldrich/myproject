@@ -17,8 +17,8 @@ public:
 	typedef struct tagBUTTON_INFO
 	{
 		int nIndex;
-		CString strFilePath;
 		CString strMusicDesc;
+		PVOID  pParam;
 	}BUTTON_INFO,PBUTTON_INFO;
 	typedef std::list<PBUTTON_INFO> LIST_MUSIC_BUTTON;
 	typedef LIST_MUSIC_BUTTON::iterator LIST_MUSIC_BUTTON_PTR;
@@ -31,6 +31,9 @@ protected:
 	HDC  m_hMemDC;
 	HBITMAP m_hMemBmp;
 
+	HWND        m_hWndNotify;
+	UINT        m_uMsgNotify;
+
 public:
 	CMusicDisplayWnd();
 	virtual ~CMusicDisplayWnd();
@@ -38,7 +41,8 @@ public:
 protected:
 	DECLARE_MESSAGE_MAP()
 public:
-	BOOL AddMusic( LPCWSTR pszFilePath,LPCWSTR pszMusicDesc );
+	VOID SetNotifyParam(HWND hWndNotify,UINT uMsgNotify);
+	BOOL AddMusic( LPVOID pParam , LPCWSTR pszMusicDesc );
 	VOID DelMusic( int nIndex);
 	VOID CalcBtnRect(int nIndex,CRect &rcBtn);
 	int MoveButton(int nIndex,int nTargetIndexPre,int nTargetIndexNext);

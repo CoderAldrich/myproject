@@ -25,12 +25,13 @@ BOOL CMCI::Open(CString strSongPath)
 	mciOP.lpstrElementName = strSongPath;
 	DWORD dwReturn = mciSendCommand(NULL, MCI_OPEN, MCI_OPEN_ELEMENT | MCI_WAIT | MCI_OPEN_SHAREABLE, (DWORD)(LPVOID)&mciOP);
 	if(dwReturn == 0)
-	{	
+	{
 		nDeviceID = mciOP.wDeviceID;
 		return TRUE;
 	}
 	else
 	{
+		DWORD dwErrorCode = GetLastError();
 		nDeviceID = -1;
 		return FALSE;
 	}

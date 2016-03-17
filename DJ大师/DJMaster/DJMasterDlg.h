@@ -10,6 +10,10 @@
 #include "MCI.h"
 #include "VolumeCtrl.h"
 
+typedef struct tagMUSIC_NOTE
+{
+	CString strFilePath;
+}MUSIC_NOTE,*PMUSIC_NOTE;
 // CDJMasterDlg ¶Ô»°¿ò
 class CDJMasterDlg : public CDialog
 {
@@ -44,7 +48,8 @@ public:
 	afx_msg void OnDropFiles(HDROP hDropInfo);
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
-	
+	LRESULT OnMusicChange(WPARAM wParam,LPARAM lParam);
+	LRESULT OnVolumeChange(WPARAM wParam,LPARAM lParam);
 	void RelayoutChild(int cx, int cy);
 	BOOL AddMusicFile(LPCWSTR pszFilePath);
 };

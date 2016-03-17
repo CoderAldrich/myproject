@@ -36,6 +36,8 @@ BEGIN_MESSAGE_MAP(CDJMasterDlg, CDialog)
 	ON_WM_DROPFILES()
 	ON_BN_CLICKED(IDC_BUTTON1, &CDJMasterDlg::OnBnClickedButton1)
 	ON_WM_SIZE()
+	ON_MESSAGE(WM_USER+2222,OnMusicChange)
+	ON_MESSAGE(WM_USER+3333,OnVolumeChange)
 END_MESSAGE_MAP()
 
 
@@ -76,17 +78,27 @@ BOOL CDJMasterDlg::OnInitDialog()
 
 	m_wndMusicDisplay.Create(NULL,NULL,WS_VISIBLE|WS_CHILD|WS_CLIPCHILDREN|WS_CLIPSIBLINGS|WS_TABSTOP,CRect(10,10,200,500),this,0);
 	m_wndVolumeCtrl.Create(NULL,NULL,WS_VISIBLE|WS_CHILD|WS_CLIPCHILDREN|WS_CLIPSIBLINGS|WS_TABSTOP,CRect(10,10,200,500),this,0);
-
+	
+	m_wndMusicDisplay.SetNotifyParam(m_hWnd,WM_USER+2222);
+	m_wndVolumeCtrl.SetNotifyParam(m_hWnd,WM_USER+3333);
 	
 	CRect rcClient;
 	GetClientRect(&rcClient);
 	RelayoutChild(rcClient.Width(),rcClient.Height());
-
-	m_Mci.Open(L"D:\\搜狗高速下载\\Right Here Waiting.mp3");
-	m_Mci.SetVolume(500);
-	m_Mci.Play();
-
 	
+	m_wndVolumeCtrl.InitStatus(100);
+
+//  	m_Mci.Open(L"D:\\搜狗高速下载\\Right Here Waiting.mp3");
+//  	m_Mci.SetVolume(1000);
+// 
+//  	m_Mci.Play();
+// 
+// 	Sleep(5000);
+// 
+// 	m_Mci.Close();
+// 	m_Mci.Open(L"D:\\搜狗高速下载\\410010151200128.mp3");
+// 	m_Mci.Play();
+// 	
 // 	m_wndVolumeCtrl.SetRange(0,1000);
 // 	m_wndVolumeCtrl.SetPos(1000);
 
@@ -183,7 +195,20 @@ void CDJMasterDlg::OnSize(UINT nType, int cx, int cy)
 
 	RelayoutChild(cx,cy);
 }
-
+LRESULT CDJMasterDlg::OnMusicChange(WPARAM wParam,LPARAM lParam)
+{
+	PMUSIC_NOTE pNode = (PMUSIC_NOTE)wParam;
+	m_Mci.Pause();
+	m_Mci.Close();
+	m_Mci.Open(pNode->strFilePath);
+	m_Mci.Play();
+	return 0;
+}
+LRESULT CDJMasterDlg::OnVolumeChange(WPARAM wParam,LPARAM lParam)
+{
+	m_Mci.SetVolume(wParam);
+	return 0;
+}
 void CDJMasterDlg::RelayoutChild(int cx, int cy)
 {
 	if ( ::IsWindow(m_wndMusicDisplay.m_hWnd))
@@ -193,7 +218,7 @@ void CDJMasterDlg::RelayoutChild(int cx, int cy)
 
 	if ( ::IsWindow(m_wndVolumeCtrl.m_hWnd))
 	{
-		m_wndVolumeCtrl.MoveWindow(cx-45,0,45,200);
+		m_wndVolumeCtrl.MoveWindow(cx-60,0,60,200);
 	}
 }
 
@@ -228,7 +253,9 @@ BOOL CDJMasterDlg::AddMusicFile(LPCWSTR pszFilePath)
 			CString strMusicDesc;
 			strMusicDesc = addDlg.GetMusicDescription();
 
-			m_wndMusicDisplay.AddMusic(pszFilePath,strMusicDesc);
+			PMUSIC_NOTE pNode = new MUSIC_NOTE;
+			pNode->strFilePath = pszFilePath;
+			m_wndMusicDisplay.AddMusic(pNode,strMusicDesc);
 		}
 	}
 

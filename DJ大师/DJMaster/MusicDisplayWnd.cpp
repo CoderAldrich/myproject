@@ -24,6 +24,9 @@ CMusicDisplayWnd::CMusicDisplayWnd()
 
 	m_hMemDC = NULL;
 	m_hMemBmp = NULL;
+
+	m_hWndNotify = NULL;
+	m_uMsgNotify = 0;
 }
 
 CMusicDisplayWnd::~CMusicDisplayWnd()
@@ -46,7 +49,13 @@ BEGIN_MESSAGE_MAP(CMusicDisplayWnd, CWnd)
 	ON_WM_KEYDOWN()
 END_MESSAGE_MAP()
 
-BOOL CMusicDisplayWnd::AddMusic( LPCWSTR pszFilePath,LPCWSTR pszMusicDesc )
+VOID CMusicDisplayWnd::SetNotifyParam(HWND hWndNotify,UINT uMsgNotify)
+{
+	m_hWndNotify = hWndNotify;
+	m_uMsgNotify = uMsgNotify;
+}
+
+BOOL CMusicDisplayWnd::AddMusic( LPVOID pParam ,LPCWSTR pszMusicDesc )
 {
 	if ( m_bLockEdit )
 	{
@@ -59,8 +68,8 @@ BOOL CMusicDisplayWnd::AddMusic( LPCWSTR pszFilePath,LPCWSTR pszMusicDesc )
 
 	BUTTON_INFO Info;
 	Info.nIndex = m_lstButtons.size();
-	Info.strFilePath = pszFilePath;
 	Info.strMusicDesc = pszMusicDesc;
+	Info.pParam = pParam;
 
 	m_lstButtons.push_back(Info);
 
@@ -312,7 +321,13 @@ void CMusicDisplayWnd::OnLButtonUp(UINT nFlags, CPoint point)
 			if ( nIndexClick != -1 && nIndexClick == m_nBtnSelIndex )
 			{
 				LIST_MUSIC_BUTTON_PTR it = IndexToIterator(nIndexClick);
-				//AfxMessageBox(it->strFilePath + L"  " + it->strMusicDesc);
+
+				if(m_hWndNotify)
+				{
+					::PostMessage(m_hWndNotify,m_uMsgNotify,(WPARAM)(it->pParam),0);
+				}
+
+				//AfxMessageBox(it->strMusicDesc);
 			}
 
 		}
