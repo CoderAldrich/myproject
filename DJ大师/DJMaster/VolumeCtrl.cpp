@@ -46,7 +46,10 @@ VOID CVolumeCtrl::InitStatus(UINT uInitVolume)
 	UpdateStaticShow();
 	UpdateSpliderShow();
 }
-
+UINT CVolumeCtrl::GetVolumeValue()
+{
+	return m_uCurVolume;
+}
 VOID CVolumeCtrl::UpdateStaticShow()
 {
 	CString strStaticText;

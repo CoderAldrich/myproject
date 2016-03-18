@@ -201,7 +201,10 @@ LRESULT CDJMasterDlg::OnMusicChange(WPARAM wParam,LPARAM lParam)
 	m_Mci.Pause();
 	m_Mci.Close();
 	m_Mci.Open(pNode->strFilePath);
+	m_Mci.SetVolume(0);
 	m_Mci.Play();
+	Sleep(100);
+	m_Mci.SetVolume(m_wndVolumeCtrl.GetVolumeValue());
 	return 0;
 }
 LRESULT CDJMasterDlg::OnVolumeChange(WPARAM wParam,LPARAM lParam)
@@ -218,7 +221,7 @@ void CDJMasterDlg::RelayoutChild(int cx, int cy)
 
 	if ( ::IsWindow(m_wndVolumeCtrl.m_hWnd))
 	{
-		m_wndVolumeCtrl.MoveWindow(cx-60,0,60,200);
+		m_wndVolumeCtrl.MoveWindow(310,10,40,cy-20);
 	}
 }
 

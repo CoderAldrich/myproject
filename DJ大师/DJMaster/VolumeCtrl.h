@@ -25,6 +25,7 @@ protected:
 public:
 	VOID SetNotifyParam(HWND hWndNotify,UINT uMsgNotify);
 	VOID InitStatus(UINT uInitVolume);
+	UINT GetVolumeValue();
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnPaint();
 	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
