@@ -18,8 +18,7 @@
 
 //#include "MainFrm.h"
 #include "IECoreView.h"
-
-//#include "downloadmgr.h"
+#include "downloadmgr.h"
 
 
 class IIEOleControlSite: public COleControlSite
@@ -184,6 +183,19 @@ BEGIN_INTERFACE_PART(OleCommandTarget, IOleCommandTarget)
 		STDMETHOD(QueryStatus)(const GUID *pguidCmdGroup, ULONG cCmds, OLECMD prgCmds[], OLECMDTEXT *pCmdText);  
 		STDMETHOD(Exec)(const GUID* pguidCmdGroup, DWORD nCmdID, DWORD nCmdexecopt, VARIANTARG* pvaIn, VARIANTARG* pvaOut);  
 END_INTERFACE_PART(OleCommandTarget) 
+
+BEGIN_INTERFACE_PART(DownloadManager,IDownloadManager)
+	STDMETHOD(Download)( 
+	/* [in] */ IMoniker __RPC_FAR *pmk,
+	/* [in] */ IBindCtx __RPC_FAR *pbc,
+	/* [in] */ DWORD dwBindVerb,
+	/* [in] */ LONG grfBINDF,
+	/* [in] */ BINDINFO __RPC_FAR *pBindInfo,
+	/* [in] */ LPCOLESTR pszHeaders,
+	/* [in] */ LPCOLESTR pszRedir,
+	/* [in] */ UINT uiCP);
+END_INTERFACE_PART(DownloadManager)
+
 
 };
 

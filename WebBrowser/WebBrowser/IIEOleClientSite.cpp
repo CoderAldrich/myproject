@@ -40,6 +40,7 @@ BEGIN_INTERFACE_MAP(IIEOleControlSite, COleControlSite)
 	INTERFACE_PART(IIEOleControlSite, IID_IDocHostUIHandler, DocHostUIHandler)
 	INTERFACE_PART(IIEOleControlSite, IID_IDocHostUIHandler2, DocHostUIHandler2)
 	INTERFACE_PART(IIEOleControlSite, IID_IServiceProvider, ServiceProvider)
+	INTERFACE_PART(IIEOleControlSite, IID_IDownloadManager, DownloadManager)
 END_INTERFACE_MAP()
 
 ULONG FAR EXPORT  IIEOleControlSite::XDocHostUIHandler::AddRef()
@@ -577,7 +578,12 @@ STDMETHODIMP IIEOleControlSite::XServiceProvider::QueryService(REFGUID guidServi
 												REFIID riid,
 												void** ppvObject)
 {
-	if (riid == IID_IHTMLOMWindowServices || riid == IID_INewWindowManager|| riid==IID_IInternetSecurityManager)
+	if (riid == IID_IDownloadManager)
+	{
+		int a=0;
+	}
+
+	if (riid == IID_IHTMLOMWindowServices || riid == IID_INewWindowManager|| riid==IID_IInternetSecurityManager || riid == IID_IDownloadManager )
 	{
 		METHOD_PROLOGUE(IIEOleControlSite, ServiceProvider);
 		HRESULT hr = (HRESULT)pThis->ExternalQueryInterface(&riid, ppvObject);
@@ -655,7 +661,6 @@ STDMETHODIMP IIEOleControlSite::XOleCommandTarget::QueryStatus(
 
 
 HRESULT IIEOleControlSite::XOleCommandTarget::Exec(const GUID* pguidCmdGroup, DWORD nCmdID, DWORD nCmdexecopt, VARIANTARG* pvaIn, VARIANTARG* pvaOut )  
-
 {  
 	HRESULT hr = S_OK;
 
@@ -771,3 +776,47 @@ HRESULT IIEOleControlSite::XOleCommandTarget::Exec(const GUID* pguidCmdGroup, DW
 	return (hr);
 
 }  
+
+
+ULONG FAR EXPORT  IIEOleControlSite::XDownloadManager::AddRef()
+{
+	METHOD_PROLOGUE(IIEOleControlSite, DownloadManager)
+		return pThis->ExternalAddRef();
+}
+
+
+ULONG FAR EXPORT  IIEOleControlSite::XDownloadManager::Release()
+{                            
+	METHOD_PROLOGUE(IIEOleControlSite, DownloadManager)
+		return pThis->ExternalRelease();
+}
+
+HRESULT FAR EXPORT  IIEOleControlSite::XDownloadManager::QueryInterface(REFIID riid, void **ppvObj)
+{
+	METHOD_PROLOGUE(IIEOleControlSite, DownloadManager)
+		HRESULT hr = (HRESULT)pThis->ExternalQueryInterface(&riid, ppvObj);
+	return hr;
+}
+
+
+HRESULT FAR EXPORT IIEOleControlSite::XDownloadManager::Download(
+	/* [in] */ IMoniker __RPC_FAR *pmk,
+	/* [in] */ IBindCtx __RPC_FAR *pbc,
+	/* [in] */ DWORD dwBindVerb,
+	/* [in] */ LONG grfBINDF,
+	/* [in] */ BINDINFO __RPC_FAR *pBindInfo,
+	/* [in] */ LPCOLESTR pszHeaders,
+	/* [in] */ LPCOLESTR pszRedir,
+	/* [in] */ UINT uiCP)
+{
+
+	CString strFileUrl;
+
+	BSTR bsFileUrl;
+	pmk->GetDisplayName( pbc , NULL , &bsFileUrl) ;
+	strFileUrl=bsFileUrl;
+	CoTaskMemFree(bsFileUrl);
+	//fixit: free bsFileUrl
+
+	return S_FALSE;
+}
