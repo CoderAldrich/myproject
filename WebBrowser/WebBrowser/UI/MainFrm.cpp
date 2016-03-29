@@ -174,7 +174,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		m_IEMenuBar.ShowWindow(SW_HIDE);
 	}
 	//”¿æ√»•≥˝MenuBar
-	m_IEMenuBar.ShowWindow(SW_HIDE);
+	//m_IEMenuBar.ShowWindow(SW_HIDE);
 
 	return 0;
 }

@@ -75,6 +75,33 @@ HINTERNET WINAPI MyInternetOpenW(
 	return TReturn;
 };
 
+DWORD (WINAPI *pGetModuleFileNameW)(
+									__in HMODULE hModule,
+									__out LPWSTR lpFilename,
+									__in DWORD nSize 
+									) = GetModuleFileNameW;
+DWORD WINAPI MyGetModuleFileNameW(
+								  __in HMODULE hModule,
+								  __out LPWSTR lpFilename,
+								  __in DWORD nSize 
+								  )
+{
+
+	if ( NULL == hModule )
+	{
+		wcscpy_s(lpFilename,nSize,L"C:\\Program Files (x86)\\Internet Explorer\\iexplore.exe");
+
+		return wcslen(L"C:\\Program Files (x86)\\Internet Explorer\\iexplore.exe");
+	}
+	DWORD TReturn = pGetModuleFileNameW(
+		hModule,
+		lpFilename,
+		nSize
+		);
+	return TReturn;
+};
+
+
 // CWebBrowserApp ππ‘Ï
 CWebBrowserApp::CWebBrowserApp()
 {
@@ -97,10 +124,10 @@ BOOL CWebBrowserApp::InitInstance()
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach((PVOID *)&pInternetErrorDlg,(PVOID)MyInternetErrorDlg);
-	//DetourAttach((PVOID *)&pInternetOpenW,(PVOID)MyInternetOpenW);
+	DetourAttach((PVOID *)&pGetModuleFileNameW,(PVOID)MyGetModuleFileNameW);
 	DetourTransactionCommit();
 
-	 StartHookCookie();
+	//StartHookCookie();
 	::LoadLibrary(L"DebugPrivate.dll");
 
 	BrowserFix();

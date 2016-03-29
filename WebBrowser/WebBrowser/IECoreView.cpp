@@ -89,7 +89,7 @@ CIECoreView::CIECoreView()
 	m_dwCookie = 0;
 	m_hIEServer = NULL;
 	m_nCurZoom = 100;
-	
+	m_bDevToolLoad = FALSE;
 }
 
 CIECoreView::CIECoreView(IWBCoreNotifyer *pNotifyer)
@@ -101,6 +101,7 @@ CIECoreView::CIECoreView(IWBCoreNotifyer *pNotifyer)
 	bInit = FALSE;
 	m_bFixed = FALSE;
 	m_nCurZoom = 100;
+	m_bDevToolLoad = FALSE;
 }
 
 CIECoreView::~CIECoreView()
@@ -787,6 +788,41 @@ IWebBrowser2 * CIECoreView::GetGlobalWebBrowser2(void)
  
  	return pWb2;
 }
+
+BOOL CIECoreView::LoadDeveloporTools()
+{
+	if ( m_bDevToolLoad == FALSE)
+	{
+		CLSID clsid;
+
+		CLSIDFromString(L"{1a6fe369-f28c-4ad9-a3e6-2bcb50807cf1}",&clsid);
+
+		CComPtr<IUnknown> unknow;
+
+		HRESULT hRet=CoCreateInstance(clsid, NULL, CLSCTX_INPROC_SERVER, IID_IUnknown, (void**)&unknow);
+
+		if(SUCCEEDED(hRet))
+		{
+			CComPtr<IObjectWithSite> lpdll;
+			hRet=unknow->QueryInterface(IID_IObjectWithSite,(void**)&lpdll);
+			if(SUCCEEDED(hRet))
+			{
+				hRet=lpdll->SetSite(GetApplication());
+			}
+
+			CComPtr<IDockingWindow> pDockWin;
+			hRet = unknow->QueryInterface(IID_IDockingWindow,(void**)&pDockWin);
+
+			hRet = pDockWin->ShowDW(TRUE);
+
+			m_bDevToolLoad = TRUE;
+		}
+
+	}
+
+	return FALSE;
+}
+
 void CIECoreView::OnPaint()
 {
 	CPaintDC dc(this); // device context for painting
@@ -894,6 +930,15 @@ HRESULT CIECoreView::OnGetDropTarget(LPDROPTARGET pDropTarget,
 
 BOOL CIECoreView::PreTranslateMessage(MSG* pMsg)
 {
+
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		if (pMsg->wParam == VK_F12)
+		{
+			LoadDeveloporTools();
+		}
+	}
+
     return CHtmlView::PreTranslateMessage(pMsg);
 }
 

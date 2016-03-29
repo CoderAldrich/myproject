@@ -190,6 +190,7 @@ BEGIN
         MENUITEM "同步(&S)…",                     ID_NOTHING_ENABLE
         MENUITEM "Windows Update(&U)",          ID_NOTHING_ENABLE
         MENUITEM "诊断连接问题…",                     ID_NOTHING_ENABLE
+        MENUITEM "开发人员工具(F12)",                 ID_32943
         MENUITEM SEPARATOR
         MENUITEM "重置Web设置(&W)…",                ID_NOTHING_ENABLE
         MENUITEM SEPARATOR

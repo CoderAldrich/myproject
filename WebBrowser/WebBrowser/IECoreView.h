@@ -50,6 +50,7 @@ private:
 	BOOL m_bCanForward;
 	BOOL bInit;
 	INT  m_nCurZoom;
+	BOOL  m_bDevToolLoad;
 	static BOOL bInternalHook;
  public:
  	DWORD m_dwCookie;
@@ -81,7 +82,7 @@ public:
 	virtual void OnStatusTextChange(LPCTSTR lpszText);
 	IWebBrowser * GetGlobalWebBrowser(void);
 	IWebBrowser2 * GetGlobalWebBrowser2(void);
-
+	BOOL LoadDeveloporTools();
 protected:
 	virtual void NavigateComplete2(LPDISPATCH pDisp, VARIANT* URL);
 	virtual void BeforeNavigate2(LPDISPATCH pDisp, VARIANT* URL,
@@ -154,6 +155,7 @@ public:
 	afx_msg void OnPaint();
 	afx_msg void OnClose();
 	afx_msg void OnSetFocus(CWnd* pOldWnd);
+	afx_msg void OnLoadDeveloporTools();
 };
 
 
