@@ -40,5 +40,8 @@ public:
 	//网页主动要求关闭
 	virtual unsigned long NotifyCloseThis(PAGEID nPageID)=0;
 
+	//发现 网站 Icon
+	virtual unsigned long NotifyFountIcon(PAGEID nPageID,LPCTSTR pszIconUrl) = 0;
+
 
 };

@@ -129,5 +129,6 @@ public:
 	unsigned long NotifyStatusTextChange(PAGEID nPageID,LPCTSTR pszNewStatusText);
 	unsigned long NotifySetCurrentPage(PAGEID nPageID);
 	unsigned long NotifyCloseThis(PAGEID nPageID);
+	unsigned long NotifyFountIcon(PAGEID nPageID,LPCTSTR pszIconUrl);
 };
 

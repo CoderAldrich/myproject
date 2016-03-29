@@ -407,6 +407,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\LoadFileTimeout.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\NoParentFrameWnd.cpp"
 				>
 			</File>
@@ -538,6 +542,10 @@
 			</File>
 			<File
 				RelativePath=".\IWBCoreNotifyer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\LoadFileTimeout.h"
 				>
 			</File>
 			<File

@@ -24,10 +24,11 @@ bool DownloadFile(CString strFileUrl,CString strSavePath,bool bReplace)
 CString UrlToFaviconUrl(CString strUrl)
 {
 	const CString strHttpHead=TEXT("http://");
+	const CString strHttpsHead=TEXT("https://");
 	CString strFaviconUrl;
-	if (strUrl.Find(strHttpHead) == 0)
+	if (strUrl.Find(strHttpHead) == 0 || strUrl.Find(strHttpsHead) == 0)
 	{
-		int nIndex = strUrl.Find(TEXT("/"),strHttpHead.GetLength());
+		int nIndex = strUrl.Find(TEXT("/"),8);
 		if ( nIndex < 0 )
 		{
 			strFaviconUrl = strUrl+TEXT("/favicon.ico");

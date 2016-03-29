@@ -588,3 +588,8 @@ unsigned long INotifyerInstance::NotifyCloseThis(PAGEID nPageID)
 	NotifyPageClose(nPageID);
 	return 0;
 }
+
+unsigned long INotifyerInstance::NotifyFountIcon(PAGEID nPageID,LPCTSTR pszIconUrl)
+{
+	return 0;
+}

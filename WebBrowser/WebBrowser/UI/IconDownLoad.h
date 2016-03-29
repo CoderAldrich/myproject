@@ -1,5 +1,6 @@
 #pragma once
 #include <Shlwapi.h>
+#include "..\LoadFileTimeout.h"
 class CIconDownLoad
 {
 typedef struct ParamStruct
@@ -25,11 +26,6 @@ public:
 			return (DWORD)0;
 		}
 
-		if (param->IconUrl.Find(TEXT("https://"))>=0)//若为HTTP安全协议，则不下载ICON，防止阻塞
-		{
-			return 0;
-		}
-
 		CString IconUrl;
 		CString cstrFilePath;
 
@@ -38,10 +34,10 @@ public:
 
 		if( !PathFileExists(cstrFilePath) )//判断文件是否存在
 		{
-			URLDownloadToFileW(NULL,IconUrl,cstrFilePath,0,NULL);
+			DownloadFileTimeout(IconUrl,cstrFilePath,20000);
 		}
 
-		if (param->hWndNotify!=NULL && IsWindow(param->hWndNotify))
+		if ( param->hWndNotify!=NULL && IsWindow(param->hWndNotify))
 		{
 			::PostMessage(param->hWndNotify,param->nMsg,param->wParam,param->lParam);
 		}
