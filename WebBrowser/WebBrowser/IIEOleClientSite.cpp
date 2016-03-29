@@ -43,7 +43,7 @@ BEGIN_INTERFACE_MAP(IIEOleControlSite, COleControlSite)
 	INTERFACE_PART(IIEOleControlSite, IID_IDownloadManager, DownloadManager)
 END_INTERFACE_MAP()
 
-ULONG FAR EXPORT  IIEOleControlSite::XDocHostUIHandler::AddRef()
+ULONG FAR EXPORT  IIEOleControlSite::XDocHostUIHandler::AddRef() 
 {
 	METHOD_PROLOGUE(IIEOleControlSite, DocHostUIHandler)
 		return pThis->ExternalAddRef();
