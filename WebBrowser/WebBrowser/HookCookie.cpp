@@ -4,8 +4,11 @@
 #include "UrlParser.h"
 
 #include <detours.h>
+#ifdef WIN64
+#pragma comment(lib,"detours64.lib")
+#else
 #pragma comment(lib,"detours.lib")
-
+#endif
 
 typedef CRecordBaseT<HINTERNET,INTERNET_STATUS_CALLBACK> CInternetCallbackRecord;
 typedef CRecordBaseT<HINTERNET,CStringA>                 CInternetUrlRecord,CInternetHostRecord;

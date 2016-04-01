@@ -1019,6 +1019,18 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="开发者工具"
+			>
+			<File
+				RelativePath=".\DevToolsHost.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DevToolsHost.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>
