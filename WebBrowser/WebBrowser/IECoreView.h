@@ -106,7 +106,6 @@ private:
 	BOOL m_bCanForward;
 	BOOL bInit;
 	INT  m_nCurZoom;
-	BOOL  m_bDevToolLoad;
 	CDevToolsHost *m_pDevTools;
 	static BOOL bInternalHook;
  public:

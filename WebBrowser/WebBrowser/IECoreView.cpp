@@ -89,7 +89,6 @@ CIECoreView::CIECoreView()
 	m_dwCookie = 0;
 	m_hIEServer = NULL;
 	m_nCurZoom = 100;
-	m_bDevToolLoad = FALSE;
 	m_pDevTools = NULL;
 }
 
@@ -102,7 +101,6 @@ CIECoreView::CIECoreView(IWBCoreNotifyer *pNotifyer)
 	bInit = FALSE;
 	m_bFixed = FALSE;
 	m_nCurZoom = 100;
-	m_bDevToolLoad = FALSE;
 	m_pDevTools = NULL;
 }
 
@@ -801,53 +799,10 @@ static const IID IID_IEDevTools = {
 
 BOOL CIECoreView::LoadDeveloporTools()
 {
-	if ( m_bDevToolLoad == FALSE)
+	if ( NULL == m_pDevTools )
 	{
-// 		CLSID clsid;
-// 
-// 		CLSIDFromString(L"{1a6fe369-f28c-4ad9-a3e6-2bcb50807cf1}",&clsid);
-// 
-// 		CComPtr<IUnknown> unknow;
-// 
-// 		HRESULT hRet=CoCreateInstance(clsid, NULL, CLSCTX_INPROC_SERVER, IID_IUnknown, (void**)&unknow);
-// 
-// 		if(SUCCEEDED(hRet))
-// 		{
-// 			CComPtr<IObjectWithSite> lpdll;
-// 			hRet=unknow->QueryInterface(IID_IObjectWithSite,(void**)&lpdll);
-// 			if(SUCCEEDED(hRet))
-// 			{
-// 				hRet=lpdll->SetSite(GetApplication());
-// 			}
-// 
-// 			CComPtr<IDockingWindow> pDockWin;
-// 			hRet = unknow->QueryInterface(IID_IDockingWindow,(void**)&pDockWin);
-// 
-// 			hRet = pDockWin->ShowDW(TRUE);
-
-// 		CoCreateInstance(CLSID_IEDTExplorerBar, NULL, CLSCTX_INPROC_SERVER,
-// 			IID_IEDevTools, reinterpret_cast<PVOID *>(&m_dt));
-// 
-// 		HRESULT hr = m_dt->SetDevToolSite(this);
-// 		if (FAILED(hr))
-// 			return hr;
-// 
-// 		m_dt->SetPinState(FALSE);
-// 		hr = m_dt->ShowDevTools(TRUE);
-// 		if (SUCCEEDED(hr))
-// 			hr = m_dt->DevToolsReady();
-// 
-// 		CComQIPtr<IOleWindow> ow(m_dt);
-// 		HWND hDevTools = NULL;
-// 		ATLVERIFY(SUCCEEDED(ow->GetWindow(&hDevTools)));
-// 		SetForegroundWindow(hDevTools);
-
-		
-			m_pDevTools = new CDevToolsHost(m_hIEServer);
-			m_pDevTools->Show();
-			m_bDevToolLoad = TRUE;
-		//}
-
+		m_pDevTools = new CDevToolsHost(m_hIEServer);
+		m_pDevTools->Show();
 	}
 
 	return FALSE;
