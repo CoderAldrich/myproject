@@ -66,13 +66,15 @@ BOOL InjectDomNode(IWebBrowser *pWb,CString strJSUrl)
 
 typedef VOID (WINAPI *TypeCWInit)(BOOL bPhoneMode , LPCWSTR pszUserAgent);
 typedef IWBCoreControler * (WINAPI *TypeCWCreateView)( );
-typedef BOOL (WINAPI *TypeInitShieldMedia)();
-typedef BOOL (WINAPI *TypeSetShieldMedia)(BOOL bSwitchOn);
+typedef BOOL (WINAPI *TypeInitShieldResource)();
+typedef BOOL (WINAPI *TypeUpdateShildType)( LPCWSTR *pszArrayTypes,int nTypesCount );
+typedef BOOL (WINAPI *TypeSetShieldResource)(BOOL bSwitchOn);
 
 TypeCWInit pCWInit = NULL;
 TypeCWCreateView pCWCreateView = NULL;
-TypeInitShieldMedia pInitShieldMedia = NULL;
-TypeSetShieldMedia pSetShieldMedia = NULL;
+TypeInitShieldResource pInitShieldMedia = NULL;
+TypeUpdateShildType pUpdateShieldResource = NULL;
+TypeSetShieldResource pSetShieldMedia = NULL;
 
 VOID ShuaPhoneMatrix()
 {
@@ -109,6 +111,7 @@ VOID ShuaPhoneMatrix()
 			{
 				int a=0;
 			}
+
 			OutputDebugStringW(L"µ±«∞“≥√ÊUrl£∫"+strPageUrl+L"\r\n");
 
 			AutoBrowser.ClickWebPagePoint(50,680);
@@ -168,11 +171,16 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	{
 		pCWInit = (TypeCWInit)GetProcAddress(hModule,"CWInit");
 		pCWCreateView = (TypeCWCreateView)GetProcAddress(hModule,"CWCreateView");
-		pInitShieldMedia = (TypeInitShieldMedia)GetProcAddress(hModule,"InitShieldMedia");
-		pSetShieldMedia = (TypeSetShieldMedia)GetProcAddress(hModule,"SetShieldMedia");
-
-		ShuaPhoneMatrix();
-		//ShuaYouku();
+		pInitShieldMedia = (TypeInitShieldResource)GetProcAddress(hModule,"InitShieldResource");
+		pUpdateShieldResource = (TypeUpdateShildType)GetProcAddress(hModule,"UpdateShieldType");
+		pSetShieldMedia = (TypeSetShieldResource)GetProcAddress(hModule,"SetShieldResource");
+		
+		pInitShieldMedia();
+		pSetShieldMedia(TRUE);
+		LPCWSTR szArrayShieldType[]={L"image",L"application"};
+		pUpdateShieldResource(szArrayShieldType,_countof(szArrayShieldType));
+		//ShuaPhoneMatrix();
+		ShuaYouku();
 	}
 // 	while (1)
 // 	{

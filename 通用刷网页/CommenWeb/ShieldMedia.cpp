@@ -1,11 +1,21 @@
 #include "stdafx.h"
 
 #include "HttpRecvParser.h"
-
+#include "RWLock.h"
 #include "detours.h"
 #pragma comment(lib,"detours.lib")
 
-BOOL g_bShieldMedia = FALSE;
+static BOOL g_bShieldResource = FALSE;
+
+#include <list>
+using namespace std;
+
+typedef list<CString> LIST_SHIELD_TYPE;
+typedef LIST_SHIELD_TYPE::iterator LIST_SHIELD_TYPE_PTR;
+
+CRWLock rwLocker;
+LIST_SHIELD_TYPE  lstShieldTypes;
+
 
 BOOL HandleRecvData(SOCKET s,char *pRecvData,const int nRecvLen,const int nRecvBufLen,int &nNewRecvLen)
 {
@@ -27,19 +37,34 @@ BOOL HandleRecvData(SOCKET s,char *pRecvData,const int nRecvLen,const int nRecvB
 	{
 		CStringA strContentType;
 		strContentType = parser.GetValueByName("Content-Type");
-		if (
-			strContentType.Find("image") >= 0 
-			|| strContentType.Find("application") >= 0 
-			|| strContentType.Find("text/css") >= 0 
-			)
+		if ( strContentType.GetLength() > 0 )
 		{
-			char chRecvData[500];
-			sprintf_s(chRecvData,500,"HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",strContentType);
+			strContentType.MakeLower();
 
-			nNewRecvLen = min(strlen(chRecvData),nRecvBufLen);
-			memcpy_s(pRecvData,nNewRecvLen,chRecvData,nNewRecvLen);
-			bReplaceData = TRUE;
+			BOOL bShield = FALSE;
+
+			rwLocker.rlock();
+			for (LIST_SHIELD_TYPE_PTR it=lstShieldTypes.begin();it!=lstShieldTypes.end();it++)
+			{
+				if (strContentType.Find(CStringA(*it)) >= 0)
+				{
+					bShield = TRUE;
+					break;
+				}
+			}
+			rwLocker.unlock();
+
+			if ( bShield )
+			{
+				char chRecvData[500];
+				sprintf_s(chRecvData,500,"HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",strContentType);
+
+				nNewRecvLen = min(strlen(chRecvData),nRecvBufLen);
+				memcpy_s(pRecvData,nNewRecvLen,chRecvData,nNewRecvLen);
+				bReplaceData = TRUE;
+			}
 		}
+
 	}
 
 	delete pRecvBuf;
@@ -66,7 +91,7 @@ int WSAAPI MyWSARecv(
 					 LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine 
 					 )
 {
-	if(g_bShieldMedia)
+	if(g_bShieldResource)
 	{
 		int TReturn = pWSARecv(
 			s,
@@ -105,40 +130,6 @@ int WSAAPI MyWSARecv(
 	}
 };
 
-
-int (WSAAPI *pWSASend)(
-					   IN SOCKET s,
-					   __in_ecount(dwBufferCount) LPWSABUF lpBuffers,
-					   IN DWORD dwBufferCount,
-					   __out_opt LPDWORD lpNumberOfBytesSent,
-					   IN DWORD dwFlags,
-					   __in_opt LPWSAOVERLAPPED lpOverlapped,
-					   __in_opt LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine 
-					   ) = WSASend;
-int WSAAPI MyWSASend(
-					 IN SOCKET s,
-					 __in_ecount(dwBufferCount) LPWSABUF lpBuffers,
-					 IN DWORD dwBufferCount,
-					 __out_opt LPDWORD lpNumberOfBytesSent,
-					 IN DWORD dwFlags,
-					 __in_opt LPWSAOVERLAPPED lpOverlapped,
-					 __in_opt LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine 
-					 )
-{
-	int TReturn = pWSASend(
-		s,
-		lpBuffers,
-		dwBufferCount,
-		lpNumberOfBytesSent,
-		dwFlags,
-		lpOverlapped,
-		lpCompletionRoutine
-		);
-	return TReturn;
-};
-
-
-
 int (PASCAL *precv)(
 					IN SOCKET s,
 					char FAR * buf,
@@ -154,7 +145,7 @@ int PASCAL Myrecv(
 {
 	int TReturn = 0;
 	TReturn = precv( s, buf, len, flags );
-	if(g_bShieldMedia)
+	if(g_bShieldResource)
 	{
 		int nNewRecvLen = 0;
 		BOOL bReplaceData = HandleRecvData(s,buf,TReturn,len,nNewRecvLen);
@@ -168,40 +159,7 @@ int PASCAL Myrecv(
 };
 
 
-
-int (WINAPI *psend)(
-					IN SOCKET s,
-					IN const char FAR * buf,
-					IN int len,
-					IN int flags
-					) = send;
-int WINAPI Mysend(
-				  IN SOCKET s,
-				  IN const char FAR * buf,
-				  IN int len,
-				  IN int flags
-				  )
-{
-	int TReturn = psend(
-		s,
-		buf,
-		len,
-		flags
-		);
-	return TReturn;
-};
-
-
-int (WSAAPI *pclosesocket)( IN SOCKET s ) = closesocket;
-int WSAAPI Myclosesocket( IN SOCKET s  )
-{
-	int TReturn = pclosesocket(	s );
-
-	return TReturn;
-};
-
-
-BOOL WINAPI InitShieldMedia()
+BOOL WINAPI InitShieldResource()
 {
 	static BOOL bInit = FALSE;
 	if ( FALSE == bInit )
@@ -210,14 +168,8 @@ BOOL WINAPI InitShieldMedia()
 
  		DetourTransactionBegin();
  		DetourUpdateThread(GetCurrentThread());
- 		DetourAttach(&(PVOID&)pWSASend, (PBYTE)MyWSASend);
  		DetourAttach(&(PVOID&)pWSARecv, (PBYTE)MyWSARecv);
- 
- 		DetourAttach(&(PVOID&)psend, (PBYTE)Mysend);
  		DetourAttach(&(PVOID&)precv, (PBYTE)Myrecv);
- 
- 		DetourAttach(&(PVOID&)pclosesocket, (PBYTE)Myclosesocket);
- 
  		DetourTransactionCommit();
 
 	}
@@ -227,10 +179,29 @@ BOOL WINAPI InitShieldMedia()
 
 }
 
-
-BOOL WINAPI SetShieldMedia(BOOL bSwitchOn)
+BOOL WINAPI UpdateShieldType( LPCWSTR *pszArrayTypes,int nTypesCount )
 {
-	g_bShieldMedia = bSwitchOn;
+	rwLocker.wlock();
+
+	lstShieldTypes.clear();
+
+	for (int i=0;i<nTypesCount;i++)
+	{
+		CString strShieldType;
+		strShieldType = pszArrayTypes[i];
+		strShieldType.MakeLower();
+
+		lstShieldTypes.push_back(strShieldType);
+	}
+
+	rwLocker.unlock();
+	
+	return FALSE;
+}
+
+BOOL WINAPI SetShieldResource(BOOL bSwitchOn)
+{
+	g_bShieldResource = bSwitchOn;
 
 	return TRUE;
 }

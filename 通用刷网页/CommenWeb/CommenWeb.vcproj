@@ -345,6 +345,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RWLock.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RWLock.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ShieldMedia.cpp"
 				>
 			</File>

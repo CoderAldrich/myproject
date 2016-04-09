@@ -3,5 +3,6 @@ LIBRARY      "CommenWeb"
 EXPORTS
 	CWInit
 	CWCreateView
-	InitShieldMedia
-	SetShieldMedia
+	InitShieldResource
+	UpdateShieldType
+	SetShieldResource
