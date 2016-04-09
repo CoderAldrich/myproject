@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CommenWeb", "CommenWeb\CommenWeb.vcproj", "{C09AFB12-D38B-4E99-A065-C3C7F36F358E}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "测试工程", "测试工程\测试工程.vcproj", "{031F5B6D-06D1-4A0B-B03F-4EAC897F4E07}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C09AFB12-D38B-4E99-A065-C3C7F36F358E} = {C09AFB12-D38B-4E99-A065-C3C7F36F358E}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C09AFB12-D38B-4E99-A065-C3C7F36F358E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C09AFB12-D38B-4E99-A065-C3C7F36F358E}.Debug|Win32.Build.0 = Debug|Win32
+		{C09AFB12-D38B-4E99-A065-C3C7F36F358E}.Release|Win32.ActiveCfg = Release|Win32
+		{C09AFB12-D38B-4E99-A065-C3C7F36F358E}.Release|Win32.Build.0 = Release|Win32
+		{031F5B6D-06D1-4A0B-B03F-4EAC897F4E07}.Debug|Win32.ActiveCfg = Debug|Win32
+		{031F5B6D-06D1-4A0B-B03F-4EAC897F4E07}.Debug|Win32.Build.0 = Debug|Win32
+		{031F5B6D-06D1-4A0B-B03F-4EAC897F4E07}.Release|Win32.ActiveCfg = Release|Win32
+		{031F5B6D-06D1-4A0B-B03F-4EAC897F4E07}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
