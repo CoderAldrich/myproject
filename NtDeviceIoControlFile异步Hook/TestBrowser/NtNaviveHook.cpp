@@ -126,50 +126,50 @@ typedef struct tagQUEUE_WAIT_TASK
 typedef hash_map<HANDLE,char> HANDLE_HASH_MAP,*PHANDLE_HASH_MAP;
 typedef HANDLE_HASH_MAP::iterator HANDLE_HASH_MAP_PTR;
 
-CCSLock         HandleMapLock;
-HANDLE_HASH_MAP HandleMap;
+CCSLock         *pHandleMapLock = NULL;
+HANDLE_HASH_MAP *pHandleMap = NULL;
 
 VOID RecordHandle( HANDLE hFile )
 {
-	HandleMapLock.Lock();
+	pHandleMapLock->Lock();
 
-	HANDLE_HASH_MAP_PTR it = HandleMap.find(hFile);
-	if (it == HandleMap.end())
+	HANDLE_HASH_MAP_PTR it = pHandleMap->find(hFile);
+	if (it == pHandleMap->end())
 	{
-		HandleMap[hFile] = 1;
+		(*pHandleMap)[hFile] = 1;
 	}
 
-	HandleMapLock.UnLock();
+	pHandleMapLock->UnLock();
 }
 
 BOOL CheckHandle(HANDLE hFile)
 {
 	BOOL bRes = FALSE;
 
-	HandleMapLock.Lock();
+	pHandleMapLock->Lock();
 
-	HANDLE_HASH_MAP_PTR it = HandleMap.find(hFile);
-	if (it != HandleMap.end())
+	HANDLE_HASH_MAP_PTR it = pHandleMap->find(hFile);
+	if (it != pHandleMap->end())
 	{
 		bRes = TRUE;
 	}
 
-	HandleMapLock.UnLock();
+	pHandleMapLock->UnLock();
 
 	return bRes;
 }
 
 VOID DelHandle(HANDLE hFile)
 {
-	HandleMapLock.Lock();
+	pHandleMapLock->Lock();
 
-	HANDLE_HASH_MAP_PTR it = HandleMap.find(hFile);
-	if (it != HandleMap.end())
+	HANDLE_HASH_MAP_PTR it = pHandleMap->find(hFile);
+	if (it != pHandleMap->end())
 	{
-		HandleMap.erase(it);
+		pHandleMap->erase(it);
 	}
 
-	HandleMapLock.UnLock();
+	pHandleMapLock->UnLock();
 }
 
 DWORD WINAPI WaitThread(PVOID pParam)
@@ -221,8 +221,6 @@ DWORD WINAPI WaitThread(PVOID pParam)
 					}
 
 				}
-
-				
 
 				if ( bCanRemove )
 				{
@@ -377,10 +375,6 @@ BOOL WINAPI MyCloseHandle(
 		hObject
 		);
 
-// 	CString strMsgOut;
-// 	strMsgOut.Format(L"CloseHandle: 0x%x \r\n",hObject);
-// 	OutputDebugStringW(strMsgOut);
-
 	DelHandle(hObject);
 	
 	return TReturn;
@@ -393,12 +387,8 @@ int WINAPI Myclosesocket(
 						 IN SOCKET s
 						 )
 {
-	int TReturn = pclosesocket(
-		s
-		);
-
+	int TReturn = pclosesocket(s);
 	DelHandle((HANDLE)s);
-
 	return TReturn;
 };
 
@@ -412,6 +402,10 @@ VOID StartHook()
 	{
 		return;
 	}
+	
+	pHandleMapLock = new CCSLock;
+	pHandleMap = new HANDLE_HASH_MAP;
+
 	pNtDeviceIoControlFile = (TypeNtDeviceIoControlFile)::GetProcAddress(GetModuleHandle(L"ntdll.dll"),"NtDeviceIoControlFile");
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
