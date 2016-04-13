@@ -69,12 +69,18 @@ typedef IWBCoreControler * (WINAPI *TypeCWCreateView)( );
 typedef BOOL (WINAPI *TypeInitShieldResource)();
 typedef BOOL (WINAPI *TypeUpdateShildType)( LPCWSTR *pszArrayTypes,int nTypesCount );
 typedef BOOL (WINAPI *TypeSetShieldResource)(BOOL bSwitchOn);
+typedef BOOL (WINAPI *TypeInitStopWriteDisk)();
+typedef BOOL (WINAPI *TypeSetEnableWriteDisk)(BOOL bEnableWriteDisk);
+typedef BOOL (WINAPI *TypeSetSlient)();
 
 TypeCWInit pCWInit = NULL;
 TypeCWCreateView pCWCreateView = NULL;
 TypeInitShieldResource pInitShieldMedia = NULL;
 TypeUpdateShildType pUpdateShieldResource = NULL;
 TypeSetShieldResource pSetShieldMedia = NULL;
+TypeInitStopWriteDisk pInitStopWriteDisk = NULL;
+TypeSetEnableWriteDisk pSetEnableWriteDisk = NULL;
+TypeSetSlient pSetSlient = NULL;
 
 VOID ShuaPhoneMatrix()
 {
@@ -86,6 +92,11 @@ VOID ShuaPhoneMatrix()
 
 	if (pCWCreateView)
 	{
+
+		//初始化屏蔽回写
+		pInitStopWriteDisk();
+		pSetEnableWriteDisk(FALSE);
+
 		//创建一个浏览器窗口
 		IWBCoreControler *pWbControl = pCWCreateView();
 		//调整大小
@@ -111,14 +122,23 @@ VOID ShuaPhoneMatrix()
 			{
 				int a=0;
 			}
-
+#ifdef DEBUG
 			OutputDebugStringW(L"当前页面Url："+strPageUrl+L"\r\n");
+#endif
+
+			//初始化网页资源屏蔽
+			pInitShieldMedia();
+			//设置网页资源屏蔽开关
+			pSetShieldMedia(TRUE);
+			//设置网页资源屏蔽类型
+			LPCWSTR szArrayShieldType[]={L"image",L"application",L"css"};
+			pUpdateShieldResource(szArrayShieldType,_countof(szArrayShieldType));
 
 			AutoBrowser.ClickWebPagePoint(50,680);
-
 			//等待新窗口
 			IWBCoreControler *pWbControlNew = NULL;
-			pWbControl->ControlWaitNewWindow(&pWbControlNew,NULL,0/*0标识统统允许*/,1000*5);
+			pWbControl->ControlWaitNewWindow(&pWbControlNew,NULL,0/*0表示统统允许*/,1000*5);
+
 			if (pWbControlNew)
 			{
 				pWbControlNew->ControlMoveWindow(0,0,400,700);
@@ -127,8 +147,6 @@ VOID ShuaPhoneMatrix()
 				break;
 			}
 		}
-
-		int a=0;
 	}
 }
 
@@ -140,12 +158,20 @@ VOID ShuaYouku()
 		pCWInit(FALSE,NULL);
 	}
 
+	//初始化网页资源屏蔽
+	//pInitShieldMedia();
+	//设置网页资源屏蔽开关
+	pSetShieldMedia(TRUE);
+	//设置网页资源屏蔽类型
+	LPCWSTR szArrayShieldType[]={L"image",L"application",L"css"};
+	pUpdateShieldResource(szArrayShieldType,_countof(szArrayShieldType));
+
 	if (pCWCreateView)
 	{
 		//创建一个浏览器窗口
 		IWBCoreControler *pWbControl = pCWCreateView();
 		//调整大小
-		pWbControl->ControlMoveWindow(0,0,1920,980);
+		//pWbControl->ControlMoveWindow(0,0,1920,980);
 
 		//导航网址
 		pWbControl->ControlGotoUrl(L"http://v.youku.com/v_show/id_XMTQ5MjQ2OTgyMA==.html?tpa=dW5pb25faWQ9MjAwMDAxXzEwMDEyNl8wMV8wMw&r2=185&ref=union_201604061801505189470091",L"");
@@ -174,13 +200,15 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		pInitShieldMedia = (TypeInitShieldResource)GetProcAddress(hModule,"InitShieldResource");
 		pUpdateShieldResource = (TypeUpdateShildType)GetProcAddress(hModule,"UpdateShieldType");
 		pSetShieldMedia = (TypeSetShieldResource)GetProcAddress(hModule,"SetShieldResource");
-		
-		pInitShieldMedia();
-		pSetShieldMedia(TRUE);
-		LPCWSTR szArrayShieldType[]={L"image",L"application"};
-		pUpdateShieldResource(szArrayShieldType,_countof(szArrayShieldType));
-		//ShuaPhoneMatrix();
-		ShuaYouku();
+		pInitStopWriteDisk = (TypeInitStopWriteDisk)GetProcAddress(hModule,"InitStopWriteDisk");
+		pSetEnableWriteDisk = (TypeSetEnableWriteDisk)GetProcAddress(hModule,"SetEnableWriteDisk");
+		pSetSlient = (TypeSetSlient)GetProcAddress(hModule,"SetSlient");
+
+#ifndef DEBUG
+		pSetSlient();
+#endif
+		ShuaPhoneMatrix();
+		//ShuaYouku();
 	}
 // 	while (1)
 // 	{

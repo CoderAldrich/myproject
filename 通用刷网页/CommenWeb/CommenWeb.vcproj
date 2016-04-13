@@ -373,6 +373,46 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="ÆÁ±Î»ØÐ´"
+			>
+			<File
+				RelativePath=".\RecordBaseT.h"
+				>
+			</File>
+			<File
+				RelativePath=".\StopWriteDisk.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\StopWriteDisk.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="ÆÁ±Î´°¿ÚºÍÉùÒô"
+			>
+			<File
+				RelativePath=".\AudioVolume.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\AudioVolume.h"
+				>
+			</File>
+			<File
+				RelativePath=".\dsound.h"
+				>
+			</File>
+			<File
+				RelativePath=".\dsound.lib"
+				>
+			</File>
+			<File
+				RelativePath=".\Slient.cpp"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>

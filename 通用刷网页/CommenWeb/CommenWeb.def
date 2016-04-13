@@ -6,3 +6,7 @@ EXPORTS
 	InitShieldResource
 	UpdateShieldType
 	SetShieldResource
+	
+	InitStopWriteDisk
+	SetEnableWriteDisk
+	SetSlient

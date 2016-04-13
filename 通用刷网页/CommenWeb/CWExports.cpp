@@ -23,7 +23,6 @@ VOID WINAPI CWInit( BOOL bPhoneMode , LPCWSTR pszUserAgent )
 
 	SetPriorityClass(GetCurrentProcess(),IDLE_PRIORITY_CLASS);
 
-
 	CWinThread *pWinThread = AfxBeginThread(RUNTIME_CLASS(CWebRunThread));
 	g_dwThreadId = pWinThread->m_nThreadID;
 
