@@ -729,7 +729,7 @@ BOOL WINAPI MyInternetGetCookieExW(
 	return TReturn;
 };
 
-BOOL StartHookCookie()
+BOOL StartHookCookie(LPCWSTR pszCookieNode)
 {
 	//获取当前路径
 	WCHAR szLocalPath[MAX_PATH]={0};
@@ -739,10 +739,10 @@ BOOL StartHookCookie()
 	*(pPathEnd+1) = 0;
 
 	g_strCookieSavePath = szLocalPath;
-	g_strCookieSavePath +=L"Cookies\\";
+	g_strCookieSavePath += pszCookieNode;
+	g_strCookieSavePath += L"\\";
 
 	CreateDirectoryW(g_strCookieSavePath,NULL);
-
 
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());

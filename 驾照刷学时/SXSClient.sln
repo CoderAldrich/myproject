@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SXSClient", "SXSClient\SXSClient.vcproj", "{A550FA9E-FD99-45D9-B594-9E1E81FA9785}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SXSLauncher", "SXSLauncher\SXSLauncher.vcproj", "{FC5E972F-E13F-4269-938C-916E206FB940}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -13,6 +15,10 @@ Global
 		{A550FA9E-FD99-45D9-B594-9E1E81FA9785}.Debug|Win32.Build.0 = Debug|Win32
 		{A550FA9E-FD99-45D9-B594-9E1E81FA9785}.Release|Win32.ActiveCfg = Release|Win32
 		{A550FA9E-FD99-45D9-B594-9E1E81FA9785}.Release|Win32.Build.0 = Release|Win32
+		{FC5E972F-E13F-4269-938C-916E206FB940}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FC5E972F-E13F-4269-938C-916E206FB940}.Debug|Win32.Build.0 = Debug|Win32
+		{FC5E972F-E13F-4269-938C-916E206FB940}.Release|Win32.ActiveCfg = Release|Win32
+		{FC5E972F-E13F-4269-938C-916E206FB940}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
