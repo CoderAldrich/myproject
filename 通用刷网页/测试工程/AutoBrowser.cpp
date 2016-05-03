@@ -415,8 +415,14 @@ BOOL CAutoBrowser::ScrollWebWindowTo(LONG X,LONG Y)
 	if (pWb)
 	{
 		//IHTMLWindow2
+		
 		CComQIPtr<IHTMLDocument2> pDoc2;
-		pWb->get_Document((IDispatch **)&pDoc2);
+
+		CComQIPtr<IDispatch>  pDisp;
+		pWb->get_Document((IDispatch **)&pDisp);
+
+		pDisp->QueryInterface(IID_IHTMLDocument2,(void **)&pDoc2);
+
 		if (pDoc2)
 		{
 			CComQIPtr<IHTMLWindow2> pWin2;

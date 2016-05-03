@@ -53,7 +53,7 @@ BEGIN
     "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)\r\n"
     "LANGUAGE 4, 2\r\n"
     "#pragma code_page(936)\r\n"
-    "#include ""res\\ShuaClient.rc2""  // 非 Microsoft Visual C++ 编辑的资源\r\n"
+    "#include ""res\\SXSClient.rc2""  // 非 Microsoft Visual C++ 编辑的资源\r\n"
     "#include ""l.CHS\\afxres.rc""          // 标准组件\r\n"
     "#include ""l.CHS\\afxprint.rc""        // 打印/打印预览资源\r\n"
     "#endif\r\n"

@@ -314,6 +314,54 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="Cookie路燭"
+			>
+			<File
+				RelativePath=".\Cookie路燭\CookieParser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Cookie路燭\CookieParser.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Cookie路燭\HelpFun.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Cookie路燭\HelpFun.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Cookie路燭\HookCookie.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Cookie路燭\HookCookie.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Cookie路燭\RecordBaseT.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Cookie路燭\RWLock.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Cookie路燭\RWLock.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Cookie路燭\UrlParser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Cookie路燭\UrlParser.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>

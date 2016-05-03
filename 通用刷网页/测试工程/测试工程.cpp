@@ -187,6 +187,114 @@ VOID ShuaYouku()
 	}
 
 }
+
+VOID ShuaMsn()
+{
+
+	if (pSetSlient)
+	{
+#ifndef DEBUG
+		pSetSlient();
+#endif
+	}
+
+	//初始化为手机模式，并出入按UserAgent
+	if (pCWInit)
+	{
+		pCWInit(FALSE,NULL);
+	}
+
+	if (pCWCreateView)
+	{
+		//创建一个浏览器窗口
+		IWBCoreControler *pWbControl = pCWCreateView();
+		//调整大小
+		//pWbControl->ControlMoveWindow(0,30,1920,980);
+
+		//导航网址
+		pWbControl->ControlGotoUrl(L"http://123.msn.com/?ocid=MMEKJO",L"");
+
+		//等待页面加载完成
+		while (!pWbControl->ControlWaitDocumentComplete(2000));
+
+#ifdef DEBUG
+		OutputDebugStringW(L"页面加载完成\n");
+#endif
+		Sleep(1000);
+
+		CAutoBrowser AutoBrowser(pWbControl->GetSafeWebBrowser2(),pWbControl->QueryIEServerWnd());
+
+		CElementInformation ElemSearchText;
+		ElemSearchText.SetTagName(L"input");
+		ElemSearchText.AddElementAttribute(L"class",L"sw_qbox text",TRUE);
+		AutoBrowser.ClickFirstMatchWebPageElement(&ElemSearchText);
+
+#ifdef DEBUG
+		OutputDebugStringW(L"点击搜索框\n");
+#endif
+
+		Sleep(1000);
+
+		AutoBrowser.InputText(L"123123");
+
+#ifdef DEBUG
+		OutputDebugStringW(L"输入文本\n");
+#endif
+
+		CElementInformation ElemClickSearch;
+		ElemClickSearch.SetTagName(L"input");
+		ElemClickSearch.AddElementAttribute(L"class",L"button",TRUE);
+		ElemClickSearch.AddElementAttribute(L"value",L"搜索",TRUE);
+
+
+		AutoBrowser.ClickFirstMatchWebPageElement(&ElemClickSearch);
+
+#ifdef DEBUG
+		OutputDebugStringW(L"点击搜索按钮\n");
+#endif
+
+		//等待新窗口
+		IWBCoreControler *pWbControlNew = NULL;
+		pWbControl->ControlWaitNewWindow(&pWbControlNew,NULL,0/*0标识统统允许*/,1000*5);
+		if (pWbControlNew)
+		{
+#ifdef DEBUG
+			OutputDebugStringW(L"新窗口打开成功\n");
+#endif
+			Sleep(1000);
+
+#ifdef DEBUG
+			OutputDebugStringW(L"滚动窗口中...\n");
+#endif
+			CAutoBrowser AutoBrowser1(pWbControlNew->GetSafeWebBrowser2(),pWbControlNew->QueryIEServerWnd());
+			AutoBrowser1.ScrollWebWindowTo(0,3000);
+			AutoBrowser1.ScrollWebWindowTo(0,0);
+
+#ifdef DEBUG
+			OutputDebugStringW(L"滚动窗口完成\n");
+#endif
+
+			CElementInformation ElemClickRes;
+			ElemClickRes.SetTagName(L"a");
+			ElemClickRes.AddElementAttribute(L"href",L"http://",FALSE);
+			CElementInformation *pParent = ElemClickRes.CreateParentInfo();
+			pParent->SetTagName(L"h2");
+
+			AutoBrowser1.ClickRandMatchWebPageElement(&ElemClickRes);
+
+			IWBCoreControler *pWbControlNew11 = NULL;
+			pWbControlNew->ControlWaitNewWindow(&pWbControlNew11,NULL,0/*0标识统统允许*/,1000*5);
+		}
+
+		while (1)
+		{
+			Sleep(5000);
+		}
+
+	}
+}
+
+
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
                      LPTSTR    lpCmdLine,
@@ -207,8 +315,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 #ifndef DEBUG
 		pSetSlient();
 #endif
-		ShuaPhoneMatrix();
+		//ShuaPhoneMatrix();
 		//ShuaYouku();
+		ShuaMsn();
 	}
 // 	while (1)
 // 	{
