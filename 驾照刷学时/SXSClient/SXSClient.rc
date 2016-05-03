@@ -70,8 +70,8 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDR_MAINFRAME           ICON                    "res\\ShuaClient.ico"
-IDR_ShuaClientTYPE      ICON                    "res\\ShuaClientDoc.ico"
+IDR_MAINFRAME           ICON                    "res\\SXSClient.ico"
+IDR_ShuaClientTYPE      ICON                    "res\\SXSClientDoc.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -343,7 +343,7 @@ END
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
 LANGUAGE 4, 2
 #pragma code_page(936)
-#include "res\ShuaClient.rc2"  // 非 Microsoft Visual C++ 编辑的资源
+#include "res\SXSClient.rc2"  // 非 Microsoft Visual C++ 编辑的资源
 #include "l.CHS\afxres.rc"          // 标准组件
 #include "l.CHS\afxprint.rc"        // 打印/打印预览资源
 #endif

@@ -4,7 +4,7 @@
 
 #include "stdafx.h"
 #include "afxwinappex.h"
-#include "ShuaClient.h"
+#include "SXSClient.h"
 #include "MainFrm.h"
 
 #include "VirtualMouse.h"

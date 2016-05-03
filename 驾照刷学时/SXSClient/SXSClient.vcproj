@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="ShuaClient"
+	Name="SXSClient"
 	ProjectGUID="{A550FA9E-FD99-45D9-B594-9E1E81FA9785}"
 	RootNamespace="ShuaClient"
 	Keyword="MFCProj"
@@ -210,10 +210,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ShuaClient.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\Slient.cpp"
 				>
 			</File>
@@ -236,6 +232,10 @@
 						UsePrecompiledHeader="1"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\SXSClient.cpp"
+				>
 			</File>
 			<File
 				RelativePath=".\VirtualMouse.cpp"
@@ -276,11 +276,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\ShuaClient.h"
+				RelativePath=".\stdafx.h"
 				>
 			</File>
 			<File
-				RelativePath=".\stdafx.h"
+				RelativePath=".\SXSClient.h"
 				>
 			</File>
 			<File
@@ -298,19 +298,19 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\res\ShuaClient.ico"
+				RelativePath=".\res\SXSClient.ico"
 				>
 			</File>
 			<File
-				RelativePath=".\ShuaClient.rc"
+				RelativePath=".\SXSClient.rc"
 				>
 			</File>
 			<File
-				RelativePath=".\res\ShuaClient.rc2"
+				RelativePath=".\res\SXSClient.rc2"
 				>
 			</File>
 			<File
-				RelativePath=".\res\ShuaClientDoc.ico"
+				RelativePath=".\res\SXSClientDoc.ico"
 				>
 			</File>
 		</Filter>
