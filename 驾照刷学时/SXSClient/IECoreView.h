@@ -108,6 +108,7 @@ public:
 	virtual unsigned long ControlQueryWKBridge(PVOID *pWKBridge);
 
 	afx_msg void OnPaint();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };
 
 

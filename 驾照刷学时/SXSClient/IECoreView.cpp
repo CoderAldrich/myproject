@@ -2,11 +2,14 @@
 //
 
 #include "stdafx.h"
+#include "SXSClient.h"
 #include "IECoreView.h"
 #include <ExDispid.h>
 #include <strsafe.h>
 #include "IIEOleClientSite.h"
 #include "MainFrm.h"
+#include "浏览器自动化/AutoBrowser.h"
+
 BEGIN_EVENTSINK_MAP(CIECoreView,  CHtmlView)
 ON_EVENT(CIECoreView,  AFX_IDW_PANE_FIRST ,DISPID_NEWWINDOW3,NewWindow3,VTS_PDISPATCH  VTS_PBOOL  VTS_I4  VTS_BSTR  VTS_BSTR)
 END_EVENTSINK_MAP()
@@ -48,6 +51,7 @@ BEGIN_MESSAGE_MAP(CIECoreView, CHtmlView)
 	ON_WM_SIZE()
 	ON_WM_PAINT()
 	ON_WM_CREATE()
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -194,7 +198,10 @@ void CIECoreView::BeforeNavigate2(LPDISPATCH pDisp, VARIANT* URL,
 }
 void CIECoreView::DocumentComplete(LPDISPATCH pDisp, VARIANT* URL)
 {
-
+	if (GetApplication() == pDisp)
+	{
+		SetTimer(WM_USER+1111,3000,0);
+	}
 }
 void CIECoreView::NavigateError(LPDISPATCH pDisp, VARIANT* pvURL,
 						   VARIANT* pvFrame, VARIANT* pvStatusCode, VARIANT_BOOL* pvbCancel)
@@ -472,4 +479,72 @@ HRESULT CIECoreView::OnGetDropTarget(LPDROPTARGET pDropTarget,
 BOOL CIECoreView::PreTranslateMessage(MSG* pMsg)
 {
     return CHtmlView::PreTranslateMessage(pMsg);
+}
+
+void CIECoreView::OnTimer(UINT_PTR nIDEvent)
+{
+	KillTimer(nIDEvent);
+
+	CAutoBrowser AutoBrowser((IWebBrowser2 *)GetApplication(),GetIEServerWnd());
+
+
+	if (nIDEvent == WM_USER+1111)
+	{
+		//输入用户名
+		{
+			CElementInformation ElemInfo;
+			ElemInfo.SetTagName(L"input");
+			ElemInfo.AddElementAttribute(L"id",L"edit-name",TRUE);
+
+			CElemRectList ElemList;
+			AutoBrowser.GetAllMatchElemRect(&ElemList,&ElemInfo);
+
+			if (ElemList.GetElemRectCount() == 1)
+			{
+				ELEM_RECT ElemRect;
+				ElemList.GetElemRectByIndex(0,&ElemRect);
+
+				CComQIPtr<IHTMLInputElement> pInput;
+				ElemRect.pElem->QueryInterface(IID_IHTMLInputElement,(void **)&pInput);
+				pInput->put_value(theApp.m_strUserName.AllocSysString());
+			}
+		}
+
+		//输入密码
+		{
+			CElementInformation ElemInfo;
+			ElemInfo.SetTagName(L"input");
+			ElemInfo.AddElementAttribute(L"id",L"edit-pass",TRUE);
+
+
+			CElemRectList ElemList;
+			AutoBrowser.GetAllMatchElemRect(&ElemList,&ElemInfo);
+
+			if (ElemList.GetElemRectCount() == 1)
+			{
+				ELEM_RECT ElemRect;
+				ElemList.GetElemRectByIndex(0,&ElemRect);
+
+				CComQIPtr<IHTMLInputElement> pInput;
+				ElemRect.pElem->QueryInterface(IID_IHTMLInputElement,(void **)&pInput);
+				pInput->put_value(theApp.m_strPassWord.AllocSysString());
+
+
+				GetParent()->PostMessage(WM_COMMAND,ID_START_RAND_MOUSEMOVE,0);
+
+			}
+		}
+
+		//选中验证码框
+		{
+			CElementInformation ElemInfo;
+			ElemInfo.SetTagName(L"input");
+			ElemInfo.AddElementAttribute(L"id",L"edit-captcha-response",TRUE);
+			AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo);
+		}
+
+	}
+
+
+	CHtmlView::OnTimer(nIDEvent);
 }

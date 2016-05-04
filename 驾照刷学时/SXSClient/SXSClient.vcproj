@@ -362,6 +362,34 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="浏览器自动化"
+			>
+			<File
+				RelativePath=".\浏览器自动化\AutoBrowser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\浏览器自动化\AutoBrowser.h"
+				>
+			</File>
+			<File
+				RelativePath=".\浏览器自动化\ElementInformation.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\浏览器自动化\ElementInformation.h"
+				>
+			</File>
+			<File
+				RelativePath=".\浏览器自动化\ElemRectList.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\浏览器自动化\ElemRectList.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>

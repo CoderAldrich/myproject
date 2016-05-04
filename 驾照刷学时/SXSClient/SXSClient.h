@@ -19,7 +19,8 @@ class CShuaClientApp : public CWinApp
 public:
 	CShuaClientApp();
 
-
+	CString m_strUserName;
+	CString m_strPassWord;
 // ÖØÐ´
 public:
 	virtual BOOL InitInstance();

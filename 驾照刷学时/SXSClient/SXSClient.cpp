@@ -43,6 +43,44 @@ CShuaClientApp theApp;
 
 BOOL SetSlient();
 
+VOID MyParseCommandLine(
+					  LPCWSTR pszRunCmd,
+					  CString &strUserName,
+					  CString &strPassWord
+					  )
+{
+	LPWSTR *szArglist = NULL;  //命令行字符串指针,szArglist[i]代表第i个字符串变量
+	int nArgs = 0; //nArgs命令行参数的个数  
+	szArglist = CommandLineToArgvW(pszRunCmd, &nArgs);//命令行参数解析函数
+	if(szArglist!= NULL)   
+	{
+		for (int i=0;i<nArgs;i++)
+		{
+			CString strCmdPart;
+			strCmdPart=W2CT(szArglist[i]);//LPWSTR转换为LPCSTR
+			if(strCmdPart.CompareNoCase(L"-username") == 0)
+			{
+				if( i+1 < nArgs )
+				{
+					strUserName = szArglist[i+1];
+					i++;
+				}
+			}
+
+			if(strCmdPart.CompareNoCase(L"-password") == 0)
+			{
+				if( i+1 < nArgs )
+				{
+					strPassWord = szArglist[i+1];
+					i++;
+				}
+			}
+		}
+		LocalFree(szArglist);  
+	}
+}
+
+
 BOOL CShuaClientApp::InitInstance()
 {
 
@@ -50,6 +88,10 @@ BOOL CShuaClientApp::InitInstance()
 	StartVirtualMouse();
 	RegisterBrowserEmulationMode(TRUE);
 	BrowserFix();
+
+	MyParseCommandLine(GetCommandLineW(),theApp.m_strUserName,theApp.m_strPassWord);
+
+	int a=0;
 
 	// 如果一个运行在 Windows XP 上的应用程序清单指定要
 	// 使用 ComCtl32.dll 版本 6 或更高版本来启用可视化方式，
