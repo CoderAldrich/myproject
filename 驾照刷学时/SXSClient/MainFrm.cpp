@@ -5,7 +5,7 @@
 #include "stdafx.h"
 #include "SXSClient.h"
 #include "MainFrm.h"
-
+#include "浏览器自动化/VirtualMouse.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -20,6 +20,10 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_SIZE()
 	ON_WM_NCDESTROY()
 	ON_WM_CLOSE()
+	ON_MESSAGE(WM_USER+2222,OnShellIcon)
+	ON_COMMAND(ID_ROOT_SHOW, &CMainFrame::OnRootShow)
+	ON_COMMAND(ID_ROOT_HIDE, &CMainFrame::OnRootHide)
+	ON_COMMAND(ID_ROOT_EXIT, &CMainFrame::OnRootExit)
 END_MESSAGE_MAP()
 
 // CMainFrame 构造/析构
@@ -47,13 +51,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	UpdateFrameTitle(theApp.m_strUserName);
 
-	NotifyData.cbSize = sizeof(NOTIFYICONDATAW);
-	NotifyData.hIcon = (HICON)LoadIcon(theApp.m_hInstance,MAKEINTRESOURCEW(IDR_MAINFRAME));
-	NotifyData.hWnd = m_hWnd;
-	GetWindowText(NotifyData.szTip,128);
-	NotifyData.uFlags = NIF_ICON|NIF_TIP ;
 
-	BOOL bRes = Shell_NotifyIconW(NIM_ADD, &NotifyData);
 
 	m_pView = new CSXSView;
 
@@ -147,9 +145,80 @@ void CMainFrame::OnClose()
 	//CFrameWnd::OnClose();
 }
 
+LRESULT CMainFrame::OnShellIcon(WPARAM wParam,LPARAM lParam)
+{
+	if ( wParam == 1234 )
+	{
+		if (lParam == WM_LBUTTONDOWN)
+		{
+			if (IsWindowVisible())
+			{
+				ShowWindow(SW_HIDE);
+			}
+			else
+			{
+				ShowWindow(SW_SHOW);
+				SetForegroundWindow();
+			}
+			
+		}
+
+		if (lParam == WM_RBUTTONDOWN)
+		{
+			CPoint ptCursor;
+			GetRealMousePos(&ptCursor);
+
+			CMenu PopMenu;
+			PopMenu.LoadMenu(IDR_MAINFRAME);
+			PopMenu.GetSubMenu(0)->TrackPopupMenu(TPM_RIGHTALIGN|TPM_BOTTOMALIGN,ptCursor.x,ptCursor.y,this);
+		}
+	}
+	return 0;
+}
+
+
 void CMainFrame::UpdateFrameTitle(LPCWSTR pszTitle)
 {
 	CString strTitle;
 	strTitle = pszTitle;
 	SetWindowTextW(strTitle+L" - 驾照刷学时 V1.0");
+
+	BOOL bHasAdd = NotifyData.cbSize == sizeof(NOTIFYICONDATAW);
+	if ( FALSE == bHasAdd )
+	{
+		NotifyData.cbSize = sizeof(NOTIFYICONDATAW);
+		NotifyData.uID = 1234;
+		NotifyData.hIcon = (HICON)LoadIcon(theApp.m_hInstance,MAKEINTRESOURCEW(IDR_MAINFRAME));
+		NotifyData.hWnd = m_hWnd;
+		NotifyData.uCallbackMessage = WM_USER+2222;
+		wcscpy_s(NotifyData.szTip,128,pszTitle);
+		NotifyData.uFlags = NIF_ICON|NIF_TIP|NIF_MESSAGE ;
+
+		BOOL bRes = Shell_NotifyIconW(NIM_ADD, &NotifyData);
+	}
+	else
+	{
+		wcscpy_s(NotifyData.szTip,128,pszTitle);
+		BOOL bRes = Shell_NotifyIconW(NIM_MODIFY, &NotifyData);
+	}
+
+
+
+}
+
+void CMainFrame::OnRootShow()
+{
+	ShowWindow(SW_SHOW);
+	SetForegroundWindow();
+}
+
+void CMainFrame::OnRootHide()
+{
+	ShowWindow(SW_HIDE);
+}
+
+void CMainFrame::OnRootExit()
+{
+	Shell_NotifyIconW(NIM_DELETE, &NotifyData);
+	CFrameWnd::OnClose();
 }

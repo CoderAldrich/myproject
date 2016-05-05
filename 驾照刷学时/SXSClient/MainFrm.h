@@ -37,7 +37,11 @@ public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnNcDestroy();
 	afx_msg void OnClose();
+	LRESULT OnShellIcon(WPARAM wParam,LPARAM lParam);
 	void UpdateFrameTitle(LPCWSTR pszTitle);
+	afx_msg void OnRootShow();
+	afx_msg void OnRootHide();
+	afx_msg void OnRootExit();
 };
 
 

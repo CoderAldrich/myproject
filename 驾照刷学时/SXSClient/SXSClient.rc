@@ -80,25 +80,11 @@ IDR_ShuaClientTYPE      ICON                    "res\\SXSClientDoc.ico"
 
 IDR_MAINFRAME MENU 
 BEGIN
-    POPUP "文件(&F)"
+    POPUP "root"
     BEGIN
-        MENUITEM "新建(&N)\tCtrl+N",              ID_FILE_NEW
-        MENUITEM "打开(&O)...\tCtrl+O",           ID_FILE_OPEN
-        MENUITEM "保存(&S)\tCtrl+S",              ID_FILE_SAVE
-        MENUITEM "另存为(&A)...",                  ID_FILE_SAVE_AS
-        MENUITEM SEPARATOR
-        MENUITEM "打印(&P)...\tCtrl+P",           ID_FILE_PRINT
-        MENUITEM "打印预览(&V)",                    ID_FILE_PRINT_PREVIEW
-        MENUITEM "打印设置(&R)...",                 ID_FILE_PRINT_SETUP
-        MENUITEM SEPARATOR
-        MENUITEM "最近的文件",                       ID_FILE_MRU_FILE1, GRAYED
-        MENUITEM SEPARATOR
-        MENUITEM "退出(&X)",                      ID_APP_EXIT
-    END
-    POPUP "操作"
-    BEGIN
-        MENUITEM "开始随机移动鼠标",                    ID_START_RAND_MOUSEMOVE
-        MENUITEM "停止随机移动鼠标",                    ID_STOP_RAND_MOUSEMOVE
+        MENUITEM "显示窗口(&S)",                    ID_ROOT_SHOW
+        MENUITEM "隐藏窗口(&H)",                    ID_ROOT_HIDE
+        MENUITEM "退出(&E)",                      ID_ROOT_EXIT
     END
 END
 
