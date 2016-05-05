@@ -3,11 +3,11 @@
 #ifdef _WIN64
 #include <detours64.h>
 #pragma comment(lib,"detours64.lib")
-#pragma comment(lib,"dsound64.lib")
+//#pragma comment(lib,"dsound64.lib")
 #else
 #include <detours.h>
 #pragma comment(lib,"detours.lib")
-#pragma comment(lib,"dsound.lib")
+//#pragma comment(lib,"dsound.lib")
 #endif
 
 
@@ -37,27 +37,29 @@ HCURSOR WINAPI MySetCursor(
 						   )
 {
 	return NULL;
-	//HCURSOR TReturn = pSetCursor(
-	//	hCursor
-	//	);
-	//return TReturn;
 };
 
 BOOL StartVirtualMouse()
 {
-	DetourTransactionBegin();
-	DetourUpdateThread(GetCurrentThread());
-	DetourAttach(&(PVOID&)pGetCursorPos, (PBYTE)MyGetCursorPos);
-	DetourAttach(&(PVOID&)pSetCursor, (PBYTE)MySetCursor);
-	if(DetourTransactionCommit()!=NO_ERROR)
+	static BOOL bStart = FALSE;
+	if ( FALSE == bStart )
 	{
-		return FALSE;
+		bStart = TRUE;
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)pGetCursorPos, (PBYTE)MyGetCursorPos);
+		DetourAttach(&(PVOID&)pSetCursor, (PBYTE)MySetCursor);
+		if(DetourTransactionCommit()!=NO_ERROR)
+		{
+			return FALSE;
+		}
 	}
+	
 
 	return TRUE;
 }
 
-BOOL SetMousePos( int nX,int nY )
+BOOL SetVirtualMousePos( int nX,int nY )
 {
 	g_ptMouse.x = nX;
 	g_ptMouse.y = nY;
@@ -65,7 +67,7 @@ BOOL SetMousePos( int nX,int nY )
 	return TRUE;
 }
 
-BOOL SetMousePos(LPPOINT lpPoint)
+BOOL SetVirtualMousePos(LPPOINT lpPoint)
 {
 	if(lpPoint)
 	{
@@ -74,5 +76,11 @@ BOOL SetMousePos(LPPOINT lpPoint)
 	}
 
 	return FALSE;
-	
+}
+BOOL GetRealMousePos(POINT *pPtMouse)
+{
+	BOOL TReturn = pGetCursorPos(
+		pPtMouse
+		);
+	return TReturn;
 }

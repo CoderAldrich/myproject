@@ -238,7 +238,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\VirtualMouse.cpp"
+				RelativePath=".\SXSView.cpp"
 				>
 			</File>
 		</Filter>
@@ -284,11 +284,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\targetver.h"
+				RelativePath=".\SXSView.h"
 				>
 			</File>
 			<File
-				RelativePath=".\VirtualMouse.h"
+				RelativePath=".\targetver.h"
 				>
 			</File>
 		</Filter>
@@ -389,6 +389,14 @@
 				RelativePath=".\浏览器自动化\ElemRectList.h"
 				>
 			</File>
+			<File
+				RelativePath=".\浏览器自动化\VirtualMouse.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\浏览器自动化\VirtualMouse.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
@@ -398,7 +406,7 @@
 	<Globals>
 		<Global
 			Name="RESOURCE_FILE"
-			Value="ShuaClient.rc"
+			Value="SXSClient.rc"
 		/>
 	</Globals>
 </VisualStudioProject>

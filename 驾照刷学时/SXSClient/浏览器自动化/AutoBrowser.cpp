@@ -1,13 +1,13 @@
 
 #include "stdafx.h"
 #include "AutoBrowser.h"
-//#include "VirtualMouse.h"
+#include "VirtualMouse.h"
 
 CAutoBrowser::CAutoBrowser(IWebBrowser2 * pWebBrowser,HWND hIEServer)
 {
 	m_pWebBrowser = pWebBrowser;
 	m_hIEServer = hIEServer;
-	//StartVirtualMouse();
+	StartVirtualMouse();
 }
 CAutoBrowser::~CAutoBrowser()
 {
@@ -17,13 +17,6 @@ CAutoBrowser::~CAutoBrowser()
 int CAutoBrowser::GetRandValue(int nMin ,int nMax)
 {
 	ASSERT(nMin <= nMax);
-
-	//static bool bInit = false;
-	//if (bInit == false)
-	//{
-	//	bInit = true;
-	//	srand(time(NULL));
-	//}
 
 	LARGE_INTEGER struLargeInteger;
 	if(QueryPerformanceCounter(&struLargeInteger))
@@ -639,7 +632,7 @@ BOOL CAutoBrowser::SetWebPageMousePos(int nX,int nY)
 {
 	CRect rcIEWnd;
 	GetWindowRect(m_hIEServer,&rcIEWnd);
-	//SetVirtualMousePos(nX+rcIEWnd.left,nY+rcIEWnd.top);
+	SetVirtualMousePos(nX+rcIEWnd.left,nY+rcIEWnd.top);
 
 #ifdef DEBUG
 	HDC hDC = ::GetDC(NULL);

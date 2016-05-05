@@ -7,7 +7,6 @@
 #include "SXSClient.h"
 #include "MainFrm.h"
 
-#include "VirtualMouse.h"
 #include "BrowserHelpFun.h"
 
 #ifdef _DEBUG
@@ -17,8 +16,8 @@
 
 // CShuaClientApp
 
-BEGIN_MESSAGE_MAP(CShuaClientApp, CWinApp)
-	ON_COMMAND(ID_APP_ABOUT, &CShuaClientApp::OnAppAbout)
+BEGIN_MESSAGE_MAP(CSXSClientApp, CWinApp)
+	ON_COMMAND(ID_APP_ABOUT, &CSXSClientApp::OnAppAbout)
 	// 基于文件的标准文档命令
 	ON_COMMAND(ID_FILE_NEW, &CWinApp::OnFileNew)
 	ON_COMMAND(ID_FILE_OPEN, &CWinApp::OnFileOpen)
@@ -29,7 +28,7 @@ END_MESSAGE_MAP()
 
 // CShuaClientApp 构造
 
-CShuaClientApp::CShuaClientApp()
+CSXSClientApp::CSXSClientApp()
 {
 
 	// TODO: 在此处添加构造代码，
@@ -38,7 +37,7 @@ CShuaClientApp::CShuaClientApp()
 
 // 唯一的一个 CShuaClientApp 对象
 
-CShuaClientApp theApp;
+CSXSClientApp theApp;
 
 
 BOOL SetSlient();
@@ -81,11 +80,10 @@ VOID MyParseCommandLine(
 }
 
 
-BOOL CShuaClientApp::InitInstance()
+BOOL CSXSClientApp::InitInstance()
 {
 
 	SetSlient();
-	StartVirtualMouse();
 	RegisterBrowserEmulationMode(TRUE);
 	BrowserFix();
 
@@ -133,7 +131,7 @@ BOOL CShuaClientApp::InitInstance()
 
 
 // 用于运行对话框的应用程序命令
-void CShuaClientApp::OnAppAbout()
+void CSXSClientApp::OnAppAbout()
 {
 }
 
@@ -142,7 +140,7 @@ void CShuaClientApp::OnAppAbout()
 
 
 
-int CShuaClientApp::ExitInstance()
+int CSXSClientApp::ExitInstance()
 {
 	return CWinApp::ExitInstance();
 }

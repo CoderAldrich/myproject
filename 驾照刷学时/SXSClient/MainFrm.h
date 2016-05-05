@@ -4,14 +4,14 @@
 
 #pragma once
 
-#include "IECoreView.h"
+#include "SXSView.h"
 
 class CMainFrame : public CFrameWnd
 {
 public: // 仅从序列化创建
 	CMainFrame();
 	DECLARE_DYNCREATE(CMainFrame)
-	CIECoreView *m_pView;
+	CSXSView *m_pView;
 	
 // 重写
 public:
@@ -36,9 +36,6 @@ public:
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnNcDestroy();
-	afx_msg void OnTimer(UINT_PTR nIDEvent);
-	afx_msg void OnStartRandMousemove();
-	afx_msg void OnStopRandMousemove();
 };
 
 

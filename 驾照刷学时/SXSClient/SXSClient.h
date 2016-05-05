@@ -14,10 +14,10 @@
 // 有关此类的实现，请参阅 ShuaClient.cpp
 //
 
-class CShuaClientApp : public CWinApp
+class CSXSClientApp : public CWinApp
 {
 public:
-	CShuaClientApp();
+	CSXSClientApp();
 
 	CString m_strUserName;
 	CString m_strPassWord;
@@ -31,4 +31,4 @@ public:
 	virtual int ExitInstance();
 };
 
-extern CShuaClientApp theApp;
+extern CSXSClientApp theApp;
