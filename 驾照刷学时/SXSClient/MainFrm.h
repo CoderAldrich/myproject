@@ -12,7 +12,7 @@ public: // 仅从序列化创建
 	CMainFrame();
 	DECLARE_DYNCREATE(CMainFrame)
 	CSXSView *m_pView;
-	
+	NOTIFYICONDATAW NotifyData;
 // 重写
 public:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
@@ -36,6 +36,8 @@ public:
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnNcDestroy();
+	afx_msg void OnClose();
+	void UpdateFrameTitle(LPCWSTR pszTitle);
 };
 
 

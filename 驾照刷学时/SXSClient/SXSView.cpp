@@ -5,7 +5,7 @@
 #include "SXSClient.h"
 #include "SXSView.h"
 #include "ä¯ÀÀÆ÷×Ô¶¯»¯/AutoBrowser.h"
-
+#include "MainFrm.h"
 
 // CSXSView
 
@@ -173,10 +173,16 @@ void CSXSView::OnTimer(UINT_PTR nIDEvent)
 				pElem->get_innerText(&bstrInnerText);
 				strUserRealName = bstrInnerText;
 			}
-
 		}
 
-		int a=0;
+		CMainFrame *pParentFrame = (CMainFrame *)GetParent();
+		if (pParentFrame)
+		{
+			pParentFrame->UpdateFrameTitle(theApp.m_strUserName+L" "+strUserRealName);
+		}
+		
+
+
 	}
 
 

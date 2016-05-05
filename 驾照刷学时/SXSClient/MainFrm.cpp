@@ -19,6 +19,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_ERASEBKGND()
 	ON_WM_SIZE()
 	ON_WM_NCDESTROY()
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 // CMainFrame 构造/析构
@@ -40,6 +41,19 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 {
 	if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
+
+	SetIcon(LoadIcon(theApp.m_hInstance,MAKEINTRESOURCEW(IDR_MAINFRAME)),TRUE);
+	SetIcon(LoadIcon(theApp.m_hInstance,MAKEINTRESOURCEW(IDR_MAINFRAME)),FALSE);
+
+	UpdateFrameTitle(theApp.m_strUserName);
+
+	NotifyData.cbSize = sizeof(NOTIFYICONDATAW);
+	NotifyData.hIcon = (HICON)LoadIcon(theApp.m_hInstance,MAKEINTRESOURCEW(IDR_MAINFRAME));
+	NotifyData.hWnd = m_hWnd;
+	GetWindowText(NotifyData.szTip,128);
+	NotifyData.uFlags = NIF_ICON|NIF_TIP ;
+
+	BOOL bRes = Shell_NotifyIconW(NIM_ADD, &NotifyData);
 
 	m_pView = new CSXSView;
 
@@ -124,4 +138,18 @@ void CMainFrame::OnNcDestroy()
 	CFrameWnd::OnNcDestroy();
 
 	delete this;
+}
+
+void CMainFrame::OnClose()
+{
+	ShowWindow(SW_HIDE);
+
+	//CFrameWnd::OnClose();
+}
+
+void CMainFrame::UpdateFrameTitle(LPCWSTR pszTitle)
+{
+	CString strTitle;
+	strTitle = pszTitle;
+	SetWindowTextW(strTitle+L" - 驾照刷学时 V1.0");
 }

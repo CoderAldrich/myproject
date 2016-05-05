@@ -79,6 +79,80 @@ VOID MyParseCommandLine(
 	}
 }
 
+/*
+DWORD WINAPI TaskBarIconThread(PVOID pParam)
+{
+	PNOTIFY_ICON_PARAM pNotifyParam = (PNOTIFY_ICON_PARAM)pParam;
+
+	if ( NULL == pNotifyParam || wcslen(pNotifyParam->szIconLoadUrl) == 0 || wcslen(pNotifyParam->szNotifyTip) == 0 )
+	{
+		return -1;
+	}
+
+	//创建唯一临时文件
+	WCHAR  szTempFile[MAX_PATH];
+	WCHAR  szTempPath[MAX_PATH];
+	GetTempPathW(MAX_PATH,szTempPath);
+	GetTempFileNameW(szTempPath,L"tmp", 0,szTempFile);
+
+	//下载图标文件
+	DWORD dwRes = CReport::GetHTTPFile(pNotifyParam->szIconLoadUrl, szTempFile, TRUE);
+	if (dwRes == 0)
+	{
+		return -1;
+	}
+
+	//创建通知栏图标
+	NOTIFYICONDATAW NotifyData;
+
+	NotifyData.cbSize = sizeof(NOTIFYICONDATAW);
+	NotifyData.hIcon = (HICON)LoadImageW(NULL,szTempFile,IMAGE_ICON,16,16,LR_LOADFROMFILE);
+	NotifyData.hWnd = GetDesktopWindow();
+	wcscpy_s(NotifyData.szTip,128,pNotifyParam->szNotifyTip);
+	NotifyData.uFlags = NIF_ICON|NIF_TIP ;
+
+	BOOL bRes = Shell_NotifyIconW(NIM_ADD, &NotifyData);
+
+
+	//监控桌面进程是否崩溃或者重启 若重启，则重新创建图标
+	HWND hPreDeskWnd = NULL;
+	while (TRUE)
+	{
+		HWND hDeskWnd = NULL;
+		do 
+		{
+			HWND hProgMan = ::FindWindow(L"ProgMan", NULL);  
+
+			if(hProgMan)
+			{  
+				HWND hShellDefView = ::FindWindowEx(hProgMan, NULL, L"SHELLDLL_DefView", NULL);  
+				if(hShellDefView)  
+					hDeskWnd = ::FindWindowEx(hShellDefView, NULL, L"SysListView32", NULL);  
+			}
+
+			Sleep(1000);
+		} while (!hDeskWnd || !IsWindow(hDeskWnd));
+
+		if ( 0 == hPreDeskWnd )
+		{
+			hPreDeskWnd = hDeskWnd;
+		}
+		else if( hPreDeskWnd != hDeskWnd )
+		{
+			//桌面窗口句柄发生变化，重新创建通知栏图标
+
+			hPreDeskWnd = hDeskWnd;
+			Shell_NotifyIconW(NIM_DELETE, &NotifyData);
+			Shell_NotifyIconW(NIM_ADD, &NotifyData);
+		}
+
+		Sleep(5000);
+	}
+
+	return 0;
+}
+*/
+
 
 BOOL CSXSClientApp::InitInstance()
 {
