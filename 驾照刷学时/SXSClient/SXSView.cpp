@@ -7,6 +7,10 @@
 #include "浏览器自动化/AutoBrowser.h"
 #include "MainFrm.h"
 
+#include "SAStatusLog.h"
+
+CSAStatusLog g_loger(L"sxslog");
+
 // CSXSView
 
 IMPLEMENT_DYNCREATE(CSXSView, CIECoreView)
@@ -214,6 +218,8 @@ void CSXSView::OnTimer(UINT_PTR nIDEvent)
 LRESULT CSXSView::OnVideoPause(WPARAM wParam,LPARAM lParam)
 {
 	SetTimer(WM_USER+1114,200,NULL);
+
+	g_loger.StatusOut(L"发现视屏被暂停，重新观看");
 
 	return 0;
 }

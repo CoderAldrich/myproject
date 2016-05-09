@@ -418,6 +418,18 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="ÈÕÖ¾"
+			>
+			<File
+				RelativePath=".\SAStatusLog.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SAStatusLog.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>
