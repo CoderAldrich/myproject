@@ -27,6 +27,7 @@ void CSXSView::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CSXSView, CIECoreView)
 	ON_WM_TIMER()
+	ON_MESSAGE(WM_USER+3333,OnVideoPause)
 END_MESSAGE_MAP()
 
 
@@ -59,9 +60,10 @@ void CSXSView::DocumentComplete(LPDISPATCH pDisp, VARIANT* URL)
 		{
 			SetTimer(WM_USER+1113,2000,NULL);
 		}
-		else if ( strUrl.Find(L"http://www.130100.prcjx.cn:800/admin/std/training") >= 0 )
+		
+		if ( strUrl.Find(L"http://www.130100.prcjx.cn:800/admin/std/training") >= 0 )
 		{
-			SetTimer(WM_USER+1112,2000,NULL);
+			SetTimer(WM_USER+1112,5000,NULL);
 		}
 		else 
 		{
@@ -180,11 +182,38 @@ void CSXSView::OnTimer(UINT_PTR nIDEvent)
 		{
 			pParentFrame->UpdateFrameTitle(theApp.m_strUserName+L" "+strUserRealName);
 		}
-		
 
+	}
+
+	if ( nIDEvent == WM_USER+1114 )
+	{
+		KillTimer(nIDEvent);
+
+		CElementInformation ElemInfo;
+		CElemRectList ElemList;
+
+		ElemInfo.SetTagName(L"object");
+		ElemInfo.AddElementAttribute(L"id",L"VMSPlayer",TRUE);
+
+		AutoBrowser.GetAllMatchElemRect(&ElemList,&ElemInfo);
+		if ( ElemList.GetElemRectCount() == 1 )
+		{
+			// 51 382
+			ELEM_RECT ElemRect;
+			ElemList.GetElemRectByIndex(0,&ElemRect);
+			AutoBrowser.ClickWebPagePoint(ElemRect.rcElem.left+51,ElemRect.rcElem.top+382);
+			int a=0;
+		}
 
 	}
 
 
 	CIECoreView::OnTimer(nIDEvent);
+}
+
+LRESULT CSXSView::OnVideoPause(WPARAM wParam,LPARAM lParam)
+{
+	SetTimer(WM_USER+1114,200,NULL);
+
+	return 0;
 }

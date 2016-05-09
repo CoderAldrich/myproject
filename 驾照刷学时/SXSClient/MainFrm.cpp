@@ -6,6 +6,8 @@
 #include "SXSClient.h"
 #include "MainFrm.h"
 #include "ä¯ÀÀÆ÷×Ô¶¯»¯/VirtualMouse.h"
+#include "PauseMonitor.h"
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -58,6 +60,8 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	CRect rcClient;
 	GetClientRect(&rcClient);
 	m_pView->Create(NULL,NULL,WS_VISIBLE|WS_CHILD,rcClient,this,0);
+
+	StartPauseMonitor(m_pView->m_hWnd,WM_USER+3333);
 
 	return 0;
 }

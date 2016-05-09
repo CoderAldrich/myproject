@@ -30,6 +30,7 @@ protected:
 	void DocumentComplete(LPDISPATCH pDisp, VARIANT* URL);
 
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg LRESULT OnVideoPause(WPARAM wParam,LPARAM lParam);
 };
 
 

@@ -398,6 +398,26 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="ÔÝÍ£¼à¿Ø"
+			>
+			<File
+				RelativePath=".\HttpSendParser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\HttpSendParser.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PauseMonitor.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\PauseMonitor.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>
