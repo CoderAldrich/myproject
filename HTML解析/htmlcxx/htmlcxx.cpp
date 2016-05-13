@@ -6,69 +6,114 @@
 #include "ParserDom.h"
 using namespace htmlcxx;
 
-#include <atlstr.h>
-void makelower(string &str)
+#include <algorithm>
+#include <hash_map>
+#include "CRC2CheckSum.h"
+
+
+typedef stdext::hash_map<DWORD,char> hash_map_alone,*phash_map_alone;
+typedef hash_map_alone::iterator hash_map_alone_ptr;
+
+void makelower(std::string &str)
 {
 	transform(str.begin(), str.end(), str.begin(), ::tolower);
 }
-void DeletList(list<string> *plistres)
+
+bool stringcheck(std::string tarstring,std::string teststring,bool bfullmatch)
 {
-	if(plistres)
+	if ( tarstring.size() == 0 || teststring.size() == 0 )
 	{
-		delete plistres;
+		return false;
 	}
+
+	makelower(tarstring);
+	makelower(teststring);
+	
+	if ( bfullmatch )
+	{
+		return tarstring == teststring;
+	}
+	else
+	{
+		int nres = tarstring.find(teststring);
+		return nres>=0;
+	}
+
+
+
 }
-bool ParseHtml(const char *phtml,const char *ptagname,const char *pattrname,const char *pattrrule,list<string> **pplistres)
+
+bool ParseHtml(const char *phtml,pelem_feature pelemfeature,std::string attributequery,plist_result presult)
 {
-	if(!phtml || !ptagname || !pattrname || !pplistres) return false;
+	if(!phtml || NULL==pelemfeature || pelemfeature->tagname.size() == 0 || attributequery.size() == 0 ||NULL==presult) return false;
 
 	tree<HTML::Node> tr;
-	string html(phtml);
+	std::string html(phtml);
 	HTML::ParserDom parser;
 	parser.parse(html);
 	tr = parser.getTree();
 
-	list<string> *plistres = new list<string>;
+	makelower(pelemfeature->tagname);
 
-	string targettagname(ptagname);
-	string targetattrname(pattrname);
-	string targetattrrule(pattrrule);
-	
-	makelower(targettagname);
-	makelower(targetattrname);
-	makelower(targetattrrule);
+	hash_map_alone dataalone;
 
 	for (tree<HTML::Node>::iterator it = tr.begin();it!=tr.end();it++)
 	{
-		try
+		//比较tagname
+		std::string tagname = it->tagName();
+		makelower(tagname);
+		if (tagname != pelemfeature->tagname)
 		{
-			string tagname = it->tagName();
-			makelower(tagname);
-			if (tagname == targettagname)
+			continue;
+		}
+
+		//比较标签文本
+		bool bctxtextmatch = true;
+		if( pelemfeature->contenttext.strfeature.size() > 0  )
+		{
+			bctxtextmatch = stringcheck(it->mContentText,pelemfeature->contenttext.strfeature,pelemfeature->contenttext.bfullmatch);
+		}
+
+		if ( false == bctxtextmatch )
+		{
+			continue;
+		}
+		
+		//比较属性
+
+		it->parseAttributes();
+
+		bool battributematch = true;
+
+		for (list_attribute_feature_ptr fit = pelemfeature->attributefeature.begin();fit!=pelemfeature->attributefeature.end();fit++)
+		{
+			std::pair<bool,std::string> attrpair = it->attribute(fit->strattributename);
+
+			if( false == stringcheck(attrpair.second,fit->strattributevalue,fit->bfullmatch) )
 			{
-				it->parseAttributes();
-				pair<bool,string> attrpair = it->attribute(targetattrname);
-				if (attrpair.first)
-				{
-					string attrval=attrpair.second;
-					makelower(attrval);
-					int findres = attrval.find(targetattrrule);
-					if( findres >= 0)
-					{
-						//OutputDebugStringW(CString(attrpair.second.c_str())+TEXT("\n"));
-						plistres->push_back(attrpair.second);
-					}
-				}
+				battributematch = false;
+				break;
 			}
 		}
-		catch( ... )
+
+		if ( false == battributematch)
+		{
+			continue;
+		}
+
+		std::pair<bool,std::string> attrpair = it->attribute(attributequery);
+		DWORD dwchksum = CRC32((void *)(attrpair.second.c_str()),attrpair.second.size());
+		if(dataalone.find(dwchksum) == dataalone.end())
+		{
+			dataalone[dwchksum]='0';
+			presult->push_back(attrpair.second);
+		}
+		else
 		{
 			int a=0;
 		}
-
+		
 	}
-
-	*pplistres = plistres;
 
 	return true;
 }

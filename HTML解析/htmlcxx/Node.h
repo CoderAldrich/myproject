@@ -14,7 +14,10 @@ namespace htmlcxx {
 				//Node(const Node &rhs); //uses default
 				~Node() {}
 
-				inline void text(const std::string& text) { this->mText = text; }
+				inline void text(const std::string& text) 
+				{
+					this->mText = text; 
+				}
 				inline const std::string& text() const { return this->mText; }
 
 				inline void closingText(const std::string &text) { this->mClosingText = text; }
@@ -53,8 +56,11 @@ namespace htmlcxx {
 
 				bool operator==(const Node &rhs) const;
 
+		public:
+			std::string mContentText;
+			   
 			protected:
-
+				
 				std::string mText;
 				std::string mClosingText;
 				unsigned int mOffset;

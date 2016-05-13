@@ -47,7 +47,13 @@ void ParserDom::foundComment(Node node)
 void ParserDom::foundText(Node node)
 {
 	//Add child content node, but do not update current state
+	//mHtmlTree.append_child(mCurrentState, node);
+	std::string strtext;
+	strtext = node.text();
 	mHtmlTree.append_child(mCurrentState, node);
+	mCurrentState->mContentText = strtext;
+	//mCurrentState
+	///mHtmlTree.append_child_text(mCurrentState, node.text());
 }
 
 void ParserDom::foundTag(Node node, bool isEnd)

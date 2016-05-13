@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="htmlcxx"
-	ProjectGUID="{D652903F-1692-4FCF-A639-761172743253}"
-	RootNamespace="htmlcxx"
+	Name="htmltester"
+	ProjectGUID="{C65A57A1-FCEC-4F6A-9D95-0A9850BFC775}"
+	RootNamespace="htmltester"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -20,7 +20,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			CharacterSet="1"
 			>
 			<Tool
@@ -41,9 +41,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;HTMLCXX_EXPORTS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
-				ExceptionHandling="1"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="2"
@@ -62,9 +61,8 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="2"
-				ModuleDefinitionFile="htmlcxx.def"
 				GenerateDebugInformation="true"
-				SubSystem="2"
+				SubSystem="1"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -93,7 +91,7 @@
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="2"
+			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -116,8 +114,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;HTMLCXX_EXPORTS"
-				ExceptionHandling="0"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
@@ -136,9 +133,8 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="1"
-				ModuleDefinitionFile="htmlcxx.def"
 				GenerateDebugInformation="true"
-				SubSystem="2"
+				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
@@ -175,53 +171,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\CRC2CheckSum.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\dllmain.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						CompileAsManaged="0"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
-						CompileAsManaged="0"
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\Extensions.cc"
-				>
-			</File>
-			<File
-				RelativePath=".\htmlcxx.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\htmlcxx.def"
-				>
-			</File>
-			<File
-				RelativePath=".\Node.cc"
-				>
-			</File>
-			<File
-				RelativePath=".\ParserDom.cc"
-				>
-			</File>
-			<File
-				RelativePath=".\ParserSax.cc"
+				RelativePath=".\htmltester.cpp"
 				>
 			</File>
 			<File
@@ -244,14 +194,6 @@
 					/>
 				</FileConfiguration>
 			</File>
-			<File
-				RelativePath=".\Uri.cc"
-				>
-			</File>
-			<File
-				RelativePath=".\utils.cc"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -259,63 +201,11 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\ci_string.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CRC2CheckSum.h"
-				>
-			</File>
-			<File
-				RelativePath=".\debug.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Extensions.h"
-				>
-			</File>
-			<File
-				RelativePath=".\htmlcxx.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Node.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ParserDom.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ParserSax.h"
-				>
-			</File>
-			<File
 				RelativePath=".\stdafx.h"
 				>
 			</File>
 			<File
 				RelativePath=".\targetver.h"
-				>
-			</File>
-			<File
-				RelativePath=".\tld.h"
-				>
-			</File>
-			<File
-				RelativePath=".\tree.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Uri.h"
-				>
-			</File>
-			<File
-				RelativePath=".\utils.h"
-				>
-			</File>
-			<File
-				RelativePath=".\wincstring.h"
 				>
 			</File>
 		</Filter>
@@ -326,15 +216,7 @@
 			>
 		</Filter>
 		<File
-			RelativePath=".\gen_tld.pl"
-			>
-		</File>
-		<File
-			RelativePath=".\ParserSax.tcc"
-			>
-		</File>
-		<File
-			RelativePath=".\tld.list"
+			RelativePath=".\ReadMe.txt"
 			>
 		</File>
 	</Files>
