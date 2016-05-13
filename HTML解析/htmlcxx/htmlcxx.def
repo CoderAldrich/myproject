@@ -1,0 +1,4 @@
+LIBRARY	"htmlcxx"
+EXPORTS
+	ParseHtml
+	DeletList
