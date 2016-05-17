@@ -5,6 +5,8 @@
 #include "stdafx.h"
 #include "OfflineBrowser.h"
 #include "OfflineBrowserDlg.h"
+#include "OfflineBrowserCore.h"
+
 #include <Psapi.h>
 #pragma comment(lib,"Psapi.lib")
 
@@ -161,4 +163,5 @@ HCURSOR COfflineBrowserDlg::OnQueryDragIcon()
 void COfflineBrowserDlg::OnBnClickedOk()
 {
 
+	ParseWeb(L"http://www.sina.com.cn/",NULL);
 }
