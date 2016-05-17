@@ -50,9 +50,8 @@ int _tmain(int argc, _TCHAR* argv[])
 //  		elemfeature.contenttext.strfeature = "¡¶";
 
 			attribute_feature attrfeature;
-			attrfeature.bfullmatch = false;
 			attrfeature.strattributename="href";
-			attrfeature.strattributevalue="file";
+			attrfeature.re_attributevalue="*/*";
 
 			elemfeature.attributefeature.push_back(attrfeature);
 

@@ -9,17 +9,10 @@
 #include <string>
 #include <list>
 
-typedef struct tag_string_feature
-{
-	std::string strfeature;
-	bool        bfullmatch;
-}string_feature,*pstring_feature;
-
 typedef struct tag_attribute_feature
 {
 	std::string strattributename;
-	std::string strattributevalue;
-	bool        bfullmatch;
+	std::string re_attributevalue;
 }attribute_feature,*pattribute_feature;
 
 typedef std::list<attribute_feature>  list_attribute_feature,*plist_attribute_feature;
@@ -28,7 +21,7 @@ typedef list_attribute_feature::iterator list_attribute_feature_ptr;
 typedef struct tag_elem_feature
 {
 	std::string tagname;
-	string_feature  contenttext;
+	std::string re_contenttext;
 	list_attribute_feature attributefeature;
 }elem_feature,*pelem_feature;
 

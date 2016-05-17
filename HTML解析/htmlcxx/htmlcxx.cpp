@@ -8,6 +8,7 @@ using namespace htmlcxx;
 
 #include <algorithm>
 #include <hash_map>
+#include <regex>
 #include "CRC2CheckSum.h"
 
 
@@ -19,27 +20,25 @@ void makelower(std::string &str)
 	transform(str.begin(), str.end(), str.begin(), ::tolower);
 }
 
-bool stringcheck(std::string tarstring,std::string teststring,bool bfullmatch)
+bool stringcheck(std::string tarstring,std::string restring)
 {
-	if ( tarstring.size() == 0 || teststring.size() == 0 )
+	if ( tarstring.size() == 0 || restring.size() == 0 )
 	{
 		return false;
 	}
 
-	makelower(tarstring);
-	makelower(teststring);
-	
-	if ( bfullmatch )
+	std::tr1::regex rgx(restring);
+
+	std::tr1::cmatch match;
+
+	if(regex_match(tarstring,rgx))
 	{
-		return tarstring == teststring;
+		return true;
 	}
 	else
 	{
-		int nres = tarstring.find(teststring);
-		return nres>=0;
+		return false;
 	}
-
-
 
 }
 
@@ -69,9 +68,9 @@ bool ParseHtml(const char *phtml,pelem_feature pelemfeature,std::string attribut
 
 		//比较标签文本
 		bool bctxtextmatch = true;
-		if( pelemfeature->contenttext.strfeature.size() > 0  )
+		if( pelemfeature->re_contenttext.size() > 0  )
 		{
-			bctxtextmatch = stringcheck(it->mContentText,pelemfeature->contenttext.strfeature,pelemfeature->contenttext.bfullmatch);
+			bctxtextmatch = stringcheck(it->mContentText,pelemfeature->re_contenttext);
 		}
 
 		if ( false == bctxtextmatch )
@@ -89,7 +88,7 @@ bool ParseHtml(const char *phtml,pelem_feature pelemfeature,std::string attribut
 		{
 			std::pair<bool,std::string> attrpair = it->attribute(fit->strattributename);
 
-			if( false == stringcheck(attrpair.second,fit->strattributevalue,fit->bfullmatch) )
+			if( false == stringcheck(attrpair.second,fit->re_attributevalue) )
 			{
 				battributematch = false;
 				break;
