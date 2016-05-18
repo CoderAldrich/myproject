@@ -294,6 +294,61 @@ VOID ShuaMsn()
 	}
 }
 
+VOID ShuaPhoneTest()
+{
+	//初始化为手机模式，并出入按UserAgent
+	if (pCWInit)
+	{
+		pCWInit(TRUE,L"Mozilla/5.0 (Linux; Android 5.1.1; zh-cn; KIW-AL10 Build/HONORKIW-AL10) AppleWebKit/534.24 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.24");
+	}
+
+	if (pCWCreateView)
+	{
+
+		//初始化屏蔽回写
+		//pInitStopWriteDisk();
+		pSetEnableWriteDisk(FALSE);
+
+		//创建一个浏览器窗口
+		IWBCoreControler *pWbControl = pCWCreateView();
+		//调整大小
+		pWbControl->ControlMoveWindow(0,0,400,700);
+		//导航网址
+		pWbControl->ControlGotoUrl(L"http://www.mwangzhi.com/",L"");
+
+		//等待页面加载完成
+		while (!pWbControl->ControlWaitDocumentComplete(2000));
+
+		
+
+// 		while (1)
+// 		{
+// 			WCHAR szFileUrl[1000]={0};
+// 			pWbControl->ControlWaitDownloadFile(szFileUrl,1000,2000);
+// 			if (wcslen(szFileUrl))
+// 			{
+// 				break;
+// 			}
+// 		}
+
+
+		IWBCoreControler *pNewWbControl = NULL;
+
+		while (1)
+		{
+			pWbControl->ControlWaitNewWindow(&pNewWbControl,NULL,0,2000);
+			if (pNewWbControl)
+			{
+				break;
+			}
+		}
+
+		pNewWbControl->ControlMoveWindow(100,100,400,700);
+
+		Sleep(1000000);
+
+	}
+}
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
@@ -317,7 +372,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 #endif
 		//ShuaPhoneMatrix();
 		//ShuaYouku();
-		ShuaMsn();
+		//ShuaMsn();
+		ShuaPhoneTest();
 	}
 // 	while (1)
 // 	{
