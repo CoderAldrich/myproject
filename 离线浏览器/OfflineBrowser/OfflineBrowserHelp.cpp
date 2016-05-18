@@ -2,6 +2,36 @@
 #include <atlstr.h>
 #include <afxinet.h>
 
+
+CString UTF8ToUnicode(char* UTF8)
+
+{
+	DWORD dwUnicodeLen;        //转换后Unicode的长度
+	TCHAR *pwText;            //保存Unicode的指针
+	CString strUnicode;        //返回值
+	//获得转换后的长度，并分配内存
+	dwUnicodeLen = MultiByteToWideChar(CP_UTF8,0,UTF8,-1,NULL,0);
+
+	pwText = new TCHAR[dwUnicodeLen];
+	if (!pwText)
+	{
+		return strUnicode;
+	}
+
+	//转为Unicode
+	MultiByteToWideChar(CP_UTF8,0,UTF8,-1,pwText,dwUnicodeLen);
+
+	//转为CString
+	strUnicode.Format(_T("%s"),pwText);
+
+	//清除内存
+	delete []pwText;
+
+	//返回转换好的Unicode字串
+	return strUnicode;
+
+}
+
 CString GetWebContext(CString strUrl,CString strFileName,BOOL *pbSucess)
 {
 #ifdef _DEBUG
@@ -61,7 +91,9 @@ CString GetWebContext(CString strUrl,CString strFileName,BOOL *pbSucess)
 			{
 				char buffer[10240]={0};
 				nRecvLen=pHttpFile->Read(buffer,10220);
-				strRecvWebContext+=buffer;
+
+
+				strRecvWebContext+=UTF8ToUnicode(buffer);
 
 			} while (nRecvLen > 0);
 		}

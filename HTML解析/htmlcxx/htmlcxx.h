@@ -9,23 +9,16 @@
 #include <string>
 #include <list>
 
-typedef struct tag_attribute_feature
-{
-	std::string strattributename;
-	std::string re_attributevalue;
-}attribute_feature,*pattribute_feature;
-
-typedef std::list<attribute_feature>  list_attribute_feature,*plist_attribute_feature;
-typedef list_attribute_feature::iterator list_attribute_feature_ptr;
-
 typedef struct tag_elem_feature
 {
 	std::string tagname;
 	std::string re_contenttext;
-	list_attribute_feature attributefeature;
+	std::string strattributename;
+	std::string re_attributevalue;
+	std::string attributequery;
 }elem_feature,*pelem_feature;
 
 typedef std::list<std::string> list_result,*plist_result;
 
 
-typedef bool (*TypeParseHtml)(const char *phtml,pelem_feature pelemfeature,std::string attributequery,plist_result presult);
+typedef bool (*TypeParseHtml)(const char *phtml,pelem_feature pelemfeature,plist_result presult);

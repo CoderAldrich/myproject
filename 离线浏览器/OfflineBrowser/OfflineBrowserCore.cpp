@@ -1,11 +1,11 @@
 #include "stdafx.h"
 #include "OfflineBrowserCore.h"
 #include "OfflineBrowserHelp.h"
-#include "..\..\HTML½âÎö\htmlcxx\htmlcxx.h"
 
 TypeParseHtml pParseHtml = NULL;
 
-BOOL ParseWeb( LPCWSTR pszRootUrl,PLIST_LEVEL_RULE pLevelRule )
+
+BOOL ParseWeb( LPCWSTR pszRootUrl,PLIST_ELEM_FEATURE pLevelRule )
 {
 
 	if ( NULL == pParseHtml )
@@ -22,24 +22,26 @@ BOOL ParseWeb( LPCWSTR pszRootUrl,PLIST_LEVEL_RULE pLevelRule )
 		return FALSE;
 	}
 
+	if ( NULL == pLevelRule || pLevelRule->size() == 0)
+	{
+		return FALSE;
+	}
+
 
 
 	CString strWebContext;
 	strWebContext = GetWebContext(pszRootUrl,NULL,NULL);
 
-	list_result result;
+	list_result res;
 
-	elem_feature elemfeature;
-	elemfeature.tagname="a";
+	pParseHtml(CStringA(strWebContext),&(*(pLevelRule->begin())),&res);
 
-	attribute_feature attrfeature;
-	attrfeature.strattributename="href";
-	attrfeature.re_attributevalue="^h";
-
-	elemfeature.attributefeature.push_back(attrfeature);
-
-	pParseHtml(CStringA(strWebContext),&elemfeature,"href",&result);
-
+	for (list_result::iterator it = res.begin();it!=res.end();it++)
+	{
+		strWebContext = GetWebContext(CString((*it).c_str()),NULL,NULL);
+		
+		int a=0;
+	}
 
 	return FALSE;
 }

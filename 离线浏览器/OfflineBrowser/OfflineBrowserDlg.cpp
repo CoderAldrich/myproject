@@ -162,6 +162,15 @@ HCURSOR COfflineBrowserDlg::OnQueryDragIcon()
 
 void COfflineBrowserDlg::OnBnClickedOk()
 {
+	LIST_ELEM_FEATURE ElemFeature;
 
-	ParseWeb(L"http://www.sina.com.cn/",NULL);
+
+	elem_feature elem;
+	elem.tagname="a";
+	elem.strattributename="href";
+	elem.re_attributevalue=".*";
+
+	ElemFeature.push_back(elem);
+
+	ParseWeb(L"http://www.sina.com.cn/",&ElemFeature);
 }

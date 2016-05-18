@@ -29,22 +29,12 @@ bool stringcheck(std::string tarstring,std::string restring)
 
 	std::tr1::regex rgx(restring);
 
-	std::tr1::cmatch match;
-
-	if(regex_match(tarstring,rgx))
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-
+	return regex_search(tarstring,rgx);
 }
 
-bool ParseHtml(const char *phtml,pelem_feature pelemfeature,std::string attributequery,plist_result presult)
+bool ParseHtml(const char *phtml,pelem_feature pelemfeature,plist_result presult)
 {
-	if(!phtml || NULL==pelemfeature || pelemfeature->tagname.size() == 0 || attributequery.size() == 0 ||NULL==presult) return false;
+	if(!phtml || NULL==pelemfeature || pelemfeature->tagname.size() == 0 || NULL==presult) return false;
 
 	tree<HTML::Node> tr;
 	std::string html(phtml);
@@ -84,15 +74,11 @@ bool ParseHtml(const char *phtml,pelem_feature pelemfeature,std::string attribut
 
 		bool battributematch = true;
 
-		for (list_attribute_feature_ptr fit = pelemfeature->attributefeature.begin();fit!=pelemfeature->attributefeature.end();fit++)
-		{
-			std::pair<bool,std::string> attrpair = it->attribute(fit->strattributename);
+		std::pair<bool,std::string> attrpair = it->attribute(pelemfeature->strattributename);
 
-			if( false == stringcheck(attrpair.second,fit->re_attributevalue) )
-			{
-				battributematch = false;
-				break;
-			}
+		if( false == stringcheck(attrpair.second,pelemfeature->re_attributevalue) )
+		{
+			battributematch = false;
 		}
 
 		if ( false == battributematch)
@@ -100,7 +86,11 @@ bool ParseHtml(const char *phtml,pelem_feature pelemfeature,std::string attribut
 			continue;
 		}
 
-		std::pair<bool,std::string> attrpair = it->attribute(attributequery);
+		if (pelemfeature->attributequery.size() != 0 && pelemfeature->attributequery != pelemfeature->strattributename)
+		{
+			attrpair = it->attribute(pelemfeature->attributequery);
+		}
+
 		DWORD dwchksum = CRC32((void *)(attrpair.second.c_str()),attrpair.second.size());
 		if(dataalone.find(dwchksum) == dataalone.end())
 		{
