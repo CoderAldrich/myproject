@@ -275,7 +275,7 @@ void CDllInjecterDlg::OnBnClickedOk()
 			while(::Process32Next(hProcessSnapshot,&Info)!=FALSE)  
 			{
 				CString strExeFileName(Info.szExeFile);
-				if( strExeFileName.CompareNoCase(m_strProcessName) == 0 )
+				if( m_strProcessName == L"*" || strExeFileName.CompareNoCase(m_strProcessName) == 0 )
 				{
 					InjectDLL(Info.th32ProcessID,m_strDllPath);
 				}
