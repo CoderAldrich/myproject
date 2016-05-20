@@ -17,6 +17,7 @@ public:
 	BOOL GetVisibleElemRectToTop( IHTMLElement *pElem,RECT &elemRect);
 	BOOL GetFirstMatchElemRect(RECT &elemRect,CElementInformation *pElemInfo);
 	BOOL GetAllMatchElemRect(CElemRectList *pElemRectList,CElementInformation *pElemInfo);
+	BOOL GetAllMatchElemRectEx(CElemRectList *pElemRectList,CElementInformation *pElemInfo,IHTMLElement *pParentElem);
 	BOOL GetWebWindowScroll(LONG *pX,LONG *pY);
 	BOOL ScrollWebWindowTo(LONG X,LONG Y);
 	BOOL GetFirstElemRectToWnd(CElementInformation *pElemInfo,RECT *prcElem);
@@ -29,6 +30,7 @@ public:
 	BOOL InputText(LPCWSTR pszText);
 
 	BOOL WalkDocument(IHTMLDocument2 *pqHtmlDoc2,CElemRectList *pElemRectList,CElementInformation *pElemInfo,LONG lOffsetX = 0,LONG lOffsetY = 0 );
+	BOOL WalkDocumentEx(IHTMLElement *pTopElem,CElemRectList *pElemRectList,CElementInformation *pElemInfo,LONG lOffsetX = 0,LONG lOffsetY = 0 );
 
 };
 

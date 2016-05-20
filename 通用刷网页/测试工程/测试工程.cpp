@@ -294,6 +294,79 @@ VOID ShuaMsn()
 	}
 }
 
+
+VOID ShuaTest()
+{
+
+	if (pSetSlient)
+	{
+#ifndef DEBUG
+		pSetSlient();
+#endif
+	}
+
+	//初始化为手机模式，并出入按UserAgent
+	if (pCWInit)
+	{
+		pCWInit(FALSE,NULL);
+	}
+
+	if (pCWCreateView)
+	{
+		//创建一个浏览器窗口
+		IWBCoreControler *pWbControl = pCWCreateView();
+		//调整大小
+		pWbControl->ControlMoveWindow(0,30,1920,980);
+
+		//导航网址
+		//pWbControl->ControlGotoUrl(L"http://user.qzone.qq.com/2592705588/infocenter?ptsig=q8Ra1UWrfY*HEHGk98z3pd5zoD7yLnZ3tQVGxsro9a8_",L"");
+
+		pWbControl->ControlGotoUrl(L"http://freedev.top/autobrowsertest.html",L"");
+
+		//等待页面加载完成
+		while (!pWbControl->ControlWaitDocumentComplete(2000));
+
+#ifdef DEBUG
+		OutputDebugStringW(L"页面加载完成\n");
+#endif
+		Sleep(1000);
+
+		CAutoBrowser AutoBrowser(pWbControl->GetSafeWebBrowser2(),pWbControl->QueryIEServerWnd());
+
+
+		CElementInformation ElemInfo;
+		ElemInfo.SetTagName(L"div");
+		ElemInfo.AddElementAttribute(L"id",L"345",TRUE);
+		//AutoBrowser.ClickFirstMatchWebPageElement(&ElemSearchText);
+
+		CElemRectList ElemList;
+		AutoBrowser.GetAllMatchElemRect(&ElemList,&ElemInfo);
+
+		ELEM_RECT ElemRect;
+		ElemList.GetElemRectByIndex(0,&ElemRect);
+
+
+		CElementInformation ElemInfoTest;
+		ElemInfoTest.SetTagName(L"a");
+		ElemInfoTest.AddElementAttribute(L"href",L"baidu.com",FALSE);
+		CElemRectList ElemListTest;
+
+		IHTMLElement *pElem = NULL;
+		ElemRect.pElem->QueryInterface(IID_IHTMLElement,(void **)&pElem);
+		AutoBrowser.GetAllMatchElemRectEx(&ElemListTest,&ElemInfoTest,pElem);
+		//AutoBrowser.GetAllMatchElemRect(&ElemListTest,&ElemInfoTest);
+		int a=0;
+
+
+
+		while (1)
+		{
+			Sleep(5000);
+		}
+
+	}
+}
+
 VOID ShuaPhoneTest()
 {
 	//初始化为手机模式，并出入按UserAgent
@@ -373,7 +446,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		//ShuaPhoneMatrix();
 		//ShuaYouku();
 		//ShuaMsn();
-		ShuaPhoneTest();
+		//ShuaPhoneTest();
+		ShuaTest();
 	}
 // 	while (1)
 // 	{

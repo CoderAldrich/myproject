@@ -329,6 +329,82 @@ BOOL CAutoBrowser::WalkDocument(IHTMLDocument2 *pqHtmlDoc2,CElemRectList *pElemR
 	return TRUE;
 }
 
+BOOL CAutoBrowser::WalkDocumentEx(IHTMLElement *pTopElem,CElemRectList *pElemRectList,CElementInformation *pElemInfo,LONG lOffsetX,LONG lOffsetY )
+{
+	IHTMLElementCollection *pHtmlElemCol=NULL;
+	IDispatch *pTempDisp = NULL;
+	pTopElem->get_all(&pTempDisp);
+
+	if (pTempDisp)
+	{
+		pTempDisp->QueryInterface(IID_IHTMLElementCollection,(void **)&pHtmlElemCol);
+	}
+
+	if (pHtmlElemCol == NULL)
+	{
+		return FALSE;
+	}
+
+	LONG lElemCount;
+	pHtmlElemCol->get_length(&lElemCount);
+	VARIANT varIndex,var2;
+	for (long i=0;i<lElemCount;i++)
+	{
+		varIndex.vt=VT_UINT;
+		varIndex.lVal=i;
+		VariantInit(&var2);
+		IDispatch* pDisp;
+		HRESULT hr = pHtmlElemCol->item(varIndex,var2,&pDisp);
+		if (SUCCEEDED(hr))
+		{
+			CComQIPtr<IHTMLElement> pqElem(pDisp);
+
+			//如果是iframe元素 则进行递归遍历  暂时不支持，以后再加
+ 			CComQIPtr<IHTMLIFrameElement2> pqFrameElem2(pDisp);
+ 			if (pqFrameElem2)
+ 			{
+ 				RECT rcElem;
+ 				GetVisibleElemRect(pqElem,rcElem);
+ 
+ 
+ 				CComQIPtr<IWebBrowser> pSubFrameWb;
+ 				pqFrameElem2->QueryInterface(IID_IWebBrowser,(VOID **)&pSubFrameWb);
+ 				if (pSubFrameWb)
+ 				{
+ 					CComQIPtr<IDispatch> pDisp;
+ 					pSubFrameWb->get_Document(&pDisp);
+ 					CComQIPtr<IHTMLDocument2> pSubFrameDoc2(pDisp);
+ 
+ 					if( pSubFrameDoc2 )
+ 					{
+ 						WalkDocument(pSubFrameDoc2,pElemRectList,pElemInfo,lOffsetX+rcElem.left,lOffsetY + rcElem.top );
+ 					}
+ 				}
+ 			}
+
+
+			BOOL bTempFound = FALSE;
+			bTempFound = pElemInfo->MatchElementAttribute(pqElem);
+			if (bTempFound)
+			{
+				RECT rcElemRect;
+				BOOL bGetPos = GetVisibleElemRect(pqElem,rcElemRect);
+				if (bGetPos)
+				{
+					rcElemRect.left+=lOffsetX;
+					rcElemRect.right+=lOffsetX;
+					rcElemRect.top+=lOffsetY;
+					rcElemRect.bottom+=lOffsetY;
+
+					pElemRectList->InsertElemRect((IHTMLElement *)pDisp/*pqElem*/,&rcElemRect);
+				}
+			}
+		}
+	}
+
+	return TRUE;
+}
+
 BOOL CAutoBrowser::GetAllMatchElemRect(CElemRectList *pElemRectList,CElementInformation *pElemInfo)
 {
 
@@ -354,6 +430,12 @@ BOOL CAutoBrowser::GetAllMatchElemRect(CElemRectList *pElemRectList,CElementInfo
 	//WalkSubFrames(m_pWebBrowser,pElemRectList,pElemInfo);
 
 	return pElemRectList->GetElemRectCount() > 0;
+}
+
+BOOL CAutoBrowser::GetAllMatchElemRectEx(CElemRectList *pElemRectList,CElementInformation *pElemInfo,IHTMLElement *pParentElem)
+{
+	WalkDocumentEx(pParentElem,pElemRectList,pElemInfo,0,0);
+	return FALSE;
 }
 
 BOOL CAutoBrowser::GetWebWindowScroll(LONG *pX,LONG *pY)
