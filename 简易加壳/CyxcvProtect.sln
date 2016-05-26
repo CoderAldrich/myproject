@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Shell", "Shell\Shell.vcproj", "{B0EECD60-F8B9-445B-91E8-067D8AF26AB0}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ConsoleApp", "ConsoleApp\ConsoleApp.vcproj", "{4F34866B-DB0D-4EC0-B5F5-F036E0D690BC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B0EECD60-F8B9-445B-91E8-067D8AF26AB0}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B0EECD60-F8B9-445B-91E8-067D8AF26AB0}.Debug|Win32.Build.0 = Debug|Win32
+		{B0EECD60-F8B9-445B-91E8-067D8AF26AB0}.Release|Win32.ActiveCfg = Release|Win32
+		{B0EECD60-F8B9-445B-91E8-067D8AF26AB0}.Release|Win32.Build.0 = Release|Win32
+		{4F34866B-DB0D-4EC0-B5F5-F036E0D690BC}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4F34866B-DB0D-4EC0-B5F5-F036E0D690BC}.Debug|Win32.Build.0 = Debug|Win32
+		{4F34866B-DB0D-4EC0-B5F5-F036E0D690BC}.Release|Win32.ActiveCfg = Release|Win32
+		{4F34866B-DB0D-4EC0-B5F5-F036E0D690BC}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
