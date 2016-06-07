@@ -6,7 +6,7 @@
 //#include "ShuaClient.h"
 #include "MainFrm.h"
 
-#include "VirtualMouse.h"
+//#include "VirtualMouse.h"
 //#include "RandHome.h"
 //#include "SAStatusLog.h"
 
@@ -15,15 +15,6 @@
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
-
-#define CLICK_MATRIX_TIME_ID 1022
-#define MOVE_VIRTUAL_MOUSE   1023
-#define CLICK_WATCH_TIME_ID  1024
-//#define MAX_RUN_TIME_ID      1025
-#define MAX_WAIT_INJECT_TIME_ID 1026
-#define DELAY_SHOW_MATRIX_TIME_ID     1027
-#define DELAY_EXIT_PROCESS_TIME_ID     1028
-// CMainFrame
 
 IMPLEMENT_DYNCREATE(CMainFrame, CFrameWnd)
 
@@ -34,7 +25,6 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_WM_NCDESTROY()
 	ON_WM_TIMER()
 	ON_WM_CLOSE()
-	ON_WM_NCCALCSIZE()
 END_MESSAGE_MAP()
 
 
@@ -44,11 +34,6 @@ extern UINT    g_nMatrixClickRate;
 CMainFrame::CMainFrame()
 {
 	m_pView = NULL;
-// 	m_nMoveCount = 0;
-// 	m_bClickSuccess = FALSE;
-// 	m_nClickTryTimes = 0;
-// 	m_nRedirectCount = 0;
-// 	m_nShowMatrixCount = 0;
 }
 
 CMainFrame::~CMainFrame()
@@ -69,8 +54,6 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	CRect rcClient;
 	GetClientRect(&rcClient);
 	m_pView->Create(NULL,NULL,WS_VISIBLE|WS_CHILD,rcClient,this,0);
-	m_pView->Navigate2(L"about:blank");
-	m_pView->GetGlobalWebBrowser2()->put_Silent(VARIANT_TRUE);
 
 	return 0;
 }

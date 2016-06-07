@@ -4,11 +4,14 @@
 #include "IECoreView.h"
 #include "WndProcHook.h"
 #include "BrowserHelpFun.h"
+#include "ExceptionCatch.h"
 
 static DWORD g_dwThreadId = 0;
 BOOL g_bPhoneMode = FALSE;
 VOID WINAPI CWInit( BOOL bPhoneMode , LPCWSTR pszUserAgent )
 {
+	SetExceptionCatcher();
+
 	CoInitialize(NULL);
 
 	g_bPhoneMode = bPhoneMode;

@@ -2,10 +2,10 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="CommenWeb"
-	ProjectGUID="{C09AFB12-D38B-4E99-A065-C3C7F36F358E}"
-	RootNamespace="CommenWeb"
-	Keyword="MFCDLLProj"
+	Name="MatrixShua"
+	ProjectGUID="{0C4C9828-1947-4FC1-9E77-C084BE34D91B}"
+	RootNamespace="MatrixShua"
+	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -20,8 +20,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="2"
-			UseOfMFC="1"
+			ConfigurationType="1"
 			CharacterSet="1"
 			>
 			<Tool
@@ -38,16 +37,14 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="false"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG;_USRDLL"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
+				RuntimeLibrary="3"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -57,9 +54,6 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="2052"
-				AdditionalIncludeDirectories="$(IntDir)"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -67,7 +61,6 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="2"
-				ModuleDefinitionFile=".\CommenWeb.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -98,8 +91,7 @@
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="2"
-			UseOfMFC="1"
+			ConfigurationType="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -117,15 +109,13 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="false"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_USRDLL"
-				RuntimeLibrary="0"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
+				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
@@ -136,9 +126,6 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="2052"
-				AdditionalIncludeDirectories="$(IntDir)"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -146,8 +133,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="1"
-				ModuleDefinitionFile=".\CommenWeb.def"
-				GenerateDebugInformation="false"
+				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -185,39 +171,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\BrowserHelpFun.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CommenWeb.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\CommenWeb.def"
-				>
-			</File>
-			<File
-				RelativePath=".\CWExports.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\IECoreFixWnd.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\IECoreView.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\IIEOleClientSite.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\MainFrm.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\PublicFun.cpp"
+				RelativePath=".\MatrixShua.cpp"
 				>
 			</File>
 			<File
@@ -240,10 +194,6 @@
 					/>
 				</FileConfiguration>
 			</File>
-			<File
-				RelativePath=".\WebRunThread.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="头文件"
@@ -251,51 +201,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\BrowserHelpFun.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CommenWeb.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CommenWebExport.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CWExports.h"
-				>
-			</File>
-			<File
-				RelativePath=".\downloadmgr.h"
-				>
-			</File>
-			<File
-				RelativePath=".\IECoreFixWnd.h"
-				>
-			</File>
-			<File
-				RelativePath=".\IECoreView.h"
-				>
-			</File>
-			<File
-				RelativePath=".\IIEOleClientSite.h"
-				>
-			</File>
-			<File
-				RelativePath=".\IWBCoreControler.h"
-				>
-			</File>
-			<File
-				RelativePath=".\IWBCoreNotifyer.h"
-				>
-			</File>
-			<File
-				RelativePath=".\MainFrm.h"
-				>
-			</File>
-			<File
-				RelativePath=".\PublicFun.h"
+				RelativePath=".\MatrixShua.h"
 				>
 			</File>
 			<File
@@ -310,10 +216,6 @@
 				RelativePath=".\targetver.h"
 				>
 			</File>
-			<File
-				RelativePath=".\WebRunThread.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"
@@ -321,105 +223,65 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\CommenWeb.rc"
-				>
-			</File>
-			<File
-				RelativePath=".\res\CommenWeb.rc2"
+				RelativePath=".\MatrixShua.rc"
 				>
 			</File>
 		</Filter>
 		<Filter
-			Name="屏蔽多媒体"
+			Name="浏览器自动化"
 			>
 			<File
-				RelativePath=".\HttpRecvParser.cpp"
+				RelativePath=".\AutoBrowser.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\HttpRecvParser.h"
+				RelativePath=".\AutoBrowser.h"
 				>
 			</File>
 			<File
-				RelativePath=".\RWLock.cpp"
+				RelativePath=".\ElementInformation.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\RWLock.h"
+				RelativePath=".\ElementInformation.h"
 				>
 			</File>
 			<File
-				RelativePath=".\ShieldMedia.cpp"
+				RelativePath=".\ElemRectList.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\ShieldMedia.h"
+				RelativePath=".\ElemRectList.h"
 				>
 			</File>
 		</Filter>
 		<Filter
-			Name="IE内核保护"
+			Name="基础工具"
 			>
-			<File
-				RelativePath=".\WndProcHook.cpp"
+			<Filter
+				Name="Base64"
 				>
-			</File>
-			<File
-				RelativePath=".\WndProcHook.h"
+				<File
+					RelativePath=".\Base64Decode.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\Base64Decode.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="随机Url"
 				>
-			</File>
-		</Filter>
-		<Filter
-			Name="屏蔽回写"
-			>
-			<File
-				RelativePath=".\RecordBaseT.h"
-				>
-			</File>
-			<File
-				RelativePath=".\StopWriteDisk.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\StopWriteDisk.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="屏蔽窗口和声音"
-			>
-			<File
-				RelativePath=".\AudioVolume.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\AudioVolume.h"
-				>
-			</File>
-			<File
-				RelativePath=".\dsound.h"
-				>
-			</File>
-			<File
-				RelativePath=".\dsound.lib"
-				>
-			</File>
-			<File
-				RelativePath=".\Slient.cpp"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="异常捕获"
-			>
-			<File
-				RelativePath=".\ExceptionCatch.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\ExceptionCatch.h"
-				>
-			</File>
+				<File
+					RelativePath=".\RandHome.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\RandHome.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
@@ -427,9 +289,5 @@
 		</File>
 	</Files>
 	<Globals>
-		<Global
-			Name="RESOURCE_FILE"
-			Value="CommenWeb.rc"
-		/>
 	</Globals>
 </VisualStudioProject>

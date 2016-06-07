@@ -4,7 +4,7 @@
 #include "stdafx.h"
 #include "测试工程.h"
 
-#include "..\CommenWeb\IWBCoreControler.h"
+#include "..\CommenWeb\CommenWebExport.h"
 
 #include "AutoBrowser.h"
 
@@ -64,14 +64,6 @@ BOOL InjectDomNode(IWebBrowser *pWb,CString strJSUrl)
 	return E_FAIL;
 }
 
-typedef VOID (WINAPI *TypeCWInit)(BOOL bPhoneMode , LPCWSTR pszUserAgent);
-typedef IWBCoreControler * (WINAPI *TypeCWCreateView)( );
-typedef BOOL (WINAPI *TypeInitShieldResource)();
-typedef BOOL (WINAPI *TypeUpdateShildType)( LPCWSTR *pszArrayTypes,int nTypesCount );
-typedef BOOL (WINAPI *TypeSetShieldResource)(BOOL bSwitchOn);
-typedef BOOL (WINAPI *TypeInitStopWriteDisk)();
-typedef BOOL (WINAPI *TypeSetEnableWriteDisk)(BOOL bEnableWriteDisk);
-typedef BOOL (WINAPI *TypeSetSlient)();
 
 TypeCWInit pCWInit = NULL;
 TypeCWCreateView pCWCreateView = NULL;
@@ -392,17 +384,115 @@ VOID ShuaPhoneTest()
 		//等待页面加载完成
 		while (!pWbControl->ControlWaitDocumentComplete(2000));
 
+		IWBCoreControler *pNewWbControl = NULL;
+
+		while (1)
+		{
+			pWbControl->ControlWaitNewWindow(&pNewWbControl,NULL,0,2000);
+			if (pNewWbControl)
+			{
+				break;
+			}
+		}
+
+		pNewWbControl->ControlMoveWindow(100,100,400,700);
+
+		Sleep(1000000);
+
+	}
+}
+
+
+VOID ElemScrollTest()
+{
+
+	if (pSetSlient)
+	{
+#ifndef DEBUG
+		pSetSlient();
+#endif
+	}
+
+	//初始化为手机模式，并出入按UserAgent
+	if (pCWInit)
+	{
+		pCWInit(FALSE,NULL);
+	}
+
+	if (pCWCreateView)
+	{
+		//创建一个浏览器窗口
+		IWBCoreControler *pWbControl = pCWCreateView();
+		//调整大小
+		pWbControl->ControlMoveWindow(0,30,1920,980);
+
+		pWbControl->ControlGotoUrl(L"http://freedev.top/elemscroll.html",L"");
+
+		//等待页面加载完成
+		while (!pWbControl->ControlWaitDocumentComplete(2000));
+
+#ifdef DEBUG
+		OutputDebugStringW(L"页面加载完成\n");
+#endif
+		Sleep(1000);
+
+		CAutoBrowser AutoBrowser(pWbControl->GetSafeWebBrowser2(),pWbControl->QueryIEServerWnd());
+
+
+		CElementInformation ElemInfo;
+		ElemInfo.SetTagName(L"a");
+		ElemInfo.AddElementAttribute(L"href",L"freedev.top",FALSE);
+		AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo);
+
+		int a=0;
+
+		while (1)
+		{
+			Sleep(5000);
+		}
+
+	}
+}
+
+
+VOID ShuaPhoneTest1()
+{
+	//初始化为手机模式，并出入按UserAgent
+	if (pCWInit)
+	{
+		pCWInit(TRUE,L"Mozilla/5.0 (iPhone; CPU iPhone OS 7_0 like Mac OS X; en-us) AppleWebKit/537.51.1 (KHTML, like Gecko) Version/7.0 Mobile/11A465 Safari/9537.53");
+	}
+
+	if (pCWCreateView)
+	{
+
+		//初始化屏蔽回写
+		//pInitStopWriteDisk();
+		pSetEnableWriteDisk(FALSE);
+
+		//创建一个浏览器窗口
+		IWBCoreControler *pWbControl = pCWCreateView();
+		//调整大小
+		pWbControl->ControlMoveWindow(0,0,400,700);
+		//导航网址
+		pWbControl->ControlGotoUrl(L"http://freedev.top/test.html",L"");
+		//pWbControl->ControlGotoUrl(L"http://freedev.top/testlm.html",L"");
 		
 
-// 		while (1)
-// 		{
-// 			WCHAR szFileUrl[1000]={0};
-// 			pWbControl->ControlWaitDownloadFile(szFileUrl,1000,2000);
-// 			if (wcslen(szFileUrl))
-// 			{
-// 				break;
-// 			}
-// 		}
+		//等待页面加载完成
+		while (!pWbControl->ControlWaitDocumentComplete(2000));
+
+
+
+		// 		while (1)
+		// 		{
+		// 			WCHAR szFileUrl[1000]={0};
+		// 			pWbControl->ControlWaitDownloadFile(szFileUrl,1000,2000);
+		// 			if (wcslen(szFileUrl))
+		// 			{
+		// 				break;
+		// 			}
+		// 		}
 
 
 		IWBCoreControler *pNewWbControl = NULL;
@@ -419,6 +509,64 @@ VOID ShuaPhoneTest()
 		pNewWbControl->ControlMoveWindow(100,100,400,700);
 
 		Sleep(1000000);
+
+	}
+}
+
+
+VOID MousePosTest()
+{
+	if (pSetSlient)
+	{
+#ifndef DEBUG
+		pSetSlient();
+#endif
+	}
+
+	//初始化为手机模式，并出入按UserAgent
+	if (pCWInit)
+	{
+		pCWInit(FALSE,NULL);
+	}
+
+	if (pCWCreateView)
+	{
+		//创建一个浏览器窗口
+		IWBCoreControler *pWbControl = pCWCreateView();
+		//调整大小
+		pWbControl->ControlMoveWindow(0,30,1920,980);
+
+		pWbControl->ControlGotoUrl(L"http://freedev.top/t.html",L"");
+
+		//等待页面加载完成
+		while (!pWbControl->ControlWaitDocumentComplete(2000));
+
+#ifdef DEBUG
+		OutputDebugStringW(L"页面加载完成\n");
+#endif
+		Sleep(1000);
+
+		
+ 		CAutoBrowser AutoBrowser(pWbControl->GetSafeWebBrowser2(),pWbControl->QueryIEServerWnd());
+		while (1)
+		{
+			//AutoBrowser.SetWebPageMousePos(CAutoBrowser::GetRandValue(0,500),CAutoBrowser::GetRandValue(0,500));
+			AutoBrowser.SetWebPageMousePos(500,500);
+			Sleep(1000);
+		}
+// 
+// 
+// 		CElementInformation ElemInfo;
+// 		ElemInfo.SetTagName(L"a");
+// 		ElemInfo.AddElementAttribute(L"href",L"freedev.top",FALSE);
+// 		AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo);
+
+		int a=0;
+
+		while (1)
+		{
+			Sleep(5000);
+		}
 
 	}
 }
@@ -447,7 +595,10 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		//ShuaYouku();
 		//ShuaMsn();
 		//ShuaPhoneTest();
-		ShuaTest();
+		//ShuaTest();
+		//ElemScrollTest();
+		//ShuaPhoneTest1();
+		MousePosTest();
 	}
 // 	while (1)
 // 	{

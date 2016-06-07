@@ -327,9 +327,6 @@ void CIECoreView::NavigateComplete2(LPDISPATCH pDisp, VARIANT* URL)
 		{
 			m_bFixed = TRUE;
 
-			m_pBrowserApp->put_Silent(VARIANT_TRUE);
-			m_pBrowserApp->put_RegisterAsBrowser(VARIANT_FALSE);
-
 			HWND hEmbed=NULL;
 			HWND hDoc=NULL;
 			if(m_hWnd)
