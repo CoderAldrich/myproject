@@ -74,7 +74,41 @@ HRESULT WINAPI MyGetUserAgent( IOmNavigator *pThis, BSTR *bstrUserAgent )
 	return S_OK;
 }
 
-CComPtr<IGlobalInterfaceTable> CIECoreView::spGIT = NULL;
+IWebBrowser2 * GetIWebBrowser2Interface(HWND hBrowserWnd) 
+{
+	CoInitialize(NULL);
+
+	HRESULT hr;
+	LRESULT lRes; 
+	const UINT nMsg = ::RegisterWindowMessage( L"WM_HTML_GETOBJECT" );
+	::SendMessageTimeout( hBrowserWnd, nMsg, 0L, 0L, SMTO_ABORTIFHUNG, 1000, (DWORD_PTR*)&lRes );
+	static LPFNOBJECTFROMLRESULT pfObjectFromLresult = NULL;
+	if ( NULL == pfObjectFromLresult )
+	{
+		HINSTANCE hInst = ::LoadLibrary( L"OLEACC.DLL" );
+		if ( hInst )
+		{
+			pfObjectFromLresult = (LPFNOBJECTFROMLRESULT)::GetProcAddress( hInst, "ObjectFromLresult" );
+		}
+	}
+	if ( pfObjectFromLresult  )
+	{
+		CComPtr<IServiceProvider> spServiceProv;
+		hr = (*pfObjectFromLresult)( lRes, IID_IServiceProvider, 0, (void**)&spServiceProv );
+		if ( SUCCEEDED(hr) )
+		{
+			IWebBrowser2* pWebBrowser2=NULL;
+			hr = spServiceProv->QueryService(SID_SWebBrowserApp,
+				IID_IWebBrowser2,(void**)&pWebBrowser2);
+			return pWebBrowser2;
+		} 
+	}
+
+	CoUninitialize();
+
+	return NULL;
+}
+
 BOOL                   CIECoreView::bInternalHook = FALSE;
 CString                CIECoreView::m_strUserAgent = L"";
 CString                CIECoreView::m_strPlatform = L"Linux armv7l";
@@ -91,7 +125,6 @@ CIECoreView::CIECoreView()
 	bCanForward = FALSE;
 	bInit = FALSE;
 	m_bFixed = FALSE;
-	m_dwCookie = 0;
 	m_hIEServerWnd = NULL;
 
 	m_hNewWinEvent = NULL;
@@ -101,17 +134,10 @@ CIECoreView::CIECoreView()
 	pszFileUrl = NULL;
 	nFileUrlLen = 0;
 
-	if ( spGIT == NULL )
-	{
-		spGIT.CoCreateInstance(CLSID_StdGlobalInterfaceTable);
-	}
 }
 
 CIECoreView::~CIECoreView()
 {
-	spGIT->RevokeInterfaceFromGlobal( m_dwCookie );
-	
-	int a=0;
 }
 
 void CIECoreView::DoDataExchange(CDataExchange* pDX)
@@ -231,7 +257,7 @@ void CIECoreView::NewWindow3( IDispatch **ppDisp,VARIANT_BOOL *Cancel,DWORD dwFl
 			*Cancel = VARIANT_TRUE;
 		}
 
-		SetEvent(m_hNewWinEvent);
+		//SetEvent(m_hNewWinEvent);
 	}
 	else
 	{
@@ -356,6 +382,9 @@ void CIECoreView::NavigateComplete2(LPDISPATCH pDisp, VARIANT* URL)
 				m_strLastLocantionUrl = strLocationUrl;
 			}
 		}
+		
+		PostThreadMessageW(GetCurrentThreadId(),WM_USER+1112,(WPARAM)this,(LPARAM)NULL);
+		
 
 		OnMainDocumentComplete(pDisp, URL);
 	}
@@ -656,29 +685,20 @@ void CIECoreView::OnStatusTextChange(LPCTSTR lpszText)
 
 IWebBrowser * CIECoreView::GetGlobalWebBrowser(void)
 {
-	if ( m_dwCookie == 0 )
-	{
-		spGIT->RegisterInterfaceInGlobal(GetApplication(),IID_IDispatch,&m_dwCookie);
-	}
-
- 	IDispatch *pDisp;
- 	HRESULT hr = spGIT->GetInterfaceFromGlobal(m_dwCookie,IID_IDispatch,(void **)&pDisp);
  	IWebBrowser *pWb = NULL;
- 	pDisp->QueryInterface(IID_IWebBrowser,(void **)&pWb);
+	IWebBrowser2 *pWb2 = NULL;
+
+	pWb2 = GetIWebBrowser2Interface(m_hIEServerWnd);
+	if (pWb2)
+	{
+		pWb2->QueryInterface(IID_IWebBrowser,(PVOID *)&pWb);
+		pWb2->Release();
+	}
  	return pWb;
 }
 IWebBrowser2 * CIECoreView::GetGlobalWebBrowser2(void)
 {
-	//return m_pBrowserApp;
-
- 	IWebBrowser2 *pWb2 = NULL;
- 	IWebBrowser *pWb = GetGlobalWebBrowser();
- 	if(pWb)
- 	{
- 		pWb->QueryInterface(IID_IWebBrowser2,(void **)&pWb2);
- 	}
- 
- 	return pWb2;
+	return GetIWebBrowser2Interface(m_hIEServerWnd);
 }
 void CIECoreView::OnPaint()
 {

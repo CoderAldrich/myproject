@@ -20,7 +20,6 @@ public:
 	CIECoreView(); 
 	virtual ~CIECoreView();
 private:
-	static CComPtr<IGlobalInterfaceTable> spGIT;
 	CString               m_strLastLocantionUrl;
 	CString               m_strLastTitle;
 	CIECoreFixWnd         m_wndFixer;
@@ -44,9 +43,6 @@ public:
 	LPWSTR pszFileUrl;
 	UINT   nFileUrlLen;
 	//HANDLE m_hDocCompleteEvent;
-
- public:
- 	DWORD m_dwCookie;
 public:
 	BOOL OnEraseBkgnd(CDC* pDC);
 protected:

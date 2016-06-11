@@ -12,9 +12,6 @@ using namespace std;
 template<typename T,typename TT>
 class CRecordBaseT
 {
-public:
-	typedef list<TT>   RECORD_DATA_LIST;
-private:
 	typedef map< T,TT > RECORD_MAP;
 protected:
 	CRWLock         m_rwLocker;
@@ -107,57 +104,6 @@ public:
 
 		return bGetData;
 	}
-
-	LONG GetRecordCount()
-	{
-		LONG lCount = 0;
-
-		//m_rwLocker.rlock();
-
-		lCount = m_RecordMap.size();
-
-		//m_rwLocker.unlock();
-
-		return lCount;
-	}
-
-	BOOL GetAllNodeData(RECORD_DATA_LIST *pDataList,BOOL bOutLock)
-	{
-		if(FALSE == bOutLock )
-		{
-			m_rwLocker.wlock();
-		}
-		
-		for (RECORD_MAP::iterator it = m_RecordMap.begin();it!=m_RecordMap.end();it++)
-		{
-			pDataList->push_back(it->second);
-		}
-
-		if(FALSE == bOutLock )
-		{
-			m_rwLocker.unlock();
-		}
-		
-
-		return TRUE;
-	}
-
-
-	VOID RLock()
-	{
-		m_rwLocker.rlock();
-	}
-
-	VOID WLock()
-	{
-		m_rwLocker.wlock();
-	}
-
-	VOID ULock()
-	{
-		m_rwLocker.unlock();
-	}
-
 };
 
 

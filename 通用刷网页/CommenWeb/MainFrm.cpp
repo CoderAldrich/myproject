@@ -54,6 +54,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	CRect rcClient;
 	GetClientRect(&rcClient);
 	m_pView->Create(NULL,NULL,WS_VISIBLE|WS_CHILD,rcClient,this,0);
+	m_pView->Navigate2(L"about:blank");
 
 	return 0;
 }

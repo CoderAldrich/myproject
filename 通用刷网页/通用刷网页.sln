@@ -9,6 +9,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "测试工程", "测试工�
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MatrixShua", "MatrixShua\MatrixShua.vcproj", "{0C4C9828-1947-4FC1-9E77-C084BE34D91B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C09AFB12-D38B-4E99-A065-C3C7F36F358E} = {C09AFB12-D38B-4E99-A065-C3C7F36F358E}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

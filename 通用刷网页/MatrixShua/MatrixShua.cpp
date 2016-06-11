@@ -166,40 +166,7 @@ VOID MyParseCommandLine(
 
 }
 
-IWebBrowser2 * GetIWebBrowser2Interface(HWND BrowserWnd) 
-{
-	CoInitialize(NULL);
 
-	HRESULT hr;
-	LRESULT lRes; 
-	const UINT nMsg = ::RegisterWindowMessage( L"WM_HTML_GETOBJECT" );
-	::SendMessageTimeout( BrowserWnd, nMsg, 0L, 0L, SMTO_ABORTIFHUNG, 1000, (DWORD_PTR*)&lRes );
-	static LPFNOBJECTFROMLRESULT pfObjectFromLresult = NULL;
-	if ( NULL == pfObjectFromLresult )
-	{
-		HINSTANCE hInst = ::LoadLibrary( L"OLEACC.DLL" );
-		if ( hInst )
-		{
-			pfObjectFromLresult = (LPFNOBJECTFROMLRESULT)::GetProcAddress( hInst, "ObjectFromLresult" );
-		}
-	}
-	if ( pfObjectFromLresult  )
-	{
-		CComPtr<IServiceProvider> spServiceProv;
-		hr = (*pfObjectFromLresult)( lRes, IID_IServiceProvider, 0, (void**)&spServiceProv );
-		if ( SUCCEEDED(hr) )
-		{
-			IWebBrowser2* pWebBrowser2=NULL;
-			hr = spServiceProv->QueryService(SID_SWebBrowserApp,
-				IID_IWebBrowser2,(void**)&pWebBrowser2);
-			return pWebBrowser2;
-		} 
-	}
-
-	CoUninitialize();
-
-	return NULL;
-}
 
 BOOL InjectDomNode(IWebBrowser *pWb,CString strJSUrl)
 {
@@ -308,10 +275,10 @@ VOID StartShuaMatrix( LPCWSTR pszJsUrl , LPCWSTR pszBaseUrl )
 
 		pSetShieldMedia(FALSE);
 		//²åÈë¾ØÕó
-		InjectDomNode(GetIWebBrowser2Interface(pWbControl->QueryIEServerWnd()),pszJsUrl);
+		InjectDomNode(pWbControl->GetSafeWebBrowser(),pszJsUrl);
 
-		
-
+		CAutoBrowser AutoBrowser(pWbControl->GetSafeWebBrowser2(),pWbControl->QueryIEServerWnd());
+		AutoBrowser.ScrollWebWindowTo(0,300);
 		while (1)
 		{
 			Sleep(5000);
