@@ -353,10 +353,11 @@ CString GetHtmlCode(const CString strUrl)
 		BOOL bOption = TRUE;
 		BOOL bSetRes = InternetSetOption(hInternet1,INTERNET_OPTION_HTTP_DECODING,&bOption,sizeof(BOOL));
 
-		WCHAR szHeaderAdd[] = L"Accept-Encoding: gzip, deflate";
+		WCHAR szHeaderAdd[] = L"Accept-Encoding: gzip, deflate\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko\r\n";
 		HINTERNET hInternet2 = InternetOpenUrlW(hInternet1,strUrl,szHeaderAdd,wcslen(szHeaderAdd),INTERNET_FLAG_NO_CACHE_WRITE,NULL);
 		if (NULL == hInternet2)
 		{
+			DWORD dwErrorCode = GetLastError();
 			break;
 		}
 
@@ -378,6 +379,74 @@ CString GetHtmlCode(const CString strUrl)
 
 	return strPageContent;
 
+}
+
+
+#define NON_NUM '0'
+
+char Char2Num(char ch){
+if(ch>='0' && ch<='9')return (char)(ch-'0');
+if(ch>='a' && ch<='f')return (char)(ch-'a'+10);
+if(ch>='A' && ch<='F')return (char)(ch-'A'+10);
+return NON_NUM;
+}
+
+/************************************************
+ * 把字符串进行URL编码。
+ * 输入：
+ *  str:       要编码的字符串
+ *  strSize:   字符串的长度。这样str中可以是二进制数据
+ *  result:    结果缓冲区的地址
+ *  resultSize:结果地址的缓冲区大小(如果str所有字符都编码，该值为strSize*3)
+ * 返回值：
+ *  >0:  result中实际有效的字符长度，
+ *   0:  编码失败，原因是结果缓冲区result的长度太小
+ ************************************************/
+int URLEncode(const char* str, const int strSize, char* result, const int resultSize) 
+{
+	int i;
+	int j = 0; /* for result index */
+	char ch;
+
+	if ((str == NULL) || (result == NULL) || (strSize <= 0) || (resultSize <= 0)) {
+		return 0;
+	}
+
+	for (i=0; (i<strSize) && (j<resultSize); i++) 
+	{
+		ch = str[i];
+		if ((ch >= 'A') && (ch <= 'Z')) 
+		{
+			result[j++] = ch;
+		} 
+		else if ((ch >= 'a') && (ch <= 'z')) 
+		{
+			result[j++] = ch;
+		} 
+		else if ((ch >= '0') && (ch <= '9')) 
+		{
+			result[j++] = ch;
+		} 
+		else if(ch == ' ')
+		{
+			result[j++] = '+';
+		} 
+		else 
+		{
+			if (j + 3 < resultSize) 
+			{
+				sprintf(result+j, "%%%02X", (unsigned char)ch);
+				j += 3;
+			} 
+			else 
+			{
+				return 0;
+			}
+		}
+	}
+
+	result[j] = '\0';
+	return j;
 }
 
 
@@ -463,9 +532,16 @@ CString GetRandUrl(CString & strReferUrl)
 	if( nType < 0 ) nType = 0;
 	if( nType > 2 ) nType = 2;
 
+	CStringA straSearchText;
+	CStringA straSearchTextEncode;
+	straSearchText = strSearchText;
+	
+	URLEncode(straSearchText.GetBuffer(),straSearchText.GetLength(),straSearchTextEncode.GetBuffer(500),500);
+	straSearchTextEncode.ReleaseBuffer();
+
 	CString strSearchUrl;
 	// 随机一个引擎
-	strSearchUrl.Format(pchArraySearchUrl[nType],strSearchText);
+	strSearchUrl.Format(pchArraySearchUrl[nType],CString(straSearchTextEncode));
 
 #if _DEBUG
 	OutputDebugString(strSearchUrl);
