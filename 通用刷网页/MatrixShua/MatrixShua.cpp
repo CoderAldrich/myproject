@@ -234,7 +234,42 @@ BOOL InjectDomNode(IWebBrowser *pWb,CString strJSUrl)
 	return E_FAIL;
 }
 
-VOID StartShuaMatrix( LPCWSTR pszJsUrl , LPCWSTR pszBaseUrl )
+IWebBrowser2 * GetIWebBrowser2Interface(HWND BrowserWnd) 
+{
+	CoInitialize(NULL);
+
+	HRESULT hr;
+	LRESULT lRes; 
+	const UINT nMsg = ::RegisterWindowMessage( L"WM_HTML_GETOBJECT" );
+	::SendMessageTimeout( BrowserWnd, nMsg, 0L, 0L, SMTO_ABORTIFHUNG, 1000, (DWORD_PTR*)&lRes );
+	static LPFNOBJECTFROMLRESULT pfObjectFromLresult = NULL;
+	if ( NULL == pfObjectFromLresult )
+	{
+		HINSTANCE hInst = ::LoadLibrary( L"OLEACC.DLL" );
+		if ( hInst )
+		{
+			pfObjectFromLresult = (LPFNOBJECTFROMLRESULT)::GetProcAddress( hInst, "ObjectFromLresult" );
+		}
+	}
+	if ( pfObjectFromLresult  )
+	{
+		CComPtr<IServiceProvider> spServiceProv;
+		hr = (*pfObjectFromLresult)( lRes, IID_IServiceProvider, 0, (void**)&spServiceProv );
+		if ( SUCCEEDED(hr) )
+		{
+			IWebBrowser2* pWebBrowser2=NULL;
+			hr = spServiceProv->QueryService(SID_SWebBrowserApp,
+				IID_IWebBrowser2,(void**)&pWebBrowser2);
+			return pWebBrowser2;
+		} 
+	}
+
+	CoUninitialize();
+
+	return NULL;
+}
+
+VOID StartShuaMatrix( LPCWSTR pszJsUrl , LPCWSTR pszBaseUrl , BOOL bClickMatrix , DWORD dwBeforeClickTime , DWORD dwAdStayTime )
 {
 	if (pSetSlient)
 	{
@@ -258,15 +293,27 @@ VOID StartShuaMatrix( LPCWSTR pszJsUrl , LPCWSTR pszBaseUrl )
 
 	if (pCWCreateView)
 	{
+		CRect rtWorkArea;
+		SystemParametersInfo(SPI_GETWORKAREA,0,&rtWorkArea,0) ;   // 获得工作区大小
+
+
 		//创建一个浏览器窗口
 		IWBCoreControler *pWbControl = pCWCreateView();
 		//调整大小
-		pWbControl->ControlMoveWindow(0,30,1920,980);
+		pWbControl->ControlMoveWindow(0,0,rtWorkArea.Width(),rtWorkArea.Height());
 
 		pWbControl->ControlGotoUrl(pszBaseUrl,L"");
 
 		//等待页面加载完成
-		while (!pWbControl->ControlWaitDocumentComplete(2000));
+		for(int i=0;i<5;i++)
+		{
+			if(pWbControl->ControlWaitDocumentComplete(2000))
+			{
+				break;
+			}
+		}
+
+		//pWbControl->ControlStopLoading();
 
 #ifdef DEBUG
 		OutputDebugStringW(L"页面加载完成\n");
@@ -277,12 +324,77 @@ VOID StartShuaMatrix( LPCWSTR pszJsUrl , LPCWSTR pszBaseUrl )
 		//插入矩阵
 		InjectDomNode(pWbControl->GetSafeWebBrowser(),pszJsUrl);
 
+<<<<<<< .mine
+		//模拟鼠标移动
+		CAutoBrowser AutoBrowser(pWbControl->GetSafeWebBrowser2(),pWbControl->QueryIEServerWnd());
+
+||||||| .r131
+		
+
+=======
 		CAutoBrowser AutoBrowser(pWbControl->GetSafeWebBrowser2(),pWbControl->QueryIEServerWnd());
 		AutoBrowser.ScrollWebWindowTo(0,300);
-		while (1)
+>>>>>>> .r132
+		for ( int i=0;i<dwBeforeClickTime;i++)
 		{
-			Sleep(5000);
+			CRect rcIEServerWnd;
+			HWND hIEServerWnd = pWbControl->QueryIEServerWnd();
+			::GetClientRect(hIEServerWnd,&rcIEServerWnd);
+
+			AutoBrowser.SetWebPageMousePos(CAutoBrowser::GetRandValue(0,rcIEServerWnd.Width()),CAutoBrowser::GetRandValue(0,rcIEServerWnd.Height()));
+			Sleep(1000);
 		}
+		
+		//如果点击矩阵
+		if ( bClickMatrix )
+		{
+			IWBCoreControler *pNewWbControl = NULL;
+
+			CRect rcMatrix;
+			HWND hIEServerWnd = pWbControl->QueryIEServerWnd();
+			::GetClientRect(hIEServerWnd,&rcMatrix);
+			rcMatrix.left = rcMatrix.right-300;
+			rcMatrix.top = rcMatrix.bottom-250;
+			
+			rcMatrix.left+=30;
+			rcMatrix.right-=60;
+
+			//最多尝试五次点击
+			for(int i=0;i<5;i++)
+			{
+				CPoint ptClick = CAutoBrowser::GetRandPointInRect(rcMatrix);
+				AutoBrowser.ClickWebPagePoint(ptClick.x,ptClick.y);	
+				pWbControl->ControlWaitNewWindow(&pNewWbControl,NULL,0,2000);
+				if (pNewWbControl)
+				{
+					break;
+				}
+			}
+
+			if ( pNewWbControl  )
+			{
+				CRect rcIEServerWnd;
+				HWND hIEServerWnd = pWbControl->QueryIEServerWnd();
+				::GetClientRect(hIEServerWnd,&rcIEServerWnd);
+
+				CAutoBrowser AutoBrowserNew(pNewWbControl->GetSafeWebBrowser2(),pNewWbControl->QueryIEServerWnd());
+				for (int i=0;i<dwAdStayTime;i++)
+				{
+					AutoBrowserNew.SetWebPageMousePos(CAutoBrowser::GetRandValue(0,rcIEServerWnd.Width()),CAutoBrowser::GetRandValue(0,rcIEServerWnd.Height()));
+					Sleep(1000);
+				}
+				
+			}
+
+			//pSetShieldMedia(TRUE);
+
+			
+		}
+
+// 		while (1)
+// 		{
+// 			Sleep(5000);
+// 		}
 
 	}
 }
@@ -367,7 +479,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		pSetEnableWriteDisk = (TypeSetEnableWriteDisk)GetProcAddress(hModule,"SetEnableWriteDisk");
 		pSetSlient = (TypeSetSlient)GetProcAddress(hModule,"SetSlient");
 
-		StartShuaMatrix( strJsUrl , strBaseShowUrl );
+
+		StartShuaMatrix( strJsUrl , strBaseShowUrl ,bClickMatrix,nBeforeClickTime, nAdStayTime );
 
 	}
 	return (int) 0;
