@@ -21,6 +21,7 @@ typedef struct PingNode
 	CString strIP;
 	DWORD   dwIPHost;
 	DWORD   dwIPNet;
+	DWORD   dwSendTime;
 	BOOL    bRespon;
 }PingNode,*PPingNode;
 
@@ -256,10 +257,14 @@ DWORD PingRange(const char *pchStartIP,const char *pchEndIP,PingMap *pMap,UINT n
 				Node.dwIPHost = ulIP;
 				Node.dwIPNet = 0;
 				Node.strIP = inet_ntoa(ia);
+				Node.dwSendTime = GetTickCount();
 
 				pMap->insert(make_pair((USHORT)ulIP,Node));
-			}
 
+				it = (*pMap).find((USHORT)ulIP);
+			}
+			
+			it->second.dwSendTime = GetTickCount();
 
 			struct sockaddr_in dest;
 			memset(&dest, 0, sizeof(dest));
@@ -305,7 +310,86 @@ end:
 	return dwErrorCode;
 }
 
+#include "TcpSocket.h"
 
+
+//ÁÙ½çÇø»¥³âËø
+class CCSLock
+{
+private:
+	CRITICAL_SECTION m_cs;
+public:
+	CCSLock()
+	{
+		InitializeCriticalSection(&m_cs);
+	}
+	~CCSLock()
+	{
+		DeleteCriticalSection(&m_cs);
+	}
+	VOID Lock()
+	{
+		EnterCriticalSection(&m_cs);
+	}
+
+	VOID UnLock()
+	{
+		LeaveCriticalSection(&m_cs);
+	}
+
+};
+
+
+CCSLock csLock;
+#include <list>
+using namespace std;
+typedef list<CStringA> LIST_CHECK_HOSTS;
+typedef LIST_CHECK_HOSTS::iterator LIST_CHECK_HOSTS_PTR;
+
+LIST_CHECK_HOSTS lstHosts;
+
+
+DWORD WINAPI CheckPortThread(PVOID pParam)
+{
+
+	while(1)
+	{
+		CStringA strHostIp;
+
+		csLock.Lock();
+		if ( lstHosts.size() > 0 )
+		{
+			LIST_CHECK_HOSTS_PTR it = lstHosts.begin();
+			strHostIp = *it;
+			lstHosts.erase(it);
+		}
+
+		csLock.UnLock();
+
+		if ( strHostIp.GetLength() > 0 )
+		{
+			CTcpSocket tcpSock;
+			BOOL bRes = tcpSock.CreateTcpSocket();
+
+			bRes = tcpSock.Connect(strHostIp,80,1);
+			if (bRes)
+			{
+				OutputDebugStringA(strHostIp+"\r\n");
+			}
+			tcpSock.CloseTcpSocket();
+			int a=0;
+
+		}
+		else
+		{
+			Sleep(10);
+		}
+
+	}
+
+
+	return 0;
+}
 
 DWORD WINAPI WatchEchoPackge(LPVOID pParam)
 {
@@ -385,29 +469,36 @@ DWORD WINAPI WatchEchoPackge(LPVOID pParam)
 			if (it!=pMap->end())
 			{
 				(*pMap)[nPkgID].bRespon = true;
-				CString msgout;
-				msgout.Format(TEXT("Found %s \r\n"),(*pMap)[nPkgID].strIP);
-				OutputDebugStringW(msgout);
+
+// 				static int nIndex = 1;
+// 				CString msgout;
+// 				msgout.Format(TEXT(" %05d %s %dms\r\n"),nIndex++,(*pMap)[nPkgID].strIP,GetTickCount()-it->second.dwSendTime);
+// 				OutputDebugStringW(msgout);
+
+				csLock.Lock();
+				lstHosts.push_back(CStringA((*pMap)[nPkgID].strIP));
+				csLock.UnLock();
+
 			}
 			
 
 
-			//ULONG MacAddr[2];
-			//ULONG PhysAddrLen = 6;
-			//memset(&MacAddr, 0xff, sizeof (MacAddr));
-
-			//int TryTimes = 0;
-			//DWORD res = 0;
-			//while( (res = SendARP( DestIP,HostIP, &MacAddr, &PhysAddrLen)) != NO_ERROR)
-			//{
-			//	TryTimes++;
-			//	if (TryTimes >= 3)
-			//	{
-			//		break;
-			//	}
-			//}
-
-			//strMacAddr = GetMacString((LPVOID *)MacAddr,6);
+// 			ULONG MacAddr[2];
+// 			ULONG PhysAddrLen = 6;
+// 			memset(&MacAddr, 0xff, sizeof (MacAddr));
+// 
+// 			int TryTimes = 0;
+// 			DWORD res = 0;
+// 			while( (res = SendARP( DestIP,HostIP, &MacAddr, &PhysAddrLen)) != NO_ERROR)
+// 			{
+// 				TryTimes++;
+// 				if (TryTimes >= 3)
+// 				{
+// 					break;
+// 				}
+// 			}
+// 
+// 			strMacAddr = GetMacString((LPVOID *)MacAddr,6);
 
 		}
 	}
@@ -433,12 +524,13 @@ int main(char *argv,int argc)
 {
 	PingMap pMap;
 	
-
-
+	
+	CreateThread(NULL,0,CheckPortThread,((PVOID)&pMap),0,NULL);
 	CreateThread(NULL,0,WatchEchoPackge,((PVOID)&pMap),0,NULL);
-	//PingRange("192.168.0.1","192.168.0.255",&pMap,10,10);
-	PingRange("220.181.40.1","220.181.255.255",&pMap,10,10);
-
+	//PingRange("192.168.0.1","192.168.0.255",&pMap,10,500);
+	//PingRange("211.64.0.0","211.71.255.255",&pMap,10,5);
+	PingRange("157.7.200.0","157.7.254.255",&pMap,10,10);
+	
 	getchar();
 
 	return 0;

@@ -166,12 +166,28 @@
 				RelativePath=".\pingrange.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\SocketBase.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\TcpSocket.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="头文件"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\SocketBase.h"
+				>
+			</File>
+			<File
+				RelativePath=".\TcpSocket.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"
