@@ -798,6 +798,7 @@ HRESULT FAR EXPORT  IIEOleControlSite::XDownloadManager::QueryInterface(REFIID r
 	return hr;
 }
 
+#include "UrlShowDlg.h"
 
 HRESULT FAR EXPORT IIEOleControlSite::XDownloadManager::Download(
 	/* [in] */ IMoniker __RPC_FAR *pmk,
@@ -817,6 +818,16 @@ HRESULT FAR EXPORT IIEOleControlSite::XDownloadManager::Download(
 	strFileUrl=bsFileUrl;
 	CoTaskMemFree(bsFileUrl);
 	//fixit: free bsFileUrl
+
+	CUrlShowDlg *pdlg = new CUrlShowDlg;
+	if (pdlg)
+	{
+		pdlg->Create(IDD_DLG_URL_SHOW);
+		pdlg->m_strUrl = strFileUrl;
+		pdlg->UpdateData(FALSE);
+		pdlg->ShowWindow(SW_SHOW);
+
+	}
 
 	return S_FALSE;
 }

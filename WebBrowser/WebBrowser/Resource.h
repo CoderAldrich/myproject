@@ -50,19 +50,22 @@
 #define ID_GOTO_URL                     205
 #define ID_NEW_TAB                      206
 #define ID_SEARCH                       207
+#define IDD_DIALOG1                     226
+#define IDD_DLG_URL_SHOW                226
 #define ID_UI_END                       250
 #define IDB_TAB_BASE                    311
 #define IDB_TAB_HOT_BASE                313
 #define IDB_TAB_HOT                     314
+#define IDC_EDIT1                       1038
 #define ID_32943                        32943
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        226
+#define _APS_NEXT_RESOURCE_VALUE        227
 #define _APS_NEXT_COMMAND_VALUE         32944
-#define _APS_NEXT_CONTROL_VALUE         1038
+#define _APS_NEXT_CONTROL_VALUE         1039
 #define _APS_NEXT_SYMED_VALUE           108
 #endif
 #endif

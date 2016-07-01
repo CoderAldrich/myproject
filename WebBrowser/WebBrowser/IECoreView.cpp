@@ -31,7 +31,7 @@ HRESULT WINAPI MyGetPlatform( IOmNavigator *pThis, BSTR *bstrPlatform )
 	return S_OK;
 }
 
-LPCWSTR pszUserAgent = L"Mozilla/5.0 (compatible; MSIE 10.0; Windows Phone 8.0; Trident/6.0; IEMobile/10.0; ARM; Touch; NOKIA; Lumia 820)";
+LPCWSTR pszUserAgent = L"Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:41.0) Gecko/20100101 Firefox/41.0";
 
 typedef HRESULT (WINAPI *TypeGetUserAgent)( IOmNavigator *pThis, BSTR *bstrUserAgent );
 TypeGetUserAgent pGetUserAgent = NULL;
@@ -237,6 +237,36 @@ void CIECoreView::NavigateComplete2(LPDISPATCH pDisp, VARIANT* URL)
 
 	if(pDisp == GetApplication() /* 仅处理最顶层Frame的事件 */)
 	{
+
+		if ( FALSE == bInternalHook )
+		{
+			bInternalHook = TRUE;
+			IHTMLDocument2 *pDoc2 = (IHTMLDocument2 *)GetHtmlDocument();
+			if (pDoc2)
+			{
+				IHTMLWindow2 *pHW2 = NULL;
+				pDoc2->get_parentWindow(&pHW2);
+
+				IOmNavigator *pON = NULL;
+				pHW2->get_navigator(&pON);
+
+				DWORD dwTemp = *(DWORD *)((BYTE *)pON+0x10);
+				pGetNavigator = (TypeGetPlatform)*((DWORD *)(dwTemp+0x58));
+
+				pGetUserAgent =  (TypeGetUserAgent) *(PVOID *)((DWORD)(*(DWORD*)((BYTE *)pON+0xC+4))+0x28);
+
+				DetourTransactionBegin();
+				DetourUpdateThread(GetCurrentThread());
+
+				//DetourAttach((LPVOID*)&pNetHttpSendRequestW,(PVOID)&MyNetHttpSendRequestW);
+				DetourAttach((LPVOID*)&pGetNavigator,(PVOID)&MyGetPlatform);
+				DetourAttach((LPVOID*)&pGetUserAgent,(PVOID)&MyGetUserAgent);
+
+				DetourTransactionCommit();
+
+			}
+		}
+
 		if(m_bFixed == FALSE)
 		{
 			m_bFixed = TRUE;
@@ -417,37 +447,6 @@ void CIECoreView::DocumentComplete(LPDISPATCH pDisp, VARIANT* URL)
 {	
 	if(m_pNotifyer && pDisp == GetApplication()/* 仅处理最顶层Frame的事件 */)
 	{
-
-		if ( FALSE/*FALSE == bInternalHook*/ )
-		{
-			bInternalHook = TRUE;
-			IHTMLDocument2 *pDoc2 = (IHTMLDocument2 *)GetHtmlDocument();
-			if (pDoc2)
-			{
-				IHTMLWindow2 *pHW2 = NULL;
-				pDoc2->get_parentWindow(&pHW2);
-
-
-
-				IOmNavigator *pON = NULL;
-				pHW2->get_navigator(&pON);
-
-				DWORD dwTemp = *(DWORD *)((BYTE *)pON+0x10);
-				pGetNavigator = (TypeGetPlatform)*((DWORD *)(dwTemp+0x58));
-
-				pGetUserAgent =  (TypeGetUserAgent) *(PVOID *)((DWORD)(*(DWORD*)((BYTE *)pON+0xC+4))+0x28);
-
-				DetourTransactionBegin();
-				DetourUpdateThread(GetCurrentThread());
-
-//				DetourAttach((LPVOID*)&pGetNavigator,(PVOID)&MyGetPlatform);
-// 				DetourAttach((LPVOID*)&pGetUserAgent,(PVOID)&MyGetUserAgent);
-// 				DetourAttach((LPVOID*)&pNetHttpSendRequestW,(PVOID)&MyNetHttpSendRequestW);
-				DetourTransactionCommit();
-
-			}
-		}
-
 		m_pNotifyer->NotifyMainDocumentComplete(m_PageID,V_BSTR(URL));
 	}
 }

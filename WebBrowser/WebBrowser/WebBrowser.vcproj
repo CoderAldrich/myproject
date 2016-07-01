@@ -73,7 +73,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				RegisterOutput="true"
-				OutputFile="$(OutDir)\iexplore.exe"
+				OutputFile="$(OutDir)\WebBrowser.exe"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(OutDir)\;..\..\¹«¹²¾²Ì¬¿â\lib"
 				GenerateDebugInformation="true"
@@ -499,6 +499,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\UrlShowDlg.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\WebBrowser.cpp"
 				>
 			</File>
@@ -578,6 +582,10 @@
 			</File>
 			<File
 				RelativePath=".\targetver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UrlShowDlg.h"
 				>
 			</File>
 			<File

@@ -94,13 +94,13 @@ BOOL StartHookCookie();
 BOOL CWebBrowserApp::InitInstance()
 {
 
-	DetourTransactionBegin();
-	DetourUpdateThread(GetCurrentThread());
-	DetourAttach((PVOID *)&pInternetErrorDlg,(PVOID)MyInternetErrorDlg);
-	//DetourAttach((PVOID *)&pGetModuleFileNameW,(PVOID)MyGetModuleFileNameW);
-	DetourTransactionCommit();
+// 	DetourTransactionBegin();
+// 	DetourUpdateThread(GetCurrentThread());
+// 	//DetourAttach((PVOID *)&pInternetErrorDlg,(PVOID)MyInternetErrorDlg);
+// 	//DetourAttach((PVOID *)&pGetModuleFileNameW,(PVOID)MyGetModuleFileNameW);
+// 	DetourTransactionCommit();
 
-	StartHookCookie();
+	//StartHookCookie();
 	::LoadLibrary(L"DebugPrivate.dll");
 
 	BrowserFix();
