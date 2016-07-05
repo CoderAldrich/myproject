@@ -1,0 +1,2 @@
+sc stop ProcessMasterService
+sc start ProcessMasterService
