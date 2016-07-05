@@ -49,6 +49,8 @@ END_MESSAGE_MAP()
 
 CProcessMasterDlg::CProcessMasterDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CProcessMasterDlg::IDD, pParent)
+	, m_strProcessName(_T(""))
+	, m_strDependProcessName(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -56,6 +58,9 @@ CProcessMasterDlg::CProcessMasterDlg(CWnd* pParent /*=NULL*/)
 void CProcessMasterDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_LIST1, m_wndItemList);
+	DDX_Text(pDX, IDC_EDIT1, m_strProcessName);
+	DDX_Text(pDX, IDC_EDIT2, m_strDependProcessName);
 }
 
 BEGIN_MESSAGE_MAP(CProcessMasterDlg, CDialog)
@@ -63,6 +68,8 @@ BEGIN_MESSAGE_MAP(CProcessMasterDlg, CDialog)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	//}}AFX_MSG_MAP
+	ON_BN_CLICKED(IDC_BUTTON1, &CProcessMasterDlg::OnBnClickedButton1)
+	ON_BN_CLICKED(IDOK, &CProcessMasterDlg::OnBnClickedOk)
 END_MESSAGE_MAP()
 
 
@@ -151,3 +158,20 @@ HCURSOR CProcessMasterDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+
+void CProcessMasterDlg::OnBnClickedButton1()
+{
+	UpdateData();
+	
+	CString strItemAdd;
+	strItemAdd.Format(L"进程 %s 依赖 %s",m_strProcessName,m_strDependProcessName);
+	m_wndItemList.AddString(strItemAdd);
+
+
+}
+
+void CProcessMasterDlg::OnBnClickedOk()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	OnOK();
+}

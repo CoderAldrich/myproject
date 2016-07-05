@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include "afxwin.h"
 
 
 // CProcessMasterDlg ¶Ô»°¿ò
@@ -29,4 +30,10 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+public:
+	CListBox m_wndItemList;
+	afx_msg void OnBnClickedButton1();
+	CString m_strProcessName;
+	CString m_strDependProcessName;
+	afx_msg void OnBnClickedOk();
 };
