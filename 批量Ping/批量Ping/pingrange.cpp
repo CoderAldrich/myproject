@@ -237,6 +237,10 @@ DWORD PingRange(const char *pchStartIP,const char *pchEndIP,PingMap *pMap,UINT n
 	dwErrorCode = 10;
 	for(int i=0;i<nPingTimes;i++)
 	{
+		CString strMsgOut;
+		strMsgOut.Format(L"µÚ%d´ÎÉ¨Ãè..\r\n",i+1);
+		OutputDebugStringW(strMsgOut);
+
 		for (DWORD ulIP = ulIPStart;ulIP < ulIPEnd;ulIP++)
 		{
 			PingMapPtr it = (*pMap).find((USHORT)ulIP);
@@ -376,6 +380,10 @@ DWORD WINAPI CheckPortThread(PVOID pParam)
 			{
 				OutputDebugStringA(strHostIp+"\r\n");
 			}
+// 			else
+// 			{
+// 				OutputDebugStringA(strHostIp+" 80 no\r\n");
+// 			}
 			tcpSock.CloseTcpSocket();
 			int a=0;
 
@@ -470,35 +478,35 @@ DWORD WINAPI WatchEchoPackge(LPVOID pParam)
 			{
 				(*pMap)[nPkgID].bRespon = true;
 
-// 				static int nIndex = 1;
-// 				CString msgout;
-// 				msgout.Format(TEXT(" %05d %s %dms\r\n"),nIndex++,(*pMap)[nPkgID].strIP,GetTickCount()-it->second.dwSendTime);
-// 				OutputDebugStringW(msgout);
+//  				static int nIndex = 1;
+//  				CString msgout;
+//  				msgout.Format(TEXT(" %05d %s %dms\r\n"),nIndex++,(*pMap)[nPkgID].strIP,GetTickCount()-it->second.dwSendTime);
+//  				OutputDebugStringW(msgout);
 
-				csLock.Lock();
-				lstHosts.push_back(CStringA((*pMap)[nPkgID].strIP));
-				csLock.UnLock();
+ 				csLock.Lock();
+ 				lstHosts.push_back(CStringA((*pMap)[nPkgID].strIP));
+ 				csLock.UnLock();
 
 			}
 			
 
 
-// 			ULONG MacAddr[2];
-// 			ULONG PhysAddrLen = 6;
-// 			memset(&MacAddr, 0xff, sizeof (MacAddr));
-// 
-// 			int TryTimes = 0;
-// 			DWORD res = 0;
-// 			while( (res = SendARP( DestIP,HostIP, &MacAddr, &PhysAddrLen)) != NO_ERROR)
-// 			{
-// 				TryTimes++;
-// 				if (TryTimes >= 3)
-// 				{
-// 					break;
-// 				}
-// 			}
-// 
-// 			strMacAddr = GetMacString((LPVOID *)MacAddr,6);
+//  			ULONG MacAddr[2];
+//  			ULONG PhysAddrLen = 6;
+//  			memset(&MacAddr, 0xff, sizeof (MacAddr));
+//  
+//  			int TryTimes = 0;
+//  			DWORD res = 0;
+//  			while( (res = SendARP( DestIP,HostIP, &MacAddr, &PhysAddrLen)) != NO_ERROR)
+//  			{
+//  				TryTimes++;
+//  				if (TryTimes >= 3)
+//  				{
+//  					break;
+//  				}
+//  			}
+//  
+//  			strMacAddr = GetMacString((LPVOID *)MacAddr,6);
 
 		}
 	}
@@ -527,9 +535,9 @@ int main(char *argv,int argc)
 	
 	CreateThread(NULL,0,CheckPortThread,((PVOID)&pMap),0,NULL);
 	CreateThread(NULL,0,WatchEchoPackge,((PVOID)&pMap),0,NULL);
-	//PingRange("192.168.0.1","192.168.0.255",&pMap,10,500);
+	//PingRange("192.168.0.1","192.168.0.255",&pMap,10,1);
 	//PingRange("211.64.0.0","211.71.255.255",&pMap,10,5);
-	PingRange("157.7.200.0","157.7.254.255",&pMap,10,10);
+	PingRange("112.121.100.0","112.121.164.255",&pMap,10,10);
 	
 	getchar();
 
