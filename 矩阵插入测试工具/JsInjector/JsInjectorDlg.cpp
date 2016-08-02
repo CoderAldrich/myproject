@@ -124,6 +124,7 @@ void CJsInjectorDlg::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT1, m_strJsData);
 	DDX_Control(pDX, IDC_LIST1, m_wndListBox);
+	DDX_Control(pDX, IDC_EDIT1, m_wndJsEdit);
 }
 
 BEGIN_MESSAGE_MAP(CJsInjectorDlg, CDialog)

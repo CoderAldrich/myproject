@@ -194,6 +194,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\MyEdit.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -229,6 +233,10 @@
 			</File>
 			<File
 				RelativePath=".\JsInjectorDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MyEdit.h"
 				>
 			</File>
 			<File

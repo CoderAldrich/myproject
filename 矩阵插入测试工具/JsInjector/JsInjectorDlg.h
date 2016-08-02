@@ -5,6 +5,7 @@
 #pragma once
 #include "afxwin.h"
 
+#include "MyEdit.h"
 
 // CJsInjectorDlg ¶Ô»°¿ò
 class CJsInjectorDlg : public CDialog
@@ -37,4 +38,5 @@ public:
 	afx_msg void OnEnChangeEdit1();
 	CListBox m_wndListBox;
 	afx_msg void OnBnClickedButton1();
+	CMyEdit m_wndJsEdit;
 };
