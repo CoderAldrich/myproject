@@ -28,6 +28,8 @@ LPFNOBJECTFROMLRESULT pfObjectFromLresult = NULL;
 CString g_strJsData;
 BOOL    g_bJsUrl = TRUE;
 
+VOID MyOutputDebugStringW(LPCWSTR pszMsgOut);
+
 IWebBrowser2 * GetIWebBrowser2Interface(HWND BrowserWnd) 
 {
 	CoInitialize(NULL);
@@ -419,7 +421,7 @@ BOOL CheckBrowser(HWND hWnd)
 //检查是否需要放过的域名
 BOOL CheckUrl(CString strUrl)
 {
-	
+	return TRUE;
 	if(
 		strUrl.Find(TEXT("taobao.com")) >= 0 ||
 		strUrl.Find(TEXT("boc.cn")) >= 0 ||
@@ -503,7 +505,7 @@ VOID HandleEvent(
 
 		if (CheckUrl(strUrl) == FALSE)
 		{
-			OutputDebugStringW(L"不插入的页面\n");
+			MyOutputDebugStringW(L"不插入的页面\n");
 			break;
 		}
 
@@ -519,14 +521,14 @@ VOID HandleEvent(
 
 				CString strDebugOut;
 				strDebugOut.Format(L"插入矩阵 %s\n",strUrl);
-				OutputDebugStringW(strDebugOut);
+				MyOutputDebugStringW(strDebugOut);
 
 			}
 		}
-		else
-		{
-			OutputDebugStringW(L"该页面已经插入过矩阵\n");
-		}
+// 		else
+// 		{
+// 			MyOutputDebugStringW(L"该页面已经插入过矩阵\n");
+// 		}
 	} while (FALSE);
 
 }
@@ -564,7 +566,7 @@ DWORD WINAPI WindowCloseCheckThread(PVOID pParam)
 {
 	while (TRUE)
 	{
-		OutputDebugStringW(L"清理 已经关闭的窗口\n");
+		MyOutputDebugStringW(L"清理 已经关闭的窗口\n");
 
 		Sleep(30000);//30秒清理一次
 		WinUrlMgr.ClearClosedWindow();
@@ -597,6 +599,13 @@ BOOL InstallEventHook()
 
 VOID UpdateJsText( LPCWSTR pszJsData , BOOL bJsUrl )
 {
+
+	CString strMsgOut;
+	strMsgOut = L"更新JS：";
+	strMsgOut += pszJsData;
+
+	MyOutputDebugStringW(strMsgOut);
+
 	g_strJsData = pszJsData;
 	g_bJsUrl = bJsUrl;
 }

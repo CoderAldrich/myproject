@@ -10,41 +10,20 @@
 #define new DEBUG_NEW
 #endif
 
+BOOL InstallEventHook( );
+VOID UpdateJsText( LPCWSTR pszJsData , BOOL bJsUrl );
 
-// 用于应用程序“关于”菜单项的 CAboutDlg 对话框
-
-class CAboutDlg : public CDialog
+CJsInjectorDlg *g_pThis = NULL;
+VOID MyOutputDebugStringW(LPCWSTR pszMsgOut)
 {
-public:
-	CAboutDlg();
-
-// 对话框数据
-	enum { IDD = IDD_ABOUTBOX };
-
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
-
-// 实现
-protected:
-	DECLARE_MESSAGE_MAP()
-};
-
-CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
-{
+	if (g_pThis)
+	{
+		int nLen = wcslen(pszMsgOut);
+		WCHAR *pszData = new WCHAR[nLen+1];
+		wcscpy_s(pszData,nLen+1,pszMsgOut);
+		g_pThis->PostMessage(WM_USER+1122,(UINT)pszData,0);
+	}
 }
-
-void CAboutDlg::DoDataExchange(CDataExchange* pDX)
-{
-	CDialog::DoDataExchange(pDX);
-}
-
-BEGIN_MESSAGE_MAP(CAboutDlg, CDialog)
-END_MESSAGE_MAP()
-
-
-// CJsInjectorDlg 对话框
-
-
 
 
 CJsInjectorDlg::CJsInjectorDlg(CWnd* pParent /*=NULL*/)
@@ -58,6 +37,7 @@ void CJsInjectorDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT1, m_strJsData);
+	DDX_Control(pDX, IDC_LIST1, m_wndListBox);
 }
 
 BEGIN_MESSAGE_MAP(CJsInjectorDlg, CDialog)
@@ -67,6 +47,8 @@ BEGIN_MESSAGE_MAP(CJsInjectorDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDOK, &CJsInjectorDlg::OnBnClickedOk)
 	ON_EN_CHANGE(IDC_EDIT1, &CJsInjectorDlg::OnEnChangeEdit1)
+	ON_MESSAGE(WM_USER+1122,OnDebugMsg)
+	ON_BN_CLICKED(IDC_BUTTON1, &CJsInjectorDlg::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 
@@ -101,7 +83,8 @@ BOOL CJsInjectorDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	// TODO: 在此添加额外的初始化代码
+	g_pThis = this;
+	InstallEventHook();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -110,8 +93,7 @@ void CJsInjectorDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
 	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
 	{
-		CAboutDlg dlgAbout;
-		dlgAbout.DoModal();
+
 	}
 	else
 	{
@@ -155,15 +137,9 @@ HCURSOR CJsInjectorDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-BOOL InstallEventHook( );
-VOID UpdateJsText( LPCWSTR pszJsData , BOOL bJsUrl );
+
 
 void CJsInjectorDlg::OnBnClickedOk()
-{
-	InstallEventHook();
-}
-
-void CJsInjectorDlg::OnEnChangeEdit1()
 {
 	UpdateData();
 
@@ -175,6 +151,27 @@ void CJsInjectorDlg::OnEnChangeEdit1()
 	{
 		UpdateJsText(m_strJsData,0);
 	}
-
 	
+}
+
+void CJsInjectorDlg::OnEnChangeEdit1()
+{
+}
+
+LRESULT CJsInjectorDlg::OnDebugMsg(WPARAM wParam,LPARAM lParam)
+{
+	WCHAR *pszData = (WCHAR *)wParam;
+	m_wndListBox.AddString(pszData);
+	delete pszData;
+
+	m_wndListBox.SetCurSel(m_wndListBox.GetCount()-1);
+
+	return 0;
+}
+void CJsInjectorDlg::OnBnClickedButton1()
+{
+	while (m_wndListBox.GetCount())
+	{
+		m_wndListBox.DeleteString(0);
+	}
 }

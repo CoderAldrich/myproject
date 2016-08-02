@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include "afxwin.h"
 
 
 // CJsInjectorDlg ¶Ô»°¿ò
@@ -30,7 +31,10 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
+	LRESULT OnDebugMsg(WPARAM ,LPARAM);
 	afx_msg void OnBnClickedOk();
 	CString m_strJsData;
 	afx_msg void OnEnChangeEdit1();
+	CListBox m_wndListBox;
+	afx_msg void OnBnClickedButton1();
 };
