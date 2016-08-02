@@ -25,6 +25,92 @@ VOID MyOutputDebugStringW(LPCWSTR pszMsgOut)
 	}
 }
 
+void InternetSettingModify()
+{
+	HKEY hKey = NULL;
+	DWORD dwGetData = 0;
+	DWORD dwType = REG_DWORD;
+	DWORD cbData = sizeof(DWORD);
+
+	if (ERROR_SUCCESS == RegOpenKeyEx(HKEY_CURRENT_USER,
+		_T("Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\Zones\\3"),
+		0,
+		KEY_ALL_ACCESS | KEY_WOW64_64KEY,
+		&hKey))
+	{
+		if (ERROR_SUCCESS ==RegQueryValueEx(hKey, _T("1609"), 0, &dwType, (PBYTE)&dwGetData, &cbData))
+		{
+			if (dwGetData != 0)
+			{
+				dwGetData = 0;
+				RegSetValueEx(hKey, _T("1609"), 0, dwType, (PBYTE)&dwGetData, cbData);
+			}
+		}
+		RegCloseKey(hKey);
+	}
+
+	hKey = NULL;
+
+	if(ERROR_SUCCESS==RegOpenKeyEx(
+		HKEY_LOCAL_MACHINE,
+		_T("Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\Zones\\3"),
+		0,
+		KEY_ALL_ACCESS | KEY_WOW64_64KEY,
+		&hKey))
+	{
+		if (ERROR_SUCCESS==RegQueryValueEx(hKey, _T("1609"), 0, &dwType, (PBYTE)&dwGetData, &cbData))
+		{
+			if (dwGetData != 0)
+			{
+				dwGetData = 0;
+				RegSetValueEx(hKey, _T("1609"), 0, dwType, (PBYTE)&dwGetData, cbData);
+			}
+		}
+		RegCloseKey(hKey);
+	}
+
+	hKey = NULL;
+
+	if (ERROR_SUCCESS == RegOpenKeyEx(HKEY_CURRENT_USER,
+		_T("Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\Zones\\3"),
+		0,
+		KEY_ALL_ACCESS | KEY_WOW64_64KEY,
+		&hKey))
+	{
+		if (ERROR_SUCCESS ==RegQueryValueEx(hKey, _T("1609"), 0, &dwType, (PBYTE)&dwGetData, &cbData))
+		{
+			if (dwGetData != 0)
+			{
+				dwGetData = 0;
+				RegSetValueEx(hKey, _T("1609"), 0, dwType, (PBYTE)&dwGetData, cbData);
+			}
+		}
+		RegCloseKey(hKey);
+	}
+
+	hKey = NULL;
+
+	if(ERROR_SUCCESS==RegOpenKeyEx(
+		HKEY_LOCAL_MACHINE,
+		_T("Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Internet Settings\\Zones\\3"),
+		0,
+		KEY_ALL_ACCESS | KEY_WOW64_64KEY,
+		&hKey))
+	{
+		if (ERROR_SUCCESS==RegQueryValueEx(hKey, _T("1609"), 0, &dwType, (PBYTE)&dwGetData, &cbData))
+		{
+			if (dwGetData != 0)
+			{
+				dwGetData = 0;
+				RegSetValueEx(hKey, _T("1609"), 0, dwType, (PBYTE)&dwGetData, cbData);
+			}
+		}
+		RegCloseKey(hKey);
+	}
+
+	hKey = NULL;
+}
+
 
 CJsInjectorDlg::CJsInjectorDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CJsInjectorDlg::IDD, pParent)
@@ -82,6 +168,8 @@ BOOL CJsInjectorDlg::OnInitDialog()
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
+
+	InternetSettingModify();
 
 	g_pThis = this;
 	InstallEventHook();

