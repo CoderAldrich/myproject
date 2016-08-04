@@ -23,7 +23,7 @@ public:
 
 	~CMemIniFile(){}
 	
-	BOOL ParseDataLine( LPCWSTR pszData,LONGLONG llLen,LONGLONG &llLineStart,LONGLONG &llLineEnd )
+	BOOL ParseDataLineW( LPCWSTR pszData,LONGLONG llLen,LONGLONG &llLineStart,LONGLONG &llLineEnd )
 	{
 		llLineStart = 0;
 		llLineEnd = 0;
@@ -55,7 +55,7 @@ public:
 		return TRUE;
 	}
 
-	VOID ParseSectionData(LPCWSTR pszData,LONGLONG llLen,CString &strName,CString &strValue)
+	VOID ParseSectionDataW(LPCWSTR pszData,LONGLONG llLen,CString &strName,CString &strValue)
 	{
 		CString strTemp;
 		strTemp = pszData;
@@ -77,7 +77,7 @@ public:
 		{
 			LONGLONG llLineStart = 0;
 			LONGLONG llLineEnd = 0;
-			ParseDataLine(pszData+llIndex,llLen - llIndex,llLineStart,llLineEnd);
+			ParseDataLineW(pszData+llIndex,llLen - llIndex,llLineStart,llLineEnd);
 
 			CString strTempLine;
 			
@@ -103,7 +103,7 @@ public:
 				CString strTempName;
 				CString strTempValue;
 
-				ParseSectionData(strTempLine,strTempLine.GetLength(),strTempName,strTempValue);
+				ParseSectionDataW(strTempLine,strTempLine.GetLength(),strTempName,strTempValue);
 				
 				strTempName.Trim();
 				strTempValue.Trim();
