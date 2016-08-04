@@ -375,11 +375,33 @@ DWORD WINAPI CheckPortThread(PVOID pParam)
 			CTcpSocket tcpSock;
 			BOOL bRes = tcpSock.CreateTcpSocket();
 
-			bRes = tcpSock.Connect(strHostIp,80,1);
+// 			bRes = tcpSock.Connect(strHostIp,80,1);
+// 			if (bRes)
+// 			{
+// 				OutputDebugStringA(strHostIp+":80\r\n");
+// 			}
+
+
+			bRes = tcpSock.Connect(strHostIp,8888,1);
 			if (bRes)
 			{
-				OutputDebugStringA(strHostIp+"\r\n");
+				OutputDebugStringA(strHostIp+":8888\r\n");
 			}
+
+
+			bRes = tcpSock.Connect(strHostIp,8080,1);
+			if (bRes)
+			{
+				OutputDebugStringA(strHostIp+":8080\r\n");
+			}
+
+			bRes = tcpSock.Connect(strHostIp,3218,1);
+			if (bRes)
+			{
+				OutputDebugStringA(strHostIp+":3218\r\n");
+			}
+
+
 // 			else
 // 			{
 // 				OutputDebugStringA(strHostIp+" 80 no\r\n");
@@ -478,14 +500,14 @@ DWORD WINAPI WatchEchoPackge(LPVOID pParam)
 			{
 				(*pMap)[nPkgID].bRespon = true;
 
-//  				static int nIndex = 1;
-//  				CString msgout;
-//  				msgout.Format(TEXT(" %05d %s %dms\r\n"),nIndex++,(*pMap)[nPkgID].strIP,GetTickCount()-it->second.dwSendTime);
-//  				OutputDebugStringW(msgout);
+//   				static int nIndex = 1;
+//   				CString msgout;
+//   				msgout.Format(TEXT(" %05d %s %dms\r\n"),nIndex++,(*pMap)[nPkgID].strIP,GetTickCount()-it->second.dwSendTime);
+//   				OutputDebugStringW(msgout);
 
- 				csLock.Lock();
- 				lstHosts.push_back(CStringA((*pMap)[nPkgID].strIP));
- 				csLock.UnLock();
+  				csLock.Lock();
+  				lstHosts.push_back(CStringA((*pMap)[nPkgID].strIP));
+  				csLock.UnLock();
 
 			}
 			
@@ -537,7 +559,9 @@ int main(char *argv,int argc)
 	CreateThread(NULL,0,WatchEchoPackge,((PVOID)&pMap),0,NULL);
 	//PingRange("192.168.0.1","192.168.0.255",&pMap,10,1);
 	//PingRange("211.64.0.0","211.71.255.255",&pMap,10,5);
-	PingRange("112.121.100.0","112.121.164.255",&pMap,10,10);
+	//PingRange("112.121.100.0","112.121.164.255",&pMap,10,10);
+	//PingRange("172.16.0.0","172.31.255.255",&pMap,10,1);
+	PingRange("220.181.10.0","220.181.255.188",&pMap,1,5);
 	
 	getchar();
 
