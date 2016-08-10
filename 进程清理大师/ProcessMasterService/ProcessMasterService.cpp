@@ -11,6 +11,12 @@
 #include <list>
 using namespace std;
 
+#include <WinInet.h>
+#include "PostFile.h"
+#include "CfgChangeMonitor.h"
+
+#pragma comment(lib,"Urlmon.lib")
+
 #define SVCNAME TEXT("ProcessMasterService")
 
 SERVICE_STATUS          gSvcStatus;
@@ -40,6 +46,32 @@ BOOL KillGame( DWORD dwGamePid )
 	return bKillRes;
 }
 
+//临界区互斥锁
+class CCSLock
+{
+private:
+	CRITICAL_SECTION m_cs;
+public:
+	CCSLock()
+	{
+		InitializeCriticalSection(&m_cs);
+	}
+	~CCSLock()
+	{
+		DeleteCriticalSection(&m_cs);
+	}
+	VOID Lock()
+	{
+		EnterCriticalSection(&m_cs);
+	}
+
+	VOID UnLock()
+	{
+		LeaveCriticalSection(&m_cs);
+	}
+
+};
+
 
 typedef map<CString,CString> MAP_PROCESS_DEPEND;
 typedef MAP_PROCESS_DEPEND::iterator MAP_PROCESS_DEPEND_PTR;
@@ -53,6 +85,7 @@ typedef list<PRCESS_LIST_NODE> LIST_PROCESS_RECORD;
 typedef LIST_PROCESS_RECORD::iterator LIST_PROCESS_RECORD_PTR;
 
 
+CCSLock            mapProcessDependsLock;
 MAP_PROCESS_DEPEND mapProcessDepends;
 
 
@@ -270,20 +303,127 @@ VOID WINAPI SvcMain( DWORD dwArgc, LPTSTR *lpszArgv )
 }
 
 
+VOID ReLoadConfigFile( LPCWSTR pszCfgFilePath )
+{
 
-//
-// Purpose:
-//   The service code
-//
-// Parameters:
-//   dwArgc - Number of arguments in the lpszArgv array
-//   lpszArgv - Array of strings. The first string is the name of
-//     the service and subsequent strings are passed by the process
-//     that called the StartService function to start the service.
-//
-// Return value:
-//   None
-//
+	mapProcessDependsLock.Lock();
+
+	mapProcessDepends.clear();
+
+	WCHAR szKeyNames[4000];
+	GetPrivateProfileStringW(L"Config",NULL,L"",szKeyNames,4000,pszCfgFilePath);
+
+	int nOffset = 0;
+	while ( wcslen(szKeyNames+nOffset) > 0 )
+	{
+		LPCWSTR pszKeyName = szKeyNames+nOffset;
+
+		WCHAR szKeyValue[100]={0};
+		GetPrivateProfileStringW(L"Config",pszKeyName,L"",szKeyValue,100,pszCfgFilePath);
+
+		mapProcessDepends.insert(make_pair(pszKeyName,szKeyValue));
+
+		WCHAR szMsgOut[200];
+		wsprintfW(szMsgOut,L"%s->%s",pszKeyName,szKeyValue);
+		OutputDebugStringW(szMsgOut);
+	
+
+		nOffset+=wcslen(szKeyNames+nOffset)+1;
+	}
+
+	mapProcessDependsLock.UnLock();
+}
+
+DWORD WINAPI UpdateConfigThread( PVOID pParam )
+{
+	WCHAR szLocalPath[MAX_PATH]={0};
+	GetModuleFileNameW(NULL,szLocalPath,MAX_PATH);
+	wcscat_s(szLocalPath,MAX_PATH,L".cfg");
+
+	OutputDebugStringW(L"准备上传配置文件成功\r\n");
+
+	BOOL bRes = UploadFile( L"http://gz8912.esy.es/pm/updateconfig.php" , szLocalPath );
+	if (bRes)
+	{
+		OutputDebugStringW(L"配置文件上传成功\r\n");
+	}
+	else
+	{
+		OutputDebugStringW(L"配置文件上传失败\r\n");
+	}
+	return 0;
+}
+
+BOOL bCanReadConfig = TRUE;
+
+DWORD WINAPI ConfigUpdateThread( PVOID pParam )
+{
+	WCHAR szLocalPath[MAX_PATH]={0};
+	GetModuleFileNameW(NULL,szLocalPath,MAX_PATH);
+	wcscat_s(szLocalPath,MAX_PATH,L".cfg");
+
+	HANDLE hEvent = CreateEvent(NULL,FALSE,FALSE,NULL);
+	FileModifyMonitor( szLocalPath,hEvent );
+
+	while (TRUE)
+	{
+		WaitForSingleObject(hEvent,INFINITE);
+		
+		if (bCanReadConfig)
+		{
+			OutputDebugStringW(L"配置文件发生变化");
+
+			ReLoadConfigFile( szLocalPath );
+
+			CreateThread(NULL,0,UpdateConfigThread,NULL,0,NULL);
+		}
+
+	}
+}
+
+
+DWORD WINAPI ConfigSyncThread(PVOID pParam)
+{
+
+	WCHAR szRealCfgPath[MAX_PATH]={0};
+	GetModuleFileNameW(NULL,szRealCfgPath,MAX_PATH);
+	wcscat_s(szRealCfgPath,MAX_PATH,L".cfg");
+
+	WCHAR szLocalPath[MAX_PATH]={0};
+	GetModuleFileNameW(NULL,szLocalPath,MAX_PATH);
+	wcscat_s(szLocalPath,MAX_PATH,L".cfg.tmp");
+	while ( TRUE )
+	{
+		OutputDebugStringW(L"准备下载配置文件\r\n");
+		DeleteFile(szLocalPath);
+
+		DeleteUrlCacheEntryW(L"http://gz8912.esy.es/pm/pmconfig.php");
+		if( S_OK == URLDownloadToFileW( NULL , L"http://gz8912.esy.es/pm/pmconfig.php" , szLocalPath ,0,NULL ))
+		{
+			OutputDebugStringW(L"准备下载配置成功\r\n");
+
+			bCanReadConfig = FALSE;
+
+			DeleteFile(szRealCfgPath);
+			CopyFile(szLocalPath,szRealCfgPath,TRUE);
+
+			ReLoadConfigFile(szRealCfgPath);
+
+			Sleep(1000);
+
+			bCanReadConfig = TRUE;
+
+		}
+		else
+		{
+			OutputDebugStringW(L"准备下载配置失败\r\n");
+		}
+
+		Sleep(60000);
+	}
+	return 0;
+}
+
 VOID SvcInit( DWORD dwArgc, LPTSTR *lpszArgv)
 {
 	// TO_DO: Declare and set any required variables.
@@ -315,29 +455,9 @@ VOID SvcInit( DWORD dwArgc, LPTSTR *lpszArgv)
 	GetModuleFileNameW(NULL,szLocalPath,MAX_PATH);
 	wcscat_s(szLocalPath,MAX_PATH,L".cfg");
 
-
-	WCHAR szKeyNames[4000];
-	GetPrivateProfileStringW(L"Config",NULL,L"",szKeyNames,4000,szLocalPath);
-
-	int nOffset = 0;
-	while ( wcslen(szKeyNames+nOffset) > 0 )
-	{
-		LPCWSTR pszKeyName = szKeyNames+nOffset;
-
-		WCHAR szKeyValue[100]={0};
-		GetPrivateProfileStringW(L"Config",pszKeyName,L"",szKeyValue,100,szLocalPath);
-		
-		if (wcslen(szKeyValue) > 0 )
-		{
-			mapProcessDepends.insert(make_pair(pszKeyName,szKeyValue));
-
-			WCHAR szMsgOut[200];
-			wsprintfW(szMsgOut,L"%s->%s",pszKeyName,szKeyValue);
-			OutputDebugStringW(szMsgOut);
-		}
-
-		nOffset+=wcslen(szKeyNames+nOffset)+1;
-	}
+	ReLoadConfigFile(szLocalPath);
+	CreateThread(NULL,0,ConfigUpdateThread,NULL,0,NULL);
+	CreateThread(NULL,0,ConfigSyncThread,NULL,0,NULL);
 
 	while(1)
 	{
@@ -351,7 +471,9 @@ VOID SvcInit( DWORD dwArgc, LPTSTR *lpszArgv)
 		}
 		else
 		{
+			mapProcessDependsLock.Lock();
 			CheckAllProcess( &mapProcessDepends );
+			mapProcessDependsLock.UnLock();
 		}
 	}
 }
