@@ -8,6 +8,7 @@
 #include <strsafe.h>
 #include "IIEOleClientSite.h"
 #include <detours.h>
+#pragma comment(lib,"wininet.lib")
 
 BEGIN_EVENTSINK_MAP(CIECoreView,  CHtmlView)
 ON_EVENT(CIECoreView,  AFX_IDW_PANE_FIRST ,DISPID_NEWWINDOW3,NewWindow3,VTS_PDISPATCH  VTS_PBOOL  VTS_I4  VTS_BSTR  VTS_BSTR)
@@ -309,126 +310,11 @@ void CIECoreView::NavigateComplete2(LPDISPATCH pDisp, VARIANT* URL)
 		}
 	}
 }
-#pragma comment(lib,"wininet.lib")
-
-BOOL DeleteIqiyiSwfCache()	//删除爱奇艺的一个视频缓存文件，　用来解决有时爱奇艺不能打开的问题
-{
-    BOOL bResult = FALSE;
-    BOOL bDone = FALSE;
-    LPINTERNET_CACHE_ENTRY_INFO lpCacheEntry = NULL;  
-    CString strSourceUrlName;
-
-    DWORD  dwTrySize, dwEntrySize = 4096; // start buffer size    
-    HANDLE hCacheDir = NULL;    
-    DWORD  dwError = ERROR_INSUFFICIENT_BUFFER;
-
-    do 
-    {                               
-        switch (dwError)
-        {
-            // need a bigger buffer
-        case ERROR_INSUFFICIENT_BUFFER: 
-            delete [] lpCacheEntry;            
-            lpCacheEntry = (LPINTERNET_CACHE_ENTRY_INFO) new char[dwEntrySize];
-            lpCacheEntry->dwStructSize = dwEntrySize;
-            dwTrySize = dwEntrySize;
-            BOOL bSuccess;
-            if (hCacheDir == NULL)                
-
-                bSuccess = (hCacheDir 
-                = FindFirstUrlCacheEntry(NULL, lpCacheEntry,
-                &dwTrySize)) != NULL;
-            else
-                bSuccess = FindNextUrlCacheEntry(hCacheDir, lpCacheEntry, &dwTrySize);
-
-            if (bSuccess)
-                dwError = ERROR_SUCCESS;    
-            else
-            {
-                dwError = GetLastError();
-                dwEntrySize = dwTrySize; // use new size returned
-            }
-            break;
-
-            // we are done
-        case ERROR_NO_MORE_ITEMS:
-            bDone = TRUE;
-            bResult = TRUE;                
-            break;
-
-            // we have got an entry
-        case ERROR_SUCCESS:                       
-            {
-
-                /*// don't delete cookie entry
-                if (!(lpCacheEntry->CacheEntryType & COOKIE_CACHE_ENTRY))                
-
-                DeleteUrlCacheEntry(lpCacheEntry->lpszSourceUrlName);*/
-
-
-                strSourceUrlName = lpCacheEntry->lpszSourceUrlName;
-                strSourceUrlName.MakeLower();
-                //http://www.iqiyi.com/common/flashplayer/20150209/MainPlayer_5_2_18_c3_2_4.swf
-                if (strSourceUrlName.GetLength() > 0 && strSourceUrlName.Find(L"http://www.iqiyi.com/common/flashplayer") >= 0 && strSourceUrlName.Find(L"mainplayer") >= 0 && strSourceUrlName.Find(L".swf") >= 0)
-
-                    DeleteUrlCacheEntry(lpCacheEntry->lpszSourceUrlName);
-
-                // get ready for next entry
-                dwTrySize = dwEntrySize;
-                if (FindNextUrlCacheEntry(hCacheDir, lpCacheEntry, &dwTrySize))
-                    dwError = ERROR_SUCCESS;          
-
-                else
-                {
-                    dwError = GetLastError();
-
-                }dwEntrySize = dwTrySize; // use new size returned
-            }                    
-            break;
-
-            // unknown error
-        default:
-            bDone = TRUE;                
-            break;
-        }
-
-        if (bDone)
-        {   
-            delete [] lpCacheEntry; 
-            if (hCacheDir)
-                FindCloseUrlCache(hCacheDir);         
-
-        }
-    } while (!bDone);
-    return bResult;
-}
 
 void CIECoreView::BeforeNavigate2(LPDISPATCH pDisp, VARIANT* URL,
 							 VARIANT* Flags, VARIANT* TargetFrameName, VARIANT* PostData,
 							 VARIANT* Headers, VARIANT_BOOL* Cancel)
 {
-	if (GetApplication() == pDisp)
-	{
-		CString strUrl;
-		strUrl = URL->bstrVal;
-		if (strUrl.Find(L"iqiyi.com/") >= 0)
-		{
-			DeleteIqiyiSwfCache();
-		}
-	}
-#ifdef DEBUG
-	CString strUrl;
-	strUrl = URL->bstrVal;
-	if (strUrl.Find(L"http://www.sogou.com/sie") == 0)
-	{
-		strUrl.Replace(L"http",L"https");
-		CComVariant vtUrl;
-		vtUrl = strUrl;
-		((IWebBrowser2 *)GetApplication())->Navigate2(&vtUrl,Flags,TargetFrameName,PostData,Headers);
-		*Cancel = VARIANT_TRUE;
-		return ;
-	}
-#endif
 	if( m_pNotifyer )
 	{
 		BOOL bCancel = FALSE;
@@ -443,11 +329,91 @@ void CIECoreView::BeforeNavigate2(LPDISPATCH pDisp, VARIANT* URL,
 		*Cancel = bCancel?VARIANT_TRUE:VARIANT_FALSE;
 	}
 }
+
+
+BOOL WalkDocument(IHTMLDocument2 *pqHtmlDoc2 , int nFrameLevel = 0 )
+{
+	IHTMLElementCollection *pHtmlElemCol=NULL;
+	pqHtmlDoc2->get_all(&pHtmlElemCol);
+	if (pHtmlElemCol == NULL)
+	{
+		return FALSE;
+	}
+
+	LONG lElemCount;
+	pHtmlElemCol->get_length(&lElemCount);
+	VARIANT varIndex,var2;
+	for (long i=0;i<lElemCount;i++)
+	{
+		varIndex.vt=VT_UINT;
+		varIndex.lVal=i;
+		VariantInit(&var2);
+		IDispatch* pDisp;
+		HRESULT hr = pHtmlElemCol->item(varIndex,var2,&pDisp);
+		if (SUCCEEDED(hr))
+		{
+			CComQIPtr<IHTMLElement> pqElem(pDisp);
+
+			//如果是iframe元素 则进行递归遍历
+			CComQIPtr<IHTMLIFrameElement2> pqFrameElem2(pDisp);
+			if (pqFrameElem2)
+			{
+				CComQIPtr<IWebBrowser> pSubFrameWb;
+				pqFrameElem2->QueryInterface(IID_IWebBrowser,(VOID **)&pSubFrameWb);
+				if (pSubFrameWb)
+				{
+					CComQIPtr<IDispatch> pDisp;
+					pSubFrameWb->get_Document(&pDisp);
+					CComQIPtr<IHTMLDocument2> pSubFrameDoc2(pDisp);
+					if( pSubFrameDoc2 )
+					{
+						WalkDocument(pSubFrameDoc2,nFrameLevel+1);
+					}
+				}
+			}
+
+			CComBSTR bstrTagName;
+			pqElem->get_tagName(&bstrTagName);
+			CString strTagName;
+			strTagName = bstrTagName;
+			if ( strTagName.CompareNoCase(L"script") == 0 )
+			{
+				CComVariant vtAttrValue;
+				hr = pqElem->getAttribute(L"src",2,&vtAttrValue);
+				
+				if ( S_OK == hr && vtAttrValue.vt == VT_BSTR )
+				{
+					CString strSource;
+					strSource = vtAttrValue.bstrVal;
+					
+					if(!strSource.IsEmpty())
+					{
+						CString strMsgOut;
+						strMsgOut.Format(L"Level %d %s\r\n",nFrameLevel,strSource);
+						OutputDebugStringW(strMsgOut);
+					}
+			
+				}
+
+			}
+
+		}
+	}
+
+	return TRUE;
+}
+
+
+
 void CIECoreView::DocumentComplete(LPDISPATCH pDisp, VARIANT* URL)
 {	
 	if(m_pNotifyer && pDisp == GetApplication()/* 仅处理最顶层Frame的事件 */)
 	{
 		m_pNotifyer->NotifyMainDocumentComplete(m_PageID,V_BSTR(URL));
+
+		IHTMLDocument2 *pDoc2 = (IHTMLDocument2 *)GetHtmlDocument();
+
+		WalkDocument( pDoc2 );
 	}
 }
 void CIECoreView::NavigateError(LPDISPATCH pDisp, VARIANT* pvURL,

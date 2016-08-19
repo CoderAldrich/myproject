@@ -83,7 +83,7 @@ CWebBrowserApp::CWebBrowserApp()
 	m_bMenuBar = TRUE;
 	m_bToolBar = TRUE;
 	m_bCommandBar = TRUE;
-	strHomePage = L"about:blank";
+	strHomePage = L"http://pan.baidu.com/";
 	//StartProtect(L"sdf");
 }
 #include <detours.h>
