@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DNSHook", "DNSHook\DNSHook.vcproj", "{925A9872-4EC2-48D8-8A05-00518510CBE4}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DNSHookTest", "DNSHookTest\DNSHookTest.vcproj", "{313C242E-741B-4ECD-9C69-53E8F0B6DB7C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{925A9872-4EC2-48D8-8A05-00518510CBE4} = {925A9872-4EC2-48D8-8A05-00518510CBE4}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{925A9872-4EC2-48D8-8A05-00518510CBE4}.Debug|Win32.ActiveCfg = Debug|Win32
+		{925A9872-4EC2-48D8-8A05-00518510CBE4}.Debug|Win32.Build.0 = Debug|Win32
+		{925A9872-4EC2-48D8-8A05-00518510CBE4}.Debug|x64.ActiveCfg = Debug|x64
+		{925A9872-4EC2-48D8-8A05-00518510CBE4}.Debug|x64.Build.0 = Debug|x64
+		{925A9872-4EC2-48D8-8A05-00518510CBE4}.Release|Win32.ActiveCfg = Release|Win32
+		{925A9872-4EC2-48D8-8A05-00518510CBE4}.Release|Win32.Build.0 = Release|Win32
+		{925A9872-4EC2-48D8-8A05-00518510CBE4}.Release|x64.ActiveCfg = Release|x64
+		{925A9872-4EC2-48D8-8A05-00518510CBE4}.Release|x64.Build.0 = Release|x64
+		{313C242E-741B-4ECD-9C69-53E8F0B6DB7C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{313C242E-741B-4ECD-9C69-53E8F0B6DB7C}.Debug|Win32.Build.0 = Debug|Win32
+		{313C242E-741B-4ECD-9C69-53E8F0B6DB7C}.Debug|x64.ActiveCfg = Debug|x64
+		{313C242E-741B-4ECD-9C69-53E8F0B6DB7C}.Debug|x64.Build.0 = Debug|x64
+		{313C242E-741B-4ECD-9C69-53E8F0B6DB7C}.Release|Win32.ActiveCfg = Release|Win32
+		{313C242E-741B-4ECD-9C69-53E8F0B6DB7C}.Release|Win32.Build.0 = Release|Win32
+		{313C242E-741B-4ECD-9C69-53E8F0B6DB7C}.Release|x64.ActiveCfg = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
