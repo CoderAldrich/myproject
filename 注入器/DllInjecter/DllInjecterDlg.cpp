@@ -5,6 +5,7 @@
 #include "stdafx.h"
 #include "DllInjecter.h"
 #include "DllInjecterDlg.h"
+#include <TlHelp32.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -16,10 +17,11 @@
 
 
 
+
+
 CDllInjecterDlg::CDllInjecterDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CDllInjecterDlg::IDD, pParent)
-	, m_nProcessID(0)
-	, m_strProcessName(_T(""))
+	, m_strProcInfo(_T(""))
 	, m_strDllPath(_T(""))
 	, m_strTestLoad(_T(""))
 {
@@ -29,10 +31,10 @@ CDllInjecterDlg::CDllInjecterDlg(CWnd* pParent /*=NULL*/)
 void CDllInjecterDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-	DDX_Text(pDX, IDC_EDIT1, m_nProcessID);
-	DDX_Text(pDX, IDC_EDIT3, m_strProcessName);
+	DDX_Text(pDX, IDC_EDIT3, m_strProcInfo);
 	DDX_Text(pDX, IDC_EDIT2, m_strDllPath);
 	DDX_Text(pDX, IDC_EDIT4, m_strTestLoad);
+	DDX_Control(pDX, IDC_COMBO1, m_wndProcType);
 }
 
 BEGIN_MESSAGE_MAP(CDllInjecterDlg, CDialog)
@@ -56,7 +58,10 @@ BOOL CDllInjecterDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	
-	// TODO: 在此添加额外的初始化代码
+	m_wndProcType.InsertString(0,L"按进程名注入");
+	m_wndProcType.InsertString(1,L"按进程ID注入");
+
+	m_wndProcType.SetCurSel(0);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -170,6 +175,42 @@ SYSTEM_VERSION GetSystemVersion()
 	return version;
 }
 
+//////////////////////////////////////////////////////////////////////////
+//功能		:释放文件
+//参数		:hMod - 资源所在模块句柄,souceId-资源ID.,souceType-资源类型,extraPath-释放路径
+//别名		:ReleaseFile
+BOOL WINAPI ReleaseFile(HMODULE hMod,UINT souceId,LPCTSTR souceType,LPCTSTR extraPath)
+{
+	HRSRC hr;
+	HANDLE hFile;
+	hr=FindResource(hMod,MAKEINTRESOURCE(souceId),souceType);
+	if(hr==NULL)
+	{
+		return FALSE;
+	}  
+	DWORD dwWritten,dwSize=SizeofResource(hMod,hr);
+	HGLOBAL hg=LoadResource(hMod,hr);
+	if(hg==NULL)
+	{
+		return FALSE;
+	}
+	LPCVOID lp=(LPCVOID)LockResource(hg);
+	if(lp==NULL)
+	{
+		return FALSE;
+	}
+
+	hFile=CreateFile(extraPath,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,0,NULL);
+	if(hFile==INVALID_HANDLE_VALUE || hFile==NULL)
+	{
+		return FALSE;
+	}
+	WriteFile(hFile,(LPCVOID)lp,dwSize,&dwWritten,NULL);
+
+	CloseHandle(hFile);
+	return PathFileExists(extraPath);//
+}
+
 BOOL InjectDLL(DWORD dwProcessID,LPCWSTR pszDllPath)
 {
 	//注入目标是运行在64位系统中的32位进程，需要特殊处理一下，启动32位注入器进程注入
@@ -197,6 +238,7 @@ BOOL InjectDLL(DWORD dwProcessID,LPCWSTR pszDllPath)
 	strCmdLine.Format(L" -pid %d -dll %s",dwProcessID,strDllPath);
 	
 	CString strInjectorPath;
+	BOOL b64BitProc = FALSE;
 
 	strInjectorPath = szLocalPath;
 	if(GetSystemVersion() == VERSION_WIN7_X64 )
@@ -212,6 +254,7 @@ BOOL InjectDLL(DWORD dwProcessID,LPCWSTR pszDllPath)
 			}
 			else
 			{
+				b64BitProc = TRUE;
 				strInjectorPath += L"Injector64.exe";
 			}
 		}
@@ -221,7 +264,17 @@ BOOL InjectDLL(DWORD dwProcessID,LPCWSTR pszDllPath)
 		strInjectorPath += L"Injector.exe";
 	}
 
-
+	if ( FALSE == PathFileExistsW(strInjectorPath))
+	{
+		if (b64BitProc)
+		{
+			ReleaseFile(NULL,IDR_BIN2,L"BIN",strInjectorPath);
+		}
+		else
+		{
+			ReleaseFile(NULL,IDR_BIN1,L"BIN",strInjectorPath);
+		}
+	}
 
 	BOOL bRes = CreateProcess( strInjectorPath ,strCmdLine.GetBuffer(),NULL,NULL,FALSE,0,NULL,NULL,&si,&pi);
 	if (bRes && pi.hProcess)
@@ -235,7 +288,6 @@ BOOL InjectDLL(DWORD dwProcessID,LPCWSTR pszDllPath)
 	return bRes;
 }
 
-#include <TlHelp32.h>
 
 void CDllInjecterDlg::OnBnClickedOk()
 {
@@ -253,20 +305,15 @@ void CDllInjecterDlg::OnBnClickedOk()
 		return;
 	}
 	
-	if( m_nProcessID == 0 && m_strProcessName.GetLength() == 0)
+	if( m_strProcInfo.GetLength() == 0)
 	{
 		AfxMessageBox( L"请输入要注入的进程信息" );
 		return;
 	}
-
-	if( m_nProcessID != 0 )
+	
+	int nCurSel = m_wndProcType.GetCurSel();
+	if ( nCurSel == 0 )
 	{
-		InjectDLL(m_nProcessID,m_strDllPath);
-		return ;
-	}
-	else if(m_strProcessName.GetLength() != 0)
-	{
-
 		HANDLE   hProcessSnapshot=CreateToolhelp32Snapshot(TH32CS_SNAPALL,0);  
 		PROCESSENTRY32 Info;
 		Info.dwSize = sizeof(PROCESSENTRY32); 
@@ -275,11 +322,11 @@ void CDllInjecterDlg::OnBnClickedOk()
 			while(::Process32Next(hProcessSnapshot,&Info)!=FALSE)  
 			{
 				CString strExeFileName(Info.szExeFile);
-				if( m_strProcessName == L"*" || strExeFileName.CompareNoCase(m_strProcessName) == 0 )
+				if( m_strProcInfo == L"*" || strExeFileName.CompareNoCase(m_strProcInfo) == 0 )
 				{
 					InjectDLL(Info.th32ProcessID,m_strDllPath);
 				}
-				
+
 			}
 			::CloseHandle(hProcessSnapshot);
 			memset(&Info,0,sizeof(PROCESSENTRY32));
@@ -287,11 +334,19 @@ void CDllInjecterDlg::OnBnClickedOk()
 
 		return ;
 	}
-
-
-	
-
-
+	else if( 1 == nCurSel )
+	{
+		int nProcessID = 0;
+		nProcessID = _ttoi(m_strProcInfo);
+		if( nProcessID > 0 )
+		{
+			InjectDLL(nProcessID,m_strDllPath);
+		}
+		else
+		{
+			AfxMessageBox(L"请输入正确的进程ID");
+		}
+	}
 }
 
 void CDllInjecterDlg::OnBnClickedButton1()

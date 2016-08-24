@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include "afxwin.h"
 
 
 // CDllInjecterDlg ¶Ô»°¿ò
@@ -30,9 +31,10 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnBnClickedOk();
-	UINT m_nProcessID;
-	CString m_strProcessName;
+
+	CString m_strProcInfo;
 	CString m_strDllPath;
 	afx_msg void OnBnClickedButton1();
 	CString m_strTestLoad;
+	CComboBox m_wndProcType;
 };
