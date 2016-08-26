@@ -88,14 +88,66 @@ typedef LIST_PROCESS_RECORD::iterator LIST_PROCESS_RECORD_PTR;
 CCSLock            mapProcessDependsLock;
 MAP_PROCESS_DEPEND mapProcessDepends;
 
+BOOL PathernMatch( LPCWSTR pszCheck,LPCWSTR pszSrc)
+{
+	LPCWSTR pszTempSrc=NULL;
+	CONST WCHAR *pChar=NULL;
+	BOOL bStart=FALSE;
+	BOOL bBreak=FALSE;
+	do 
+	{
+		bBreak=false;
+		for(pszTempSrc=pszSrc,pChar=pszCheck;*pszTempSrc;++pszTempSrc,++pChar)
+		{
+			switch(*pChar)
+			{
+			case L'?':
+				break;
+			case L'*':
+				bStart=TRUE; //出现*匹配符
+				pszSrc=pszTempSrc;
+				pszCheck=pChar;
+				if(!*++pszCheck)
+					return TRUE;
+				bBreak=TRUE; //退出循环
+				break;
+			default:
+				if(*pszTempSrc!=*pChar)
+				{
+					if(!bStart) 
+						return FALSE;
+					pszSrc++;
+					bBreak=TRUE;
+				}
+				break;
+			}
+			if(bBreak) //退出循环 重新开始循环
+				break;
+		}
+		if(bBreak==FALSE)
+		{
+			if(*pChar=='*')
+				++pChar;
+			return (!*pChar);
+		}
+	} while(TRUE);
+}
 
-BOOL CheckProcessInList( LIST_PROCESS_RECORD *pProcessList , LPCWSTR pszExeName , PRCESS_LIST_NODE *pNode )
+BOOL CheckProcessInList( LIST_PROCESS_RECORD *pProcessList , LPCWSTR pszMatchRule , PRCESS_LIST_NODE *pNode )
 {
 	BOOL bFound = FALSE;
-
+	
+	CString strExeName;
+	CString strMatchRule;
+	strMatchRule = pszMatchRule;
+	strMatchRule.MakeLower();
+	
 	for (LIST_PROCESS_RECORD_PTR lstit = pProcessList->begin();lstit!= pProcessList->end();lstit++)
 	{
-		if( lstit->strProcessName.CompareNoCase(pszExeName) == 0 )
+		strExeName = lstit->strProcessName;
+		strExeName.MakeLower();
+
+		if( PathernMatch(strMatchRule,strExeName) )
 		{
 			if (pNode)
 			{
@@ -111,7 +163,6 @@ BOOL CheckProcessInList( LIST_PROCESS_RECORD *pProcessList , LPCWSTR pszExeName 
 	return bFound;
 }
 
-
 VOID CheckAllProcess( MAP_PROCESS_DEPEND *pProcessMap )
 {
 	LIST_PROCESS_RECORD TempProcessList;
@@ -126,9 +177,6 @@ VOID CheckAllProcess( MAP_PROCESS_DEPEND *pProcessMap )
 		DWORD tick=GetTickCount();
 		while(::Process32Next(m_handle,&Info)!=FALSE)  
 		{
-			CString strExeName(Info.szExeFile);
-			strExeName.MakeLower();
-
 			PRCESS_LIST_NODE ProcNode;
 			ProcNode.dwProcessId = Info.th32ProcessID;
 			ProcNode.strProcessName = Info.szExeFile;
