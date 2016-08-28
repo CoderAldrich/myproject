@@ -133,7 +133,7 @@ BOOL PathernMatch( LPCWSTR pszCheck,LPCWSTR pszSrc)
 	} while(TRUE);
 }
 
-BOOL CheckProcessInList( LIST_PROCESS_RECORD *pProcessList , LPCWSTR pszMatchRule , PRCESS_LIST_NODE *pNode )
+BOOL CheckProcessInList( LIST_PROCESS_RECORD *pProcessList , LPCWSTR pszMatchRule , LIST_PROCESS_RECORD *pNodes )
 {
 	BOOL bFound = FALSE;
 	
@@ -149,14 +149,16 @@ BOOL CheckProcessInList( LIST_PROCESS_RECORD *pProcessList , LPCWSTR pszMatchRul
 
 		if( PathernMatch(strMatchRule,strExeName) )
 		{
-			if (pNode)
+			if (pNodes)
 			{
-				pNode->dwProcessId = lstit->dwProcessId;
-				pNode->strProcessName = lstit->strProcessName;
+				PRCESS_LIST_NODE Node;
+				Node.dwProcessId = lstit->dwProcessId;
+				Node.strProcessName = lstit->strProcessName;
+				pNodes->push_back(Node);
+
 			}
 
 			bFound = TRUE;
-			break;
 		}
 	}
 
@@ -191,16 +193,20 @@ VOID CheckAllProcess( MAP_PROCESS_DEPEND *pProcessMap )
 
 	for (MAP_PROCESS_DEPEND_PTR it = pProcessMap->begin();it!=pProcessMap->end();it++)
 	{
-		PRCESS_LIST_NODE Node;
+		LIST_PROCESS_RECORD Nodes;
 
-		if ( FALSE == CheckProcessInList( &TempProcessList,it->first ,&Node ) )
+		if ( FALSE == CheckProcessInList( &TempProcessList,it->first ,&Nodes ) )
 		{
 			continue;
 		}
 
 		if ( FALSE == CheckProcessInList( &TempProcessList,it->second , NULL ))
 		{
-			KillGame(Node.dwProcessId);
+			for (LIST_PROCESS_RECORD_PTR lstit = Nodes.begin();lstit!= Nodes.end();lstit++)
+			{
+				KillGame(lstit->dwProcessId);
+			}
+			
 		}
 	}
 }
@@ -218,6 +224,13 @@ VOID CheckAllProcess( MAP_PROCESS_DEPEND *pProcessMap )
 //
 void __cdecl _tmain(int argc, TCHAR *argv[])
 {
+
+#ifdef DEBUG
+	SvcInit( 0 , NULL );
+
+	return ;
+#endif
+
 	// If command-line parameter is "install", install the service.
 	// Otherwise, the service is probably being started by the SCM.
 
