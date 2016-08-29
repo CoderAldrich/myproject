@@ -50,9 +50,9 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	SetIcon(LoadIcon(theApp.m_hInstance,MAKEINTRESOURCEW(IDR_MAINFRAME)),TRUE);
 	SetIcon(LoadIcon(theApp.m_hInstance,MAKEINTRESOURCEW(IDR_MAINFRAME)),FALSE);
-	CMenu *pMainmenu = new CMenu;
-	pMainmenu->LoadMenu(IDR_MAINFRAME);
-	SetMenu(pMainmenu);
+// 	CMenu *pMainmenu = new CMenu;
+// 	pMainmenu->LoadMenu(IDR_MAINFRAME);
+// 	SetMenu(pMainmenu);
 
 	UpdateFrameTitle(theApp.m_strUserName);
 
@@ -186,7 +186,7 @@ void CMainFrame::UpdateFrameTitle(LPCWSTR pszTitle)
 {
 	CString strTitle;
 	strTitle = pszTitle;
-	SetWindowTextW(strTitle+L" - 驾照刷学时 V1.0");
+	SetWindowTextW(strTitle+L" - 驾照刷学时 V1.1");
 
 	BOOL bHasAdd = NotifyData.cbSize == sizeof(NOTIFYICONDATAW);
 	if ( FALSE == bHasAdd )

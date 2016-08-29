@@ -349,7 +349,7 @@ void CSXSView::OnTimer(UINT_PTR nIDEvent)
 
 			m_refPreColor = refColor;
 
-			if ( m_nColorSameCount > 3 )
+			if ( m_nColorSameCount > 20 )
 			{
 				KillTimer(nIDEvent);
 
