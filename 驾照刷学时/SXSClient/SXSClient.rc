@@ -78,13 +78,21 @@ IDR_ShuaClientTYPE      ICON                    "res\\SXSClientDoc.ico"
 // Menu
 //
 
-IDR_MAINFRAME MENU 
+IDR_NOTIFY_POPUP MENU 
 BEGIN
     POPUP "root"
     BEGIN
         MENUITEM "显示窗口(&S)",                    ID_ROOT_SHOW
         MENUITEM "隐藏窗口(&H)",                    ID_ROOT_HIDE
         MENUITEM "退出(&E)",                      ID_ROOT_EXIT
+    END
+END
+
+IDR_MAINFRAME MENU 
+BEGIN
+    POPUP "关于(&A)"
+    BEGIN
+        MENUITEM "帮助(&H)",                      ID_APP_HELP
     END
 END
 
@@ -205,7 +213,7 @@ END
 
 STRINGTABLE 
 BEGIN
-    AFX_IDS_APP_TITLE       "ShuaClient"
+    AFX_IDS_APP_TITLE       "驾照刷学时"
     AFX_IDS_IDLEMESSAGE     "就绪"
 END
 

@@ -6,18 +6,94 @@
 #include "SXSView.h"
 #include "浏览器自动化/AutoBrowser.h"
 #include "MainFrm.h"
-
+#include "PauseMonitor.h"
+#include <detours.h>
 #include "SAStatusLog.h"
 
 CSAStatusLog g_loger(L"sxslog");
 
+#define TIME_ID_INPUT_LOGIN       1000
+#define TIME_ID_QUERY_USER_INFO   1001
+#define TIME_ID_MOUSE_MOVE        1002
+#define TIME_ID_CHECK_VIDEO_PAUSE 1003
+#define TIME_ID_CLICK_RESUME      1004
+#define TIME_ID_CLICK_WATCH_CONTINE 1005
+
+#define WM_ON_VIDEO_PAUSE          WM_USER+1000
+#define WM_ON_VIDEO_RESUME         WM_USER+1001
 // CSXSView
 
 IMPLEMENT_DYNCREATE(CSXSView, CIECoreView)
 
+
+int (WINAPI *pMessageBoxW)(
+						   __in_opt HWND hWnd,
+						   __in_opt LPCWSTR lpText,
+						   __in_opt LPCWSTR lpCaption,
+						   __in UINT uType
+						   ) = MessageBoxW;
+int WINAPI MyMessageBoxW(
+						 __in_opt HWND hWnd,
+						 __in_opt LPCWSTR lpText,
+						 __in_opt LPCWSTR lpCaption,
+						 __in UINT uType
+						 )
+{
+	int TReturn = pMessageBoxW(
+		hWnd,
+		lpText,
+		lpCaption,
+		uType
+		);
+	return TReturn;
+};
+
+int (WINAPI *pMessageBoxIndirectW)(
+								   __in CONST MSGBOXPARAMSW * lpmbp
+								   ) = MessageBoxIndirectW;
+int WINAPI MyMessageBoxIndirectW(
+								 __in CONST MSGBOXPARAMSW * lpmbp
+								 )
+{
+	CString strCaption;
+	CString strText;
+
+	strCaption = lpmbp->lpszCaption;
+	strText = lpmbp->lpszText;
+
+	
+
+	if (
+		strCaption.CompareNoCase(L"来自网页的消息") == 0 
+		&& strText.CompareNoCase(L"您确实要退出理论培训吗?") == 0
+		)
+	{
+		return IDOK;
+	}
+
+	int TReturn = pMessageBoxIndirectW(
+		lpmbp
+		);
+	return TReturn;
+};
+
 CSXSView::CSXSView()
 {
+	m_refPreColor = 0;
+	m_nColorSameCount = 0;
 
+	static BOOL bHook = FALSE;
+	if ( !bHook )
+	{
+		bHook = TRUE;
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach( (PVOID *)&pMessageBoxW ,(PVOID)MyMessageBoxW );
+		DetourAttach( (PVOID *)&pMessageBoxIndirectW ,(PVOID)MyMessageBoxIndirectW );
+		
+		DetourTransactionCommit();
+	}
 }
 
 CSXSView::~CSXSView()
@@ -31,7 +107,9 @@ void CSXSView::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CSXSView, CIECoreView)
 	ON_WM_TIMER()
-	ON_MESSAGE(WM_USER+3333,OnVideoPause)
+	ON_MESSAGE(WM_ON_VIDEO_PAUSE,OnVideoPause)
+	ON_MESSAGE(WM_ON_VIDEO_RESUME,OnVideoResume)
+	ON_WM_CREATE()
 END_MESSAGE_MAP()
 
 
@@ -49,6 +127,17 @@ void CSXSView::Dump(CDumpContext& dc) const
 }
 #endif //_DEBUG
 
+int CSXSView::OnCreate(LPCREATESTRUCT lpCreateStruct)
+{
+	if (CIECoreView::OnCreate(lpCreateStruct) == -1)
+		return -1;
+
+#ifndef DEBUG
+	StartPauseMonitor(m_hWnd,WM_ON_VIDEO_PAUSE,WM_ON_VIDEO_RESUME);
+#endif
+	return 0;
+}
+
 
 void CSXSView::DocumentComplete(LPDISPATCH pDisp, VARIANT* URL)
 {
@@ -58,24 +147,24 @@ void CSXSView::DocumentComplete(LPDISPATCH pDisp, VARIANT* URL)
 		strUrl = URL->bstrVal;
 		if ( strUrl.CompareNoCase(L"http://www.130100.prcjx.cn/") == 0 )
 		{
-			SetTimer(WM_USER+1111,2000,NULL);
+			SetTimer(TIME_ID_INPUT_LOGIN,2000,NULL);
 		}
 		else if( strUrl.CompareNoCase(L"http://www.130100.prcjx.cn:800/admin/std") == 0 )
 		{
-			SetTimer(WM_USER+1113,2000,NULL);
+			SetTimer(TIME_ID_QUERY_USER_INFO,2000,NULL);
+			SetTimer(TIME_ID_CLICK_WATCH_CONTINE,4000,NULL);
+			
 		}
 		
 		if ( strUrl.Find(L"http://www.130100.prcjx.cn:800/admin/std/training") >= 0 )
 		{
-			SetTimer(WM_USER+1112,5000,NULL);
+			SetTimer( TIME_ID_MOUSE_MOVE   , 5000,NULL);
+			SetTimer( TIME_ID_CHECK_VIDEO_PAUSE , 5000 , NULL );
 		}
 		else 
 		{
-			KillTimer(WM_USER+1112);
+			KillTimer(TIME_ID_MOUSE_MOVE);
 		}
-		
-
-
 	}
 }
 
@@ -85,7 +174,7 @@ void CSXSView::OnTimer(UINT_PTR nIDEvent)
 	
 	CAutoBrowser AutoBrowser((IWebBrowser2 *)GetApplication(),GetIEServerWnd());
 
-	if (nIDEvent == WM_USER+1111)
+	if (nIDEvent == TIME_ID_INPUT_LOGIN)
 	{
 		KillTimer(nIDEvent);
 
@@ -140,7 +229,7 @@ void CSXSView::OnTimer(UINT_PTR nIDEvent)
 
 	}
 	
-	if (nIDEvent == WM_USER+1112)
+	if (nIDEvent == TIME_ID_MOUSE_MOVE)
 	{
 		CRect rcClient;
 		GetClientRect(&rcClient);
@@ -148,7 +237,7 @@ void CSXSView::OnTimer(UINT_PTR nIDEvent)
 	}
 
 
-	if ( nIDEvent == WM_USER+1113 )
+	if ( nIDEvent == TIME_ID_QUERY_USER_INFO )
 	{
 		KillTimer(nIDEvent);
 
@@ -189,7 +278,19 @@ void CSXSView::OnTimer(UINT_PTR nIDEvent)
 
 	}
 
-	if ( nIDEvent == WM_USER+1114 )
+	if( nIDEvent == TIME_ID_CLICK_WATCH_CONTINE )
+	{
+		KillTimer(nIDEvent);
+
+		CElementInformation ElemInfo;
+		ElemInfo.SetTagName(L"a");
+		ElemInfo.SetTextName(L"继续观看",FALSE);
+		ElemInfo.AddElementAttribute(L"href",L"/admin/std/training/",FALSE);
+		AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo);
+
+	}
+
+	if ( nIDEvent == TIME_ID_CLICK_RESUME )
 	{
 		KillTimer(nIDEvent);
 
@@ -210,16 +311,80 @@ void CSXSView::OnTimer(UINT_PTR nIDEvent)
 		}
 
 	}
+	
+	if ( nIDEvent == TIME_ID_CHECK_VIDEO_PAUSE )
+	{
+		CElementInformation ElemInfo;
+		CElemRectList ElemList;
 
+		ElemInfo.SetTagName(L"object");
+		ElemInfo.AddElementAttribute(L"id",L"VMSPlayer",TRUE);
+
+		AutoBrowser.GetAllMatchElemRect(&ElemList,&ElemInfo);
+		if ( ElemList.GetElemRectCount() == 1 )
+		{
+			// 51 382
+			ELEM_RECT ElemRect;
+			ElemList.GetElemRectByIndex(0,&ElemRect);
+			
+			CRect rcElem;
+			rcElem = ElemRect.rcElem;
+			CPoint ptCenter;
+			ptCenter = rcElem.CenterPoint();
+
+			COLORREF refColor = 0;
+
+			HDC hDc = ::GetDC(GetIEServerWnd());
+			refColor =  GetPixel(hDc,ptCenter.x,ptCenter.y);
+			::ReleaseDC(GetIEServerWnd(),hDc);
+			
+			if ( m_refPreColor == refColor )
+			{
+				m_nColorSameCount++;
+			}
+			else
+			{
+				m_nColorSameCount=0;
+			}
+
+			m_refPreColor = refColor;
+
+			if ( m_nColorSameCount > 3 )
+			{
+				KillTimer(nIDEvent);
+
+				CElementInformation ElemInfo;
+				ElemInfo.SetTagName(L"input");
+				ElemInfo.AddElementAttribute(L"value",L"退出学习",FALSE);
+				//ElemInfo.AddElementAttribute(L"type",L"submit",TRUE);
+				AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo);
+			}
+		
+#ifdef DEBUG
+			CString strMsgOut;
+			strMsgOut.Format(L"0x%x\r\n",refColor);
+			OutputDebugStringW(strMsgOut);
+#endif
+		}
+	}
 
 	CIECoreView::OnTimer(nIDEvent);
 }
 
 LRESULT CSXSView::OnVideoPause(WPARAM wParam,LPARAM lParam)
 {
-	SetTimer(WM_USER+1114,200,NULL);
+	SetTimer(TIME_ID_CLICK_RESUME,3000,NULL);
 
-	g_loger.StatusOut(L"发现视屏被暂停，重新观看");
+	g_loger.StatusOut(L"发现视屏被暂停，准备点击恢复按钮");
+
+	return 0;
+}
+
+LRESULT CSXSView::OnVideoResume(WPARAM wParam,LPARAM lParam)
+{
+	//KillTimer(TIME_ID_CLICK_RESUME);
+
+	//g_loger.StatusOut(L"视频重新观看，停止点击按钮");
 
 	return 0;
 }

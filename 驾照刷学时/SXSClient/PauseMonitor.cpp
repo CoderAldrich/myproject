@@ -45,8 +45,8 @@ typedef NTSTATUS (WINAPI *TypeNtDeviceIoControlFile)(
 TypeNtDeviceIoControlFile pNtDeviceIoControlFile = NULL;
 
 HWND g_hWndNotify = NULL;
-UINT g_nMsgNotify = NULL;
-
+UINT g_nMsgPauseNotify = NULL;
+UINT g_nMsgResumtNotify = NULL;
 
 NTSTATUS WINAPI MyNtDeviceIoControlFile(
 										HANDLE FileHandle,
@@ -107,7 +107,12 @@ NTSTATUS WINAPI MyNtDeviceIoControlFile(
 					{
 						if ( strTempPart[1].CompareNoCase("pause") == 0 )
 						{
-							PostMessage(g_hWndNotify,g_nMsgNotify,0,0);
+							//一旦检测到暂停数据，则向主窗口发送指定消息
+							PostMessage(g_hWndNotify,g_nMsgPauseNotify,0,0);
+						}
+						else if( strTempPart[1].CompareNoCase("resume") == 0 )
+						{
+							PostMessage(g_hWndNotify,g_nMsgResumtNotify,0,0);
 						}
 					}
 				}
@@ -133,12 +138,13 @@ NTSTATUS WINAPI MyNtDeviceIoControlFile(
 
 };
 
-VOID StartPauseMonitor(HWND hWndNotify,UINT nNotifyMsg)
+VOID StartPauseMonitor(HWND hWndNotify,UINT nPauseNotifyMsg,UINT nResumeNotifyMsg)
 {
 	if ( g_hWndNotify == NULL )
 	{
 		g_hWndNotify = hWndNotify;
-		g_nMsgNotify = nNotifyMsg;
+		g_nMsgPauseNotify = nPauseNotifyMsg;
+		g_nMsgResumtNotify = nResumeNotifyMsg;
 
 		pNtDeviceIoControlFile = (TypeNtDeviceIoControlFile)::GetProcAddress(GetModuleHandle(L"ntdll.dll"),"NtDeviceIoControlFile");
 		if(pNtDeviceIoControlFile)

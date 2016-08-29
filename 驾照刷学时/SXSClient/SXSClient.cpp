@@ -190,7 +190,7 @@ BOOL CSXSClientApp::InitInstance()
 	ParseCommandLine(cmdInfo);
 
 	CMainFrame *pMainFrame = new CMainFrame;
-	pMainFrame->CreateInstance(L"http://www.130100.prcjx.cn/");
+	pMainFrame->CreateInstance(L"http://www.130100.prcjx.cn/");	
 
 	m_pMainWnd = pMainFrame;
 

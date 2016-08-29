@@ -21,7 +21,9 @@ public:
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
-
+protected:
+	COLORREF m_refPreColor;
+	int      m_nColorSameCount;
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
 
@@ -31,6 +33,9 @@ protected:
 
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg LRESULT OnVideoPause(WPARAM wParam,LPARAM lParam);
+	afx_msg LRESULT OnVideoResume(WPARAM wParam,LPARAM lParam);
+public:
+	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 };
 
 

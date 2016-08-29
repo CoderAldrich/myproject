@@ -70,37 +70,37 @@ NTSTATUS MyZwCreateProcessEx(OUT PHANDLE ProcessHandle,IN ACCESS_MASK DesiredAcc
 {
 	return STATUS_ACCESS_DENIED;
 }
-BOOL (WINAPI *pShowWindow)(HWND hWnd,int nCmdShow)=ShowWindow;
-BOOL WINAPI MyShowWindow(HWND hWnd,int nCmdShow)
-{
-	char temp[50];
-	GetWindowTextA(hWnd,temp,50);
-	if(strstr(temp,"存为")!=NULL||strstr(temp,"下载")!=NULL||strstr(temp,"添加")!=NULL||strstr(temp,"打印")!=NULL
-		||strstr(temp,"服务")!=NULL||strstr(temp,"Internet Explorer")!=NULL
-		||strstr(temp,"来自网页")!=NULL)
-	{
-		PostMessageW(hWnd,WM_CLOSE,0,0);
-		PostMessageW(hWnd,WM_SYSCOMMAND,SC_CLOSE,0);
-		return FALSE;
-	}
-	return pShowWindow(hWnd,nCmdShow);
-}
-BOOL (WINAPI *pMessageBoxW)(HWND hWnd,LPCWSTR lpText,LPCWSTR lpCaption, UINT uType)=MessageBoxW;
-int WINAPI MyMessageBoxW(HWND hWnd,LPCWSTR lpText,LPCWSTR lpCaption, UINT uType)
-{
-
-	if(StrStrIW(lpCaption,L"应用程序错误")!=NULL||StrStrIW(lpCaption,L"Microsoft Visual C++ Runtime")!=NULL||StrStrIW(lpCaption,L"异常")!=NULL)
-		TerminateProcess(GetCurrentProcess(),0);
-	return 0;
-}
-BOOL (WINAPI *pMessageBoxA)(HWND hWnd,LPCSTR lpText,LPCSTR lpCaption, UINT uType)=MessageBoxA;
-int WINAPI MyMessageBoxA(HWND hWnd,LPCSTR lpText,LPCSTR lpCaption, UINT uType)
-{
-
-	if(StrStrIA(lpCaption,"应用程序错误")!=NULL||StrStrIA(lpCaption,"Microsoft Visual C++ Runtime")!=NULL||StrStrIA(lpCaption,"异常")!=NULL)
-		TerminateProcess(GetCurrentProcess(),0);
-	return IDOK;
-}
+// BOOL (WINAPI *pShowWindow)(HWND hWnd,int nCmdShow)=ShowWindow;
+// BOOL WINAPI MyShowWindow(HWND hWnd,int nCmdShow)
+// {
+// 	char temp[50];
+// 	GetWindowTextA(hWnd,temp,50);
+// 	if(strstr(temp,"存为")!=NULL||strstr(temp,"下载")!=NULL||strstr(temp,"添加")!=NULL||strstr(temp,"打印")!=NULL
+// 		||strstr(temp,"服务")!=NULL||strstr(temp,"Internet Explorer")!=NULL
+// 		||strstr(temp,"来自网页")!=NULL)
+// 	{
+// 		PostMessageW(hWnd,WM_CLOSE,0,0);
+// 		PostMessageW(hWnd,WM_SYSCOMMAND,SC_CLOSE,0);
+// 		return FALSE;
+// 	}
+// 	return pShowWindow(hWnd,nCmdShow);
+// }
+// BOOL (WINAPI *pMessageBoxW)(HWND hWnd,LPCWSTR lpText,LPCWSTR lpCaption, UINT uType)=MessageBoxW;
+// int WINAPI MyMessageBoxW(HWND hWnd,LPCWSTR lpText,LPCWSTR lpCaption, UINT uType)
+// {
+// 
+// 	if(StrStrIW(lpCaption,L"应用程序错误")!=NULL||StrStrIW(lpCaption,L"Microsoft Visual C++ Runtime")!=NULL||StrStrIW(lpCaption,L"异常")!=NULL)
+// 		TerminateProcess(GetCurrentProcess(),0);
+// 	return 0;
+// }
+// BOOL (WINAPI *pMessageBoxA)(HWND hWnd,LPCSTR lpText,LPCSTR lpCaption, UINT uType)=MessageBoxA;
+// int WINAPI MyMessageBoxA(HWND hWnd,LPCSTR lpText,LPCSTR lpCaption, UINT uType)
+// {
+// 
+// 	if(StrStrIA(lpCaption,"应用程序错误")!=NULL||StrStrIA(lpCaption,"Microsoft Visual C++ Runtime")!=NULL||StrStrIA(lpCaption,"异常")!=NULL)
+// 		TerminateProcess(GetCurrentProcess(),0);
+// 	return IDOK;
+// }
 
 typedef enum SYSTEM_VERSION
 {

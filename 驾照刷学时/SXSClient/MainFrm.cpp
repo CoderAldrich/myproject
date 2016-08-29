@@ -6,7 +6,6 @@
 #include "SXSClient.h"
 #include "MainFrm.h"
 #include "浏览器自动化/VirtualMouse.h"
-#include "PauseMonitor.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -26,6 +25,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(ID_ROOT_SHOW, &CMainFrame::OnRootShow)
 	ON_COMMAND(ID_ROOT_HIDE, &CMainFrame::OnRootHide)
 	ON_COMMAND(ID_ROOT_EXIT, &CMainFrame::OnRootExit)
+	ON_COMMAND(ID_APP_HELP, &CMainFrame::OnAppHelp)
 END_MESSAGE_MAP()
 
 // CMainFrame 构造/析构
@@ -50,6 +50,9 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 	SetIcon(LoadIcon(theApp.m_hInstance,MAKEINTRESOURCEW(IDR_MAINFRAME)),TRUE);
 	SetIcon(LoadIcon(theApp.m_hInstance,MAKEINTRESOURCEW(IDR_MAINFRAME)),FALSE);
+	CMenu *pMainmenu = new CMenu;
+	pMainmenu->LoadMenu(IDR_MAINFRAME);
+	SetMenu(pMainmenu);
 
 	UpdateFrameTitle(theApp.m_strUserName);
 
@@ -60,8 +63,6 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	CRect rcClient;
 	GetClientRect(&rcClient);
 	m_pView->Create(NULL,NULL,WS_VISIBLE|WS_CHILD,rcClient,this,0);
-
-	StartPauseMonitor(m_pView->m_hWnd,WM_USER+3333);
 
 	return 0;
 }
@@ -144,7 +145,7 @@ void CMainFrame::OnNcDestroy()
 
 void CMainFrame::OnClose()
 {
-	ShowWindow(SW_HIDE);
+	//ShowWindow(SW_HIDE);
 
 	//CFrameWnd::OnClose();
 }
@@ -173,7 +174,7 @@ LRESULT CMainFrame::OnShellIcon(WPARAM wParam,LPARAM lParam)
 			GetRealMousePos(&ptCursor);
 
 			CMenu PopMenu;
-			PopMenu.LoadMenu(IDR_MAINFRAME);
+			PopMenu.LoadMenu(IDR_NOTIFY_POPUP);
 			PopMenu.GetSubMenu(0)->TrackPopupMenu(TPM_RIGHTALIGN|TPM_BOTTOMALIGN,ptCursor.x,ptCursor.y,this);
 		}
 	}
@@ -225,4 +226,9 @@ void CMainFrame::OnRootExit()
 {
 	Shell_NotifyIconW(NIM_DELETE, &NotifyData);
 	CFrameWnd::OnClose();
+}
+
+void CMainFrame::OnAppHelp()
+{
+	AfxMessageBox(L"启动参数\r\n -username 用户名 -password 密码");
 }

@@ -42,6 +42,7 @@ public:
 	afx_msg void OnRootShow();
 	afx_msg void OnRootHide();
 	afx_msg void OnRootExit();
+	afx_msg void OnAppHelp();
 };
 
 
