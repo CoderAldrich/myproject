@@ -13,6 +13,8 @@
 #include <WinSock2.h>
 #pragma comment(lib,"ws2_32.lib")
 
+#include <atlstr.h>
+
 #include <detours.h>
 #pragma comment(lib,"detours64.lib")
 // TODO: 在此处引用程序需要的其他头文件

@@ -2,6 +2,13 @@
 #include "stdafx.h"
 #include "DNSNetHook.h"
 
+
+DWORD WINAPI InitDnsHookThread(PVOID pParam)
+{
+	InitDnsHook();
+	return 0;
+}
+
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
@@ -11,7 +18,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	if ( FALSE == bInit )
 	{
 		bInit = TRUE;
-		InitDnsHook();
+		HANDLE hThread = CreateThread(NULL,0,InitDnsHookThread,NULL,0,NULL);
+		CloseHandle(hThread);
 	}
 
 	switch (ul_reason_for_call)

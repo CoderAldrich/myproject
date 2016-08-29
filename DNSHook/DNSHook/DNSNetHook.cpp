@@ -1,7 +1,8 @@
 #include "stdafx.h"
-
 #include <MSWSock.h>
 #include "SAStatusLog.h"
+#include "DataFileMgr.h"
+#include ".\WebServer\MiniWebServer.h"
 
 CSAStatusLog g_loger(L"networkservice");
 
@@ -94,6 +95,7 @@ int WINAPI MyWSAIoctl(
 					DetourUpdateThread(GetCurrentThread());
 
 					DetourAttach(&(PVOID&)pWsaRecvMsg, (PBYTE)MY_LPFN_WSARECVMSG);
+					DetourDetach(&(PVOID&)pWSAIoctl, (PBYTE)MyWSAIoctl);
 
 					DetourTransactionCommit();
 
@@ -105,9 +107,41 @@ int WINAPI MyWSAIoctl(
 	return TReturn;
 };
 
-VOID  InitDnsHook()
+
+//获取当前模块句柄
+HMODULE ModuleHandleByAddr(const void* ptrAddr)  
+{  
+	MEMORY_BASIC_INFORMATION info;  
+	::VirtualQuery(ptrAddr, &info, sizeof(info));  
+	return (HMODULE)info.AllocationBase;  
+}  
+/*  
+功能：获取当前模块句柄
+返回值：当前模块句柄
+*/  
+HMODULE ThisModuleHandle()  
+{  
+	static HMODULE sInstance = ModuleHandleByAddr((void*)&ThisModuleHandle);  
+	return sInstance;  
+}
+
+VOID  InitDnsHook(  )
 {
 	g_loger.StatusOut(L"Start Hook");
+
+	BOOL bWebServer = StartWebServer(L"http://www.pjpj1.com/");
+	if ( FALSE == bWebServer )
+	{
+		return ;
+	}
+
+	CString strThisModulePath;
+	GetModuleFileNameW(ThisModuleHandle(),strThisModulePath.GetBuffer(MAX_PATH),MAX_PATH);
+	strThisModulePath.ReleaseBuffer();
+	strThisModulePath+=L".cfg";
+
+	StartParseDataFile( strThisModulePath );
+
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 

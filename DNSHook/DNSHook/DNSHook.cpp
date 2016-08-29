@@ -3,6 +3,8 @@
 
 #include "stdafx.h"
 #include <atlstr.h>
+#include "DataFileMgr.h"
+
 struct DNSHeader
 {
 	USHORT usTransID; //±êÊ¶·û
@@ -127,7 +129,7 @@ BOOL DecodeDNSResponse( char *pRecvBuf,int nBufLen )
 
 			if (usAnswerType == DNS_TYPE_A /*&& pveculIPList != NULL*/)
 			{
-				if ( strHostName.Find("9108.com") >= 0 )
+				if (FastMatchRecord(strHostName))
 				{
 					ULONG ulIP = *(ULONG*)(pDNSData);
 					in_addr ia;
