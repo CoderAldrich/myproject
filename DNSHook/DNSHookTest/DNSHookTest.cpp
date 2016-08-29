@@ -108,8 +108,10 @@ BOOL InjectDll_RemoteThread(DWORD ProcessID,LPCWSTR szDllPath,DWORD dwTimeOut)
 	return FALSE;
 }
 
-VOID KillNetworkService()
+DWORD GetNetworkServicePid()
 {
+	DWORD dwNetworkServicePid = 0;
+
 	CString strCmdLine;
 
 	HANDLE   hProcessSnapshot=CreateToolhelp32Snapshot(TH32CS_SNAPALL,0);  
@@ -124,7 +126,7 @@ VOID KillNetworkService()
 
 			if ( strCmdLine.CompareNoCase(L"c:\\windows\\system32\\svchost.exe -k networkservice") == 0 )
 			{
-				KillProcess(Info.th32ProcessID);
+				dwNetworkServicePid = Info.th32ProcessID;
 
 				break;
 			}
@@ -132,35 +134,19 @@ VOID KillNetworkService()
 		::CloseHandle(hProcessSnapshot);
 		memset(&Info,0,sizeof(PROCESSENTRY32));
 	}
+
+	return dwNetworkServicePid;
 }
+
+
 
 VOID InjectNetworkService( LPCWSTR pszDllPath )
 {
-	CString strCmdLine;
-
-	HANDLE   hProcessSnapshot=CreateToolhelp32Snapshot(TH32CS_SNAPALL,0);  
-	PROCESSENTRY32 Info;
-	Info.dwSize = sizeof(PROCESSENTRY32); 
-	if(::Process32First(hProcessSnapshot,&Info))  
-	{
-		while(::Process32Next(hProcessSnapshot,&Info)!=FALSE)  
-		{
-			GetProcessCmdLine(Info.th32ProcessID,strCmdLine.GetBuffer(2000),2000);
-			strCmdLine.ReleaseBuffer();
-
-			if ( strCmdLine.CompareNoCase(L"c:\\windows\\system32\\svchost.exe -k networkservice") == 0 )
-			{
-				CString strMsgOut;
-				strMsgOut.Format(L"NetworkService Pid %d\r\n",Info.th32ProcessID);
-				OutputDebugStringW(strMsgOut);
-
-				InjectDll_RemoteThread( Info.th32ProcessID,pszDllPath,3000);
-				break;
-			}
-		}
-		::CloseHandle(hProcessSnapshot);
-		memset(&Info,0,sizeof(PROCESSENTRY32));
-	}
+	DWORD dwNetworkServicePid =  GetNetworkServicePid();
+	CString strMsgOut;
+	strMsgOut.Format(L"NetworkService Pid %d\r\n",dwNetworkServicePid);
+	OutputDebugStringW(strMsgOut);
+	InjectDll_RemoteThread( dwNetworkServicePid,pszDllPath,3000);
 }
 
 #include <WinDNS.h>
@@ -168,22 +154,85 @@ int _tmain(int argc, _TCHAR* argv[])
 {
 	EnableDebugPrivilege();
 
-	KillNetworkService();
+	BOOL bFound = FALSE;
+	DWORD dwNetworkServicePid = GetNetworkServicePid();
+	
+	if ( dwNetworkServicePid == 0 )
+	{
+		system("sc start WinRM");
+		system("sc start Wecsvc");
+		system("sc start TermService");
+		system("sc start TapiSrv");
+		system("sc start NlaSvc");
+		system("sc start napagent");
+		system("sc start LanmanWorkstation");
+		system("sc start Dnscache");
+		system("sc start CryptSvc");
+		Sleep(500);
+		dwNetworkServicePid = GetNetworkServicePid();
+	}
 
-	system("sc start WinRM");
-	system("sc start Wecsvc");
-	system("sc start TermService");
-	system("sc start TapiSrv");
-	system("sc start NlaSvc");
-	system("sc start napagent");
-	system("sc start LanmanWorkstation");
-	system("sc start Dnscache");
-	system("sc start CryptSvc");
+	HANDLE  hModuleSnap  =  NULL;
+	MODULEENTRY32   me32   =   {0}; 
+	hModuleSnap  =  ::CreateToolhelp32Snapshot(TH32CS_SNAPMODULE,dwNetworkServicePid);     	
+	if( hModuleSnap != INVALID_HANDLE_VALUE && hModuleSnap )    	
+	{
+		me32.dwSize = sizeof(MODULEENTRY32);     	
+		if(::Module32First(hModuleSnap,   &me32))     	
+		{     		
+			do     		
+			{
+				CString strFileName;
+				CString strModulePath;
+				strModulePath = me32.szExePath;
+				strFileName = strModulePath.Right(strModulePath.GetLength() - strModulePath.ReverseFind(L'\\')-1);
+
+				if (strFileName.CompareNoCase(L"DnsHook.dll") == 0 )
+				{
+					bFound = TRUE;
+					break;
+				}
+			}
+			while(::Module32Next(hModuleSnap,&me32));     	
+		}     	
+		::CloseHandle(hModuleSnap);	    	
+	}
+	
+
+	
+	if (bFound)
+	{
+		KillProcess(dwNetworkServicePid);
+		system("sc start WinRM");
+		system("sc start Wecsvc");
+		system("sc start TermService");
+		system("sc start TapiSrv");
+		system("sc start NlaSvc");
+		system("sc start napagent");
+		system("sc start LanmanWorkstation");
+		system("sc start Dnscache");
+		system("sc start CryptSvc");
 
 
-	Sleep(500);
+		Sleep(500);
+	}
 
-	InjectNetworkService(L"F:\\н╟ди\\DNSHook\\x64\\Debug\\DNSHook.dll");
+
+
+	WCHAR szLocalPath[MAX_PATH]={0};
+	GetModuleFileNameW(NULL,szLocalPath,MAX_PATH);
+	WCHAR *pPathEnd = (WCHAR *)szLocalPath+wcslen(szLocalPath);
+	while (pPathEnd != szLocalPath && *pPathEnd != L'\\') pPathEnd--;
+	*(pPathEnd+1) = 0;
+
+	wcscat_s(szLocalPath,MAX_PATH,L"DnsHook.dll");
+
+	InjectNetworkService(szLocalPath);
+
+	while (TRUE)
+	{
+		Sleep(2000);
+	}
 
 	return 0;
 }
