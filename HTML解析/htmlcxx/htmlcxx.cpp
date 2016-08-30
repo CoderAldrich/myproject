@@ -27,9 +27,7 @@ bool stringcheck(std::string tarstring,std::string restring)
 		return false;
 	}
 
-	std::tr1::regex rgx(restring);
-
-	return regex_search(tarstring,rgx);
+	return tarstring.find(restring)>=0;
 }
 
 bool ParseHtml(const char *phtml,pelem_feature pelemfeature,plist_result presult)
@@ -58,9 +56,9 @@ bool ParseHtml(const char *phtml,pelem_feature pelemfeature,plist_result presult
 
 		//比较标签文本
 		bool bctxtextmatch = true;
-		if( pelemfeature->re_contenttext.size() > 0  )
+		if( pelemfeature->sub_contenttext.size() > 0  )
 		{
-			bctxtextmatch = stringcheck(it->mContentText,pelemfeature->re_contenttext);
+			bctxtextmatch = stringcheck(it->mContentText,pelemfeature->sub_contenttext);
 		}
 
 		if ( false == bctxtextmatch )
@@ -76,7 +74,7 @@ bool ParseHtml(const char *phtml,pelem_feature pelemfeature,plist_result presult
 
 		std::pair<bool,std::string> attrpair = it->attribute(pelemfeature->strattributename);
 
-		if( false == stringcheck(attrpair.second,pelemfeature->re_attributevalue) )
+		if( false == stringcheck(attrpair.second,pelemfeature->sub_attributevalue) )
 		{
 			battributematch = false;
 		}

@@ -29,11 +29,11 @@ CStringA GetFileTextA(LPCWSTR pszFilePath)
 
 	return strFileText;
 }
-
+CString GetHttpString( LPCWSTR pszUrl );
 int _tmain(int argc, _TCHAR* argv[])
 {
 	
-	CStringA strHtmlContent = GetFileTextA(L"C:\\test\\test.html");
+	CStringA strHtmlContent = GetHttpString(L"http://btkitty.red/");//GetFileTextA(L"C:\\test\\test.html");
 
 	HMODULE hModule = LoadLibraryW(L"htmlcxx.dll");
 	if (hModule)
@@ -45,19 +45,19 @@ int _tmain(int argc, _TCHAR* argv[])
 			list_result result;
 
 			elem_feature elemfeature;
-			elemfeature.tagname="a";
-//  		elemfeature.contenttext.bfullmatch = false;
-//  		elemfeature.contenttext.strfeature = "¡¶";
+			elemfeature.tagname="script";
+			elemfeature.strattributename = "src";
+			elemfeature.sub_attributevalue = "/";
+			elemfeature.attributequery="src";
 
-			attribute_feature attrfeature;
-			attrfeature.strattributename="href";
-			attrfeature.re_attributevalue="*/*";
+			pParseHtml(strHtmlContent,&elemfeature,&result);
 
-			elemfeature.attributefeature.push_back(attrfeature);
-
-			pParseHtml(strHtmlContent,&elemfeature,"href",&result);
-
-			int a=0;
+			
+			for (list_result::iterator it = result.begin();it!=result.end();it++)
+			{
+				OutputDebugStringA((*it).c_str());
+				OutputDebugStringA("\r\n");
+			}
 
 		}
 	}

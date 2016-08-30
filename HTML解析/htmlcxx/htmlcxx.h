@@ -12,9 +12,9 @@
 typedef struct tag_elem_feature
 {
 	std::string tagname;
-	std::string re_contenttext;
+	std::string sub_contenttext;
 	std::string strattributename;
-	std::string re_attributevalue;
+	std::string sub_attributevalue;
 	std::string attributequery;
 }elem_feature,*pelem_feature;
 
