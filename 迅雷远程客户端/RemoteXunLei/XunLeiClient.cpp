@@ -107,7 +107,8 @@ BOOL ParseItemsData( LPCSTR pszData )
 				int      nProcess = val_array[nIndex]["progress"].asInt();
 				long     lSpeed = val_array[nIndex]["speed"].asInt64();
 				int      nStatus = val_array[nIndex]["state"].asInt();
-				int a=0;
+				
+				OutputDebugStringW(strName+L"\r\n");
 			}
 		}
 

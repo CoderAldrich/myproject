@@ -306,6 +306,14 @@
 			Name="XunLeiClient"
 			>
 			<File
+				RelativePath=".\DownloadItem.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\DownloadItem.h"
+				>
+			</File>
+			<File
 				RelativePath=".\PublicFun.cpp"
 				>
 			</File>

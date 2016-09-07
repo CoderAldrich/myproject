@@ -51,7 +51,6 @@ END_MESSAGE_MAP()
 
 CRemoteXunLeiDlg::CRemoteXunLeiDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CRemoteXunLeiDlg::IDD, pParent)
-	, m_strMsgOut(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -59,7 +58,8 @@ CRemoteXunLeiDlg::CRemoteXunLeiDlg(CWnd* pParent /*=NULL*/)
 void CRemoteXunLeiDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-	DDX_Text(pDX, IDC_EDIT1, m_strMsgOut);
+	DDX_Control(pDX, IDC_LIST1, m_wndDownloaders);
+	DDX_Control(pDX, IDC_LIST2, m_wndDownloadItems);
 }
 
 BEGIN_MESSAGE_MAP(CRemoteXunLeiDlg, CDialog)
@@ -103,6 +103,9 @@ BOOL CRemoteXunLeiDlg::OnInitDialog()
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
+
+	m_wndDownloaders.InsertColumn(0,L"名称",LVCFMT_LEFT,90);
+	m_wndDownloaders.InsertColumn(1,L"状态",LVCFMT_LEFT,50);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -171,8 +174,14 @@ void CRemoteXunLeiDlg::OnBnClickedOk()
 
 void CRemoteXunLeiDlg::OnBnClickedButton1()
 {
+	m_wndDownloaders.DeleteAllItems();
 	int nCount = XunLeiQueryDownloaders(m_pDownloaders,10);
-	int a=0;
+	
+	for (int i=0;i<nCount;i++)
+	{
+		m_wndDownloaders.InsertItem(i,m_pDownloaders[i]->GetName());
+		m_wndDownloaders.SetItemText(i,1,L"在线");
+	}
 }
 
 void CRemoteXunLeiDlg::OnBnClickedButton2()
