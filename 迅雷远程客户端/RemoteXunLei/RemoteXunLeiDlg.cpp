@@ -158,7 +158,15 @@ HCURSOR CRemoteXunLeiDlg::OnQueryDragIcon()
 
 void CRemoteXunLeiDlg::OnBnClickedOk()
 {
-	XunLeiLongin(L"gaozan198912",L"zan123456");
+	CString strErrorMsg;
+	BOOL bRes = XunLeiCheckLogin(strErrorMsg);
+	//if ( FALSE == bRes )
+	{
+		bRes = XunLeiLongin(L"gaozan198912",L"zan123456",strErrorMsg);
+	}
+	
+	int a=0;
+
 }
 
 void CRemoteXunLeiDlg::OnBnClickedButton1()

@@ -10,8 +10,29 @@
 #pragma comment(lib,"json_vc71_libmt.lib")
 #endif
 
+BOOL XunLeiCheckLogin(CString &strErrorMsg)
+{
+	BOOL bLogin = FALSE;
+	CStringA strData;
+	strData = HttpQueryData( L"http://stat.login.xunlei.com:1800/report?cachetime=1473226733361" );
+	Json::Reader reader;  
+	Json::Value root;  
+	if (reader.parse(strData.GetBuffer(), root))   
+	{
+		int nRes = 0;
+		nRes = root["rtn"].asInt();
+		if ( nRes == 0 )
+		{
+			bLogin = TRUE;
+		}
 
-BOOL  XunLeiLongin( LPCWSTR pszUserName , LPCWSTR pszPassWord )
+		strErrorMsg = root["msg"].asCString();
+	}
+
+	return bLogin;
+}
+
+BOOL  XunLeiLongin( LPCWSTR pszUserName , LPCWSTR pszPassWord ,CString &strErrorMsg )
 {
 	HttpQueryData( L"http://yuancheng.xunlei.com/login.html" );
 	HttpQueryData( L"https://login.xunlei.com/risk?cmd=report" );
@@ -22,7 +43,7 @@ BOOL  XunLeiLongin( LPCWSTR pszUserName , LPCWSTR pszPassWord )
 	straPostData.Format("p=%s&u=%s&verifycode=----&login_enable=0&business_type=113&v=101&cachetime=1473226733018",CStringA(pszPassWord),CStringA(pszUserName));
 	HttpQueryData( L"https://login.xunlei.com/sec2login/",straPostData.GetBuffer(),straPostData.GetLength());
 
-	return FALSE;
+	return XunLeiCheckLogin(strErrorMsg);
 }
 
 int XunLeiQueryDownloaders( CXunLeiDownloader **pArray,int nMaxCount )
@@ -35,7 +56,7 @@ int XunLeiQueryDownloaders( CXunLeiDownloader **pArray,int nMaxCount )
 
 	Json::Reader reader;  
 	Json::Value root;  
-	if (reader.parse(strData.GetBuffer(), root))  // reader将Json字符串解析到root，root将包含Json里所有子元素   
+	if (reader.parse(strData.GetBuffer(), root))   
 	{
 		int nRes = 0;
 		nRes = root["rtn"].asInt();

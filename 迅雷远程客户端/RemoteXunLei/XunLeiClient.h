@@ -1,7 +1,8 @@
 #pragma once
 #include "XunLeiDownloader.h"
 
-BOOL  XunLeiLongin( LPCWSTR pszUserName , LPCWSTR pszPassWord );
+BOOL XunLeiCheckLogin(CString &strErrorMsg);
+BOOL  XunLeiLongin( LPCWSTR pszUserName , LPCWSTR pszPassWord ,CString &strErrorMsg );
 BOOL XunLeiQueryDownloaders( CXunLeiDownloader **pArray,int nMaxCount );
 
 typedef enum DOWNLOAD_ITEM_TYPE
