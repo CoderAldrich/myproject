@@ -3,6 +3,7 @@
 
 #include "PublicFun.h"
 
+
 #include ".\json\json.h"
 #ifdef DEBUG
 #pragma comment(lib,"json_vc71_libmtd.lib")
@@ -34,13 +35,16 @@ BOOL XunLeiCheckLogin(CString &strErrorMsg)
 
 BOOL  XunLeiLongin( LPCWSTR pszUserName , LPCWSTR pszPassWord ,CString &strErrorMsg )
 {
+
 	HttpQueryData( L"http://yuancheng.xunlei.com/login.html" );
 	HttpQueryData( L"https://login.xunlei.com/risk?cmd=report" );
-	HttpQueryData( L"https://login.xunlei.com/check/?u=gaozan198912&business_type=113&v=101&cachetime=1473226725725&" );
 
+	CString strLoginUrl;
+	strLoginUrl.Format( L"https://login.xunlei.com/check/?u=%s&business_type=113&v=101&cachetime=%I64d",pszUserName,GetCurrMSForMe() );
+	HttpQueryData( strLoginUrl );
 
 	CStringA straPostData;
-	straPostData.Format("p=%s&u=%s&verifycode=----&login_enable=0&business_type=113&v=101&cachetime=1473226733018",CStringA(pszPassWord),CStringA(pszUserName));
+	straPostData.Format("p=%s&u=%s&verifycode=----&login_enable=0&business_type=113&v=101&cachetime=%I64d",CStringA(pszPassWord),CStringA(pszUserName),GetCurrMSForMe());
 	HttpQueryData( L"https://login.xunlei.com/sec2login/",straPostData.GetBuffer(),straPostData.GetLength());
 
 	return XunLeiCheckLogin(strErrorMsg);
@@ -111,7 +115,6 @@ BOOL ParseItemsData( LPCSTR pszData )
 				OutputDebugStringW(strName+L"\r\n");
 			}
 		}
-
 	}  
 
 	return FALSE;
@@ -119,12 +122,11 @@ BOOL ParseItemsData( LPCSTR pszData )
 
 VOID XunLeiQueryItems( LPCWSTR pszDownloaderId , DOWNLOAD_ITEM_TYPE Type )
 {
+	CString strQueryUrl;
+	strQueryUrl.Format(L"http://homecloud.yuancheng.xunlei.com/list?pid=%s&type=%d&pos=0&number=100&needUrl=1&v=2&ct=0&_=%I64d",pszDownloaderId,Type,GetCurrMSForMe());
+
 	CStringA strData;
-
-	CString strTest;
-	strTest.Format(L"http://homecloud.yuancheng.xunlei.com/list?pid=%s&type=%d&pos=0&number=100&needUrl=1&v=2&ct=0",pszDownloaderId,Type);
-
-	strData = HttpQueryData( strTest );
+	strData = HttpQueryData( strQueryUrl );
 
 	ParseItemsData(CStringA(strData));
 }

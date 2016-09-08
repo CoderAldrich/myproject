@@ -332,3 +332,17 @@ CString HttpQueryData( LPCWSTR pszUrl , PVOID pPostData , UINT nDataLen , DWORD 
 
 }
 
+
+LONGLONG GetCurrMSForMe() //获取1970年到现在的毫秒数
+{
+	SYSTEMTIME tTime = {0};
+	GetSystemTime(&tTime);
+
+	FILETIME fTime = {0};
+	SystemTimeToFileTime(&tTime, &fTime);
+
+	ULARGE_INTEGER ui;
+	ui.LowPart = fTime.dwLowDateTime;
+	ui.HighPart = fTime.dwHighDateTime;
+	return ((LONGLONG)(ui.QuadPart-116444736000000000)/10000);
+}
