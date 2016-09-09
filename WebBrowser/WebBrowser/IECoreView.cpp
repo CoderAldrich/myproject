@@ -9,6 +9,7 @@
 #include "IIEOleClientSite.h"
 #include <detours.h>
 #pragma comment(lib,"wininet.lib")
+#include "PrintWebView.h"
 
 BEGIN_EVENTSINK_MAP(CIECoreView,  CHtmlView)
 ON_EVENT(CIECoreView,  AFX_IDW_PANE_FIRST ,DISPID_NEWWINDOW3,NewWindow3,VTS_PDISPATCH  VTS_PBOOL  VTS_I4  VTS_BSTR  VTS_BSTR)
@@ -710,6 +711,16 @@ unsigned long CIECoreView::ControlEditFind()
 {
 	//IWebBrowser2 *pWb2 = GetGlobalWebBrowser2();
 	//pWb2->ExecFormsCommand(IDM_FIND, NULL, NULL);
+	return 0;
+}
+
+unsigned long CIECoreView::ControlPrintWebView()
+{
+	CComQIPtr<IHTMLDocument2> pDoc2;
+	pDoc2 = (IHTMLDocument2 *)GetHtmlDocument();
+
+	PrintWebViewToFile(L"C:\\test\\printweb.jpg",pDoc2,m_hIEServer);
+
 	return 0;
 }
 

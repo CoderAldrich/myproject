@@ -48,6 +48,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_MESSAGE(WM_ASYNC_ADD_TAB,OnAsyncAddTab)
 	ON_MESSAGE(WM_ASYNC_DEL_TAB,OnAsyncDelTab)
 	ON_MESSAGE(WM_ASYNC_SET_FOCUS_TAB,OnAsyncSetFocusTab)
+	ON_COMMAND(ID_PRINT_WEB_VIEW, &CMainFrame::OnPrintWebView)
 END_MESSAGE_MAP()
 
 static UINT indicators[] =
@@ -712,4 +713,12 @@ void CMainFrame::OnClose()
 BOOL CMainFrame::OnNcActivate(BOOL bActive)
 {
 	return __super::OnNcActivate(bActive);
+}
+
+void CMainFrame::OnPrintWebView()
+{
+	if( m_pUINotifyer )
+	{
+		m_pUINotifyer->NotifyPrintWebView(0);
+	}
 }

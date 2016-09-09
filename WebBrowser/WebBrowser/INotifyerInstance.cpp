@@ -494,6 +494,14 @@ unsigned long INotifyerInstance::NotifyDragTab(PAGEID nPageID)
 {
 	return 0;
 }
+
+unsigned long INotifyerInstance::NotifyPrintWebView(PAGEID nPageID)
+{
+	IWBCoreControler *pWbControl = PageIDToCoreControl(m_CurrentPageID);
+	pWbControl->ControlPrintWebView();
+	return 0;
+}
+
 //浏览器内核通知函数
 unsigned long INotifyerInstance::NotifyNewWindow(PVOID *ppPageRef,LPCTSTR pszUrl,BOOL *bCancel,BOOL bNewFrame,LONG * nNewPageID/*=NULL*/)
 {

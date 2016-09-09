@@ -195,6 +195,7 @@ BEGIN
         MENUITEM "重置Web设置(&W)…",                ID_NOTHING_ENABLE
         MENUITEM SEPARATOR
         MENUITEM "Internet选项(&O)…",             ID_NOTHING_ENABLE
+        MENUITEM "网页截图",                        ID_PRINT_WEB_VIEW
     END
     POPUP "帮助(&H)"
     BEGIN

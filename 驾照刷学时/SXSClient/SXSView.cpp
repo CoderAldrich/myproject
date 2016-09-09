@@ -39,6 +39,9 @@ int WINAPI MyMessageBoxW(
 						 __in UINT uType
 						 )
 {
+
+	g_loger.StatusOut(L"对话框拦截 MessageBoxW Caption:%s Text:%s Style:%d",lpCaption,lpText,uType);
+
 	int TReturn = pMessageBoxW(
 		hWnd,
 		lpText,
@@ -62,6 +65,7 @@ int WINAPI MyMessageBoxIndirectW(
 	strText = lpmbp->lpszText;
 
 	
+	g_loger.StatusOut(L"对话框拦截 MessageBoxIndirectW Caption:%s Text:%s Style:%d",strCaption,strText,lpmbp->dwStyle);
 
 	if (
 		strCaption.CompareNoCase(L"来自网页的消息") == 0 
@@ -73,6 +77,56 @@ int WINAPI MyMessageBoxIndirectW(
 
 	int TReturn = pMessageBoxIndirectW(
 		lpmbp
+		);
+	return TReturn;
+};
+
+
+DLGPROC pDlgProc = NULL;
+
+INT_PTR CALLBACK MyDialogProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	if( WM_COMMAND == uMsg )
+	{
+		int a=0;
+	}
+	CString strMsgOut;
+	strMsgOut.Format(L"HWND %x Msg %x WPARAM %d LPARAM %d\r\n",hWnd,uMsg,wParam,lParam);
+	OutputDebugStringW(strMsgOut);
+	return pDlgProc(hWnd, uMsg, wParam, lParam);
+}
+
+INT_PTR (WINAPI *pDialogBoxIndirectParamW)(
+	__in_opt HINSTANCE hInstance,
+	__in LPCDLGTEMPLATEW hDialogTemplate,
+	__in_opt HWND hWndParent,
+	__in_opt DLGPROC lpDialogFunc,
+	__in LPARAM dwInitParam
+	) = DialogBoxIndirectParamW;
+INT_PTR WINAPI MyDialogBoxIndirectParamW(
+	__in_opt HINSTANCE hInstance,
+	__in LPCDLGTEMPLATEW hDialogTemplate,
+	__in_opt HWND hWndParent,
+	__in_opt DLGPROC lpDialogFunc,
+	__in LPARAM dwInitParam
+	)
+{
+	if ( NULL == pDlgProc && lpDialogFunc)
+	{
+		pDlgProc = lpDialogFunc;
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach( (PVOID *)&pDlgProc ,(PVOID)MyDialogProc );
+		DetourTransactionCommit();
+	}
+
+
+	INT_PTR TReturn = pDialogBoxIndirectParamW(
+		hInstance,
+		hDialogTemplate,
+		hWndParent,
+		lpDialogFunc,
+		dwInitParam
 		);
 	return TReturn;
 };
@@ -91,6 +145,7 @@ CSXSView::CSXSView()
 		DetourUpdateThread(GetCurrentThread());
 		DetourAttach( (PVOID *)&pMessageBoxW ,(PVOID)MyMessageBoxW );
 		DetourAttach( (PVOID *)&pMessageBoxIndirectW ,(PVOID)MyMessageBoxIndirectW );
+		DetourAttach( (PVOID *)&pDialogBoxIndirectParamW ,(PVOID)MyDialogBoxIndirectParamW );
 		
 		DetourTransactionCommit();
 	}
@@ -148,18 +203,21 @@ void CSXSView::DocumentComplete(LPDISPATCH pDisp, VARIANT* URL)
 		if ( strUrl.CompareNoCase(L"http://www.130100.prcjx.cn/") == 0 )
 		{
 			SetTimer(TIME_ID_INPUT_LOGIN,2000,NULL);
+
+			g_loger.StatusOut(L"打开首页");
 		}
 		else if( strUrl.CompareNoCase(L"http://www.130100.prcjx.cn:800/admin/std") == 0 )
 		{
 			SetTimer(TIME_ID_QUERY_USER_INFO,2000,NULL);
 			SetTimer(TIME_ID_CLICK_WATCH_CONTINE,4000,NULL);
-			
+			g_loger.StatusOut(L"打开用户首页");
 		}
 		
 		if ( strUrl.Find(L"http://www.130100.prcjx.cn:800/admin/std/training") >= 0 )
 		{
 			SetTimer( TIME_ID_MOUSE_MOVE   , 5000,NULL);
 			SetTimer( TIME_ID_CHECK_VIDEO_PAUSE , 5000 , NULL );
+			g_loger.StatusOut(L"打开视频教程");
 		}
 		else 
 		{
@@ -274,6 +332,7 @@ void CSXSView::OnTimer(UINT_PTR nIDEvent)
 		if (pParentFrame)
 		{
 			pParentFrame->UpdateFrameTitle(theApp.m_strUserName+L" "+strUserRealName);
+			g_loger.StatusOut(L"获取用户信息：%s %s",theApp.m_strUserName,strUserRealName);
 		}
 
 	}
@@ -287,6 +346,8 @@ void CSXSView::OnTimer(UINT_PTR nIDEvent)
 		ElemInfo.SetTextName(L"继续观看",FALSE);
 		ElemInfo.AddElementAttribute(L"href",L"/admin/std/training/",FALSE);
 		AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo);
+
+		g_loger.StatusOut(L"点击继续学习按钮");
 
 	}
 
@@ -307,7 +368,7 @@ void CSXSView::OnTimer(UINT_PTR nIDEvent)
 			ELEM_RECT ElemRect;
 			ElemList.GetElemRectByIndex(0,&ElemRect);
 			AutoBrowser.ClickWebPagePoint(ElemRect.rcElem.left+51,ElemRect.rcElem.top+382);
-			int a=0;
+			g_loger.StatusOut(L"点击重新观看按钮 X：%d Y：%d",ElemRect.rcElem.left+51,ElemRect.rcElem.top+382);
 		}
 
 	}
@@ -351,6 +412,8 @@ void CSXSView::OnTimer(UINT_PTR nIDEvent)
 
 			if ( m_nColorSameCount > 20 )
 			{
+				g_loger.StatusOut(L"窗口定点颜色 %x 超过 20*5 秒没有变化",m_refPreColor);
+
 				KillTimer(nIDEvent);
 
 				CElementInformation ElemInfo;

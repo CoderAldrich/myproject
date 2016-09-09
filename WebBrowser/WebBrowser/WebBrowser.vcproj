@@ -1039,6 +1039,18 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="ÍøÒ³½ØÍ¼"
+			>
+			<File
+				RelativePath=".\PrintWebView.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\PrintWebView.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>

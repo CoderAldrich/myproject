@@ -29,4 +29,6 @@ public:
 	virtual unsigned long NotifySizeWindow(int nLeft,int nTop,int nWidht,int nHeight)=0;
 
 	virtual unsigned long NotifyDragTab(PAGEID nPageID) = 0;
+
+	virtual unsigned long NotifyPrintWebView(PAGEID nPageID) = 0;
 };

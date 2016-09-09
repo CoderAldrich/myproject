@@ -70,6 +70,8 @@ extern UINT nHtmlMsg;
 
 #define WM_KEY_CHANGE_TAB WM_USER+1121
 
+#define WM_RPINT_WEB_VIEW WM_USER+1122
+
 #ifdef _UNICODE
 #if defined _M_IX86
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")

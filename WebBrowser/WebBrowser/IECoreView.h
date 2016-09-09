@@ -206,7 +206,7 @@ public:
 	virtual unsigned long ControlEditPaste();
 	virtual unsigned long ControlEditSelectAll();
 	virtual unsigned long ControlEditFind();
-	
+	virtual unsigned long ControlPrintWebView();
 
 	afx_msg void OnPaint();
 	afx_msg void OnClose();

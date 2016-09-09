@@ -116,6 +116,7 @@ public:
 	
 
 	afx_msg BOOL OnNcActivate(BOOL bActive);
+	afx_msg void OnPrintWebView();
 };
 
 

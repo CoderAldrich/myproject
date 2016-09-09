@@ -117,7 +117,7 @@ public:
 	unsigned long NotifyShowAboutBrowser();
 	unsigned long NotifySizeWindow(int nLeft,int nTop,int nWidht,int nHeight);
 	unsigned long NotifyDragTab(PAGEID nPageID);
-
+	unsigned long NotifyPrintWebView(PAGEID nPageID);
 	//实现浏览器内核通知接口
 	unsigned long NotifyNewWindow(PVOID *ppPageRef,LPCTSTR pszUrl,BOOL *bCancel,BOOL bNewFrame, LONG * nNewPageID=NULL);
 	unsigned long NotifyBeforeMainNavigate(PAGEID nPageID,LPCTSTR pszUrl,BOOL *bCancel);

@@ -69,4 +69,7 @@ public:
 
 	//控制内核进行查找操作
 	virtual unsigned long ControlEditFind()=0;
+
+	//控制内核进行截图操作
+	virtual unsigned long ControlPrintWebView() = 0;
 };
