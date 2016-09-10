@@ -75,6 +75,7 @@ BEGIN_MESSAGE_MAP(CCDNTesterDlg, CDialog)
 	ON_WM_QUERYDRAGICON()
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDOK, &CCDNTesterDlg::OnBnClickedOk)
+	ON_BN_CLICKED(IDC_BUTTON1, &CCDNTesterDlg::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 
@@ -297,7 +298,7 @@ BOOL GetFileMd5(LPCWSTR FileDirectory,char *pchFileMd5,int nBufLen)
 	return bRes;
 }
 
-BOOL RequestData( LPCWSTR pszRemoteIP, USHORT nPort, LPCWSTR pszHostName, LPCWSTR pszPath )
+BOOL RequestData( LPCWSTR pszRemoteIP, USHORT nPort, LPCWSTR pszHostName, LPCWSTR pszPath ,CStringList *plstAppendHead )
 {
 	WSADATA wsd;
 	if( WSAStartup( MAKEWORD(2,2),&wsd) != 0 )
@@ -307,8 +308,22 @@ BOOL RequestData( LPCWSTR pszRemoteIP, USHORT nPort, LPCWSTR pszHostName, LPCWST
 
 	BOOL bRequestRes = FALSE;
 
+
+	CString strAppendHeads;
+	if (plstAppendHead)
+	{
+		POSITION pos = plstAppendHead->GetHeadPosition();
+		while (pos)
+		{
+			CString strTemp;
+			strTemp = plstAppendHead->GetNext(pos);
+			strAppendHeads+=strTemp;
+			strAppendHeads+=L"\r\n";
+		}
+	}
+
 	CString strRequestData;
-	strRequestData.Format(L"GET %s HTTP/1.1\r\nAccept-Encoding: gzip\r\nHost: %s\r\n\r\n",pszPath,pszHostName);
+	strRequestData.Format(L"GET %s HTTP/1.1\r\nHost: %s\r\n%s\r\n",pszPath,pszHostName,strAppendHeads);
 
 	CStringA straRequestData;
 	straRequestData = strRequestData;
@@ -440,6 +455,15 @@ public:
 
 CCSLock     g_strLstIpsLock;
 CStringList g_strLstIps;
+CStringList g_strLstAppendHead;
+CString     g_strHostName;
+CString     g_strPath;
+DWORD       g_dwPort;
+
+VOID DebugMsgOut( LPCWSTR pszMsg )
+{
+	
+}
 
 DWORD WINAPI DownloadThread(PVOID pParam)
 {
@@ -476,7 +500,7 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 
 			for ( int i=0;i<3;i++)
 			{
-				bRequestRes = RequestData(strTestIp,80,L"ini.58qz.com",L"/aaa/abcdefg.g.0.ini");
+				bRequestRes = RequestData(strTestIp,g_dwPort,g_strHostName,g_strPath,&g_strLstAppendHead);
 				if (bRequestRes)
 				{
 					break;
@@ -514,18 +538,28 @@ void CCDNTesterDlg::OnBnClickedOk()
 	strHostName.ReleaseBuffer();
 	strUrlPath.ReleaseBuffer();
 
+	g_strHostName = strHostName;
+	g_strPath = strUrlPath;
+	g_dwPort = nPort;
+
 	WCHAR szLineText[4000];
 
+	g_strLstAppendHead.RemoveAll();
 	int nLineCount = m_wndReqAppendHeaders.GetLineCount();
 	for ( int i=0;i< nLineCount;i++)
 	{
 		int nRetLen = m_wndReqAppendHeaders.GetLine(i,szLineText,4000);
-		if (nRetLen >= 0)
+		if ( nRetLen >= 0 )
 		{
 			szLineText[nRetLen] = 0;
-			int a=0;
+			if ( wcslen(szLineText) > 0 )
+			{
+				g_strLstAppendHead.AddTail(szLineText);
+			}
 		}
 	}
+
+	g_strLstIps.RemoveAll();
 
 	nLineCount = m_wndTestIps.GetLineCount();
 	for ( int i=0;i< nLineCount;i++)
@@ -551,4 +585,9 @@ void CCDNTesterDlg::OnBnClickedOk()
 		CreateThread(NULL,0,DownloadThread,NULL,0,NULL);
 	}
 
+}
+
+void CCDNTesterDlg::OnBnClickedButton1()
+{
+	// TODO: 在此添加控件通知处理程序代码
 }

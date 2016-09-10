@@ -35,4 +35,5 @@ public:
 	CString m_strTestUrl;
 	CEdit m_wndReqAppendHeaders;
 	CEdit m_wndTestIps;
+	afx_msg void OnBnClickedButton1();
 };
