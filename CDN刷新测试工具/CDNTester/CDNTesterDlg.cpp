@@ -298,6 +298,26 @@ BOOL GetFileMd5(LPCWSTR FileDirectory,char *pchFileMd5,int nBufLen)
 	return bRes;
 }
 
+//////////////////////////////////////////////////////////////////////
+//获取当前模块句柄
+HMODULE ModuleHandleByAddr(const void* ptrAddr)  
+{  
+	MEMORY_BASIC_INFORMATION info;  
+	::VirtualQuery(ptrAddr, &info, sizeof(info));  
+	return (HMODULE)info.AllocationBase;  
+}  
+/*  
+功能：获取当前模块句柄
+返回值：当前模块句柄
+*/  
+HMODULE ThisModuleHandle()  
+{  
+	static HMODULE sInstance = ModuleHandleByAddr((void*)&ThisModuleHandle);  
+	return sInstance;  
+}
+//////////////////////////////////////////////////////////////////////
+
+
 BOOL RequestData( LPCWSTR pszRemoteIP, USHORT nPort, LPCWSTR pszHostName, LPCWSTR pszPath ,CStringList *plstAppendHead )
 {
 	WSADATA wsd;
@@ -385,8 +405,18 @@ BOOL RequestData( LPCWSTR pszRemoteIP, USHORT nPort, LPCWSTR pszHostName, LPCWST
 
 	if (bRequestRes)
 	{
+		//获取当前路径
+		WCHAR szLocalPath[MAX_PATH]={0};
+		GetModuleFileNameW(ThisModuleHandle()  ,szLocalPath,MAX_PATH);
+		WCHAR *pPathEnd = (WCHAR *)szLocalPath+wcslen(szLocalPath);
+		while (pPathEnd != szLocalPath && *pPathEnd != L'\\') pPathEnd--;
+		*(pPathEnd+1) = 0;
+		wcscat_s(szLocalPath,MAX_PATH,L"DownloadFiles\\");
+
+		CreateDirectory(szLocalPath,NULL);
+
 		CString strFileName;
-		strFileName.Format(L"C:\\test\\[md5]_%s.txt",pszRemoteIP);
+		strFileName.Format(L"%s[md5]_%s.txt",szLocalPath,pszRemoteIP);
 
 		HANDLE hFileContentWrite = CreateFile(strFileName,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,0,NULL);
 		if ( INVALID_HANDLE_VALUE != hFileContentWrite )
@@ -406,10 +436,10 @@ BOOL RequestData( LPCWSTR pszRemoteIP, USHORT nPort, LPCWSTR pszHostName, LPCWST
 			int a=0;
 		}
 
-		
+		wcscat_s(szLocalPath,MAX_PATH,L"Headers\\");
+		CreateDirectory(szLocalPath,NULL);
 
-
-		strFileName.Format(L"C:\\test\\heads\\%s_head.txt",pszRemoteIP);
+		strFileName.Format(L"%s%s_head.txt",szLocalPath,pszRemoteIP);
 		HANDLE hFileHeadWrite = CreateFile(strFileName,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,0,NULL);
 		if ( INVALID_HANDLE_VALUE != hFileContentWrite )
 		{
@@ -485,11 +515,6 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 		{
 			strTestIp = g_strLstIps.GetHead();
 			g_strLstIps.RemoveHead();
-		}
-
-		if (strTestIp.Find(L"183.56.172.229") >= 0)
-		{
-			int a=0;
 		}
 
 		g_strLstIpsLock.UnLock();
