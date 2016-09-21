@@ -78,7 +78,7 @@ VOID DebugStringW(const WCHAR* fmt, ...)
 
 CCSLock g_csLocker;
 
-LONGLONG llMaxSpeed = 100*1024;
+LONGLONG llMaxSpeed = 50*1024;
 
 LONGLONG llCurRecvLen = 0;
 
@@ -202,6 +202,16 @@ NTSTATUS WINAPI MyNtDeviceIoControlFile(
 	}
 	else if( IoControlCode == AFD_RECV )
 	{
+		IO_STATUS_BLOCK *pIoStatus = (IO_STATUS_BLOCK *)IoStatusBlock;
+		PAFD_INFO AfdInfo = (PAFD_INFO)InputBuffer ; 
+
+		//修改缓冲区大小，防止上层过多的接受数据
+		int nOrgBufLen = AfdInfo->BufferArray->len;
+		if ( AfdInfo->BufferArray->len > 1024 )
+		{
+			AfdInfo->BufferArray->len = 1024;
+		}
+
 		NTSTATUS nStats = pNtDeviceIoControlFile(
 			FileHandle,
 			Event,
@@ -215,9 +225,9 @@ NTSTATUS WINAPI MyNtDeviceIoControlFile(
 			OutputBufferLength
 			);
 
-		IO_STATUS_BLOCK *pIoStatus = (IO_STATUS_BLOCK *)IoStatusBlock;
-		PAFD_INFO AfdInfo = (PAFD_INFO)InputBuffer ; 
-		char * buf = AfdInfo->BufferArray->buf ; 
+		AfdInfo->BufferArray->len = nOrgBufLen;
+		
+		char * buf = AfdInfo->BufferArray->buf; 
 		ULONG len = AfdInfo->BufferArray->len;
 		
 		if (nStats == 259)
@@ -225,7 +235,7 @@ NTSTATUS WINAPI MyNtDeviceIoControlFile(
 			WaitForSingleObject(FileHandle,INFINITE);
 		}
 
-		if ( pIoStatus->Status /*nStats*/ == STATUS_SUCCESS || nStats == STATUS_SUCCESS )
+		if ( pIoStatus->Status == STATUS_SUCCESS || nStats == STATUS_SUCCESS )
 		{
 			LONGLONG llTotalLen = 0;
 
