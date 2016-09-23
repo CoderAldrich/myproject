@@ -1,19 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NavigateFile", "NavigateFile\NavigateFile.vcproj", "{E47FC136-3B5A-4309-9E0B-72515E949127}"
-	ProjectSection(ProjectDependencies) = postProject
-		{D628090D-0DB5-4C05-93F9-156052AFD28F} = {D628090D-0DB5-4C05-93F9-156052AFD28F}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinHookEx", "WinHookEx\WinHookEx.vcproj", "{D628090D-0DB5-4C05-93F9-156052AFD28F}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShellEx", "ShellEx\ShellEx.vcproj", "{645E2234-4D06-4722-99F0-C52C3D4C19A4}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShellExPS", "ShellEx\ShellExPS.vcproj", "{E61F1A25-8DAA-48FC-AFF8-F9D5E522F815}"
-	ProjectSection(ProjectDependencies) = postProject
-		{645E2234-4D06-4722-99F0-C52C3D4C19A4} = {645E2234-4D06-4722-99F0-C52C3D4C19A4}
-	EndProjectSection
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FileNavigator", "FileNavigator\FileNavigator.vcproj", "{5CF490C8-738F-488B-AE2E-AE6F1F8932EE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,32 +11,14 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{E47FC136-3B5A-4309-9E0B-72515E949127}.Debug|Win32.ActiveCfg = Debug|Win32
-		{E47FC136-3B5A-4309-9E0B-72515E949127}.Debug|Win32.Build.0 = Debug|Win32
-		{E47FC136-3B5A-4309-9E0B-72515E949127}.Debug|x64.ActiveCfg = Debug|x64
-		{E47FC136-3B5A-4309-9E0B-72515E949127}.Debug|x64.Build.0 = Debug|x64
-		{E47FC136-3B5A-4309-9E0B-72515E949127}.Release|Win32.ActiveCfg = Release|Win32
-		{E47FC136-3B5A-4309-9E0B-72515E949127}.Release|Win32.Build.0 = Release|Win32
-		{E47FC136-3B5A-4309-9E0B-72515E949127}.Release|x64.ActiveCfg = Release|x64
-		{E47FC136-3B5A-4309-9E0B-72515E949127}.Release|x64.Build.0 = Release|x64
-		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Debug|Win32.ActiveCfg = Debug|Win32
-		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Debug|Win32.Build.0 = Debug|Win32
-		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Debug|x64.ActiveCfg = Debug|x64
-		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Debug|x64.Build.0 = Debug|x64
-		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Release|Win32.ActiveCfg = Release|Win32
-		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Release|Win32.Build.0 = Release|Win32
-		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Release|x64.ActiveCfg = Release|x64
-		{D628090D-0DB5-4C05-93F9-156052AFD28F}.Release|x64.Build.0 = Release|x64
-		{645E2234-4D06-4722-99F0-C52C3D4C19A4}.Debug|Win32.ActiveCfg = Debug|Win32
-		{645E2234-4D06-4722-99F0-C52C3D4C19A4}.Debug|Win32.Build.0 = Debug|Win32
-		{645E2234-4D06-4722-99F0-C52C3D4C19A4}.Debug|x64.ActiveCfg = Debug|Win32
-		{645E2234-4D06-4722-99F0-C52C3D4C19A4}.Release|Win32.ActiveCfg = Release|Win32
-		{645E2234-4D06-4722-99F0-C52C3D4C19A4}.Release|Win32.Build.0 = Release|Win32
-		{645E2234-4D06-4722-99F0-C52C3D4C19A4}.Release|x64.ActiveCfg = Release|Win32
-		{E61F1A25-8DAA-48FC-AFF8-F9D5E522F815}.Debug|Win32.ActiveCfg = Debug|Win32
-		{E61F1A25-8DAA-48FC-AFF8-F9D5E522F815}.Debug|x64.ActiveCfg = Debug|Win32
-		{E61F1A25-8DAA-48FC-AFF8-F9D5E522F815}.Release|Win32.ActiveCfg = Release|Win32
-		{E61F1A25-8DAA-48FC-AFF8-F9D5E522F815}.Release|x64.ActiveCfg = Release|Win32
+		{5CF490C8-738F-488B-AE2E-AE6F1F8932EE}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5CF490C8-738F-488B-AE2E-AE6F1F8932EE}.Debug|Win32.Build.0 = Debug|Win32
+		{5CF490C8-738F-488B-AE2E-AE6F1F8932EE}.Debug|x64.ActiveCfg = Debug|x64
+		{5CF490C8-738F-488B-AE2E-AE6F1F8932EE}.Debug|x64.Build.0 = Debug|x64
+		{5CF490C8-738F-488B-AE2E-AE6F1F8932EE}.Release|Win32.ActiveCfg = Release|Win32
+		{5CF490C8-738F-488B-AE2E-AE6F1F8932EE}.Release|Win32.Build.0 = Release|Win32
+		{5CF490C8-738F-488B-AE2E-AE6F1F8932EE}.Release|x64.ActiveCfg = Release|x64
+		{5CF490C8-738F-488B-AE2E-AE6F1F8932EE}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
