@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FileNavigator", "FileNavigator\FileNavigator.vcproj", "{5CF490C8-738F-488B-AE2E-AE6F1F8932EE}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NavigatorRun", "NavigatorRun\NavigatorRun.vcproj", "{B81C018D-E1FB-4CFD-8B58-67F51F85954D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -19,6 +21,14 @@ Global
 		{5CF490C8-738F-488B-AE2E-AE6F1F8932EE}.Release|Win32.Build.0 = Release|Win32
 		{5CF490C8-738F-488B-AE2E-AE6F1F8932EE}.Release|x64.ActiveCfg = Release|x64
 		{5CF490C8-738F-488B-AE2E-AE6F1F8932EE}.Release|x64.Build.0 = Release|x64
+		{B81C018D-E1FB-4CFD-8B58-67F51F85954D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B81C018D-E1FB-4CFD-8B58-67F51F85954D}.Debug|Win32.Build.0 = Debug|Win32
+		{B81C018D-E1FB-4CFD-8B58-67F51F85954D}.Debug|x64.ActiveCfg = Debug|x64
+		{B81C018D-E1FB-4CFD-8B58-67F51F85954D}.Debug|x64.Build.0 = Debug|x64
+		{B81C018D-E1FB-4CFD-8B58-67F51F85954D}.Release|Win32.ActiveCfg = Release|Win32
+		{B81C018D-E1FB-4CFD-8B58-67F51F85954D}.Release|Win32.Build.0 = Release|Win32
+		{B81C018D-E1FB-4CFD-8B58-67F51F85954D}.Release|x64.ActiveCfg = Release|x64
+		{B81C018D-E1FB-4CFD-8B58-67F51F85954D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
