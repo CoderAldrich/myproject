@@ -9,6 +9,7 @@
 class CSocketBase
 {
 public:
+	static DWORD m_dwTlsIndex;
 	static IN_ADDR m_LocalIP;
 public:
 	CSocketBase(void);

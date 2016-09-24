@@ -36,4 +36,7 @@ public:
 	CEdit m_wndReqAppendHeaders;
 	CEdit m_wndTestIps;
 	afx_msg void OnBnClickedButton1();
+	CEdit m_wndMsgOut;
+
+	LRESULT OnMsgOut(WPARAM wParam,LPARAM lParam);
 };

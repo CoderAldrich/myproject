@@ -6,17 +6,13 @@
 #include "CDNTester.h"
 #include "CDNTesterDlg.h"
 
-#include <WinInet.h>
-#pragma comment(lib,"wininet.lib")
-
-#include "TcpSocket.h"
-#include "HttpRecvParser.h"
-
+#include "PublicFun.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
+HWND hMsgWnd = NULL;
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -67,6 +63,7 @@ void CCDNTesterDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT1, m_strTestUrl);
 	DDX_Control(pDX, IDC_EDIT2, m_wndReqAppendHeaders);
 	DDX_Control(pDX, IDC_EDIT3, m_wndTestIps);
+	DDX_Control(pDX, IDC_EDIT4, m_wndMsgOut);
 }
 
 BEGIN_MESSAGE_MAP(CCDNTesterDlg, CDialog)
@@ -76,6 +73,7 @@ BEGIN_MESSAGE_MAP(CCDNTesterDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDOK, &CCDNTesterDlg::OnBnClickedOk)
 	ON_BN_CLICKED(IDC_BUTTON1, &CCDNTesterDlg::OnBnClickedButton1)
+	ON_MESSAGE(WM_USER+1111,OnMsgOut)
 END_MESSAGE_MAP()
 
 
@@ -110,8 +108,11 @@ BOOL CCDNTesterDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	m_strTestUrl=L"http://ini.58qz.com/aaa/abcdefg.g.0.ini";
+	m_strTestUrl=L"http://dw.xj6x.com/fn/0/hlock.zip";
+	m_wndTestIps.SetWindowText(L"120.24.17.132");
 	UpdateData(FALSE);
+
+	hMsgWnd = m_hWnd;
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -165,297 +166,8 @@ HCURSOR CCDNTesterDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-#include <WinCrypt.h>
-
-BOOL GetFileMd5(LPCWSTR FileDirectory,char *pchFileMd5,int nBufLen)
-{
-	BOOL bRes = FALSE;
-	HANDLE hFile = NULL;
-	BYTE *pbHash = NULL;
-	HCRYPTPROV hProv=NULL;
-	HCRYPTPROV hHash=NULL;
-
-	HANDLE hFileMap = NULL;
-	LPVOID pFileMapBuf = NULL;
-	do
-	{
-		if( NULL == pchFileMd5 || nBufLen <= 32 )
-		{
-			break;
-		}
-
-		pchFileMd5[0] = 0;
-
-		hFile = CreateFile(FileDirectory,GENERIC_READ,FILE_SHARE_READ,NULL,OPEN_EXISTING,NULL,NULL);
-		if ( hFile==INVALID_HANDLE_VALUE || hFile == NULL )                                        //如果CreateFile调用失败
-		{
-			break;
-		}
-
-		if(CryptAcquireContext(&hProv,NULL,NULL,PROV_RSA_FULL,CRYPT_VERIFYCONTEXT)==FALSE)       //获得CSP中一个密钥容器的句柄
-		{
-			break;
-		}
-
-		if(CryptCreateHash(hProv,CALG_MD5,0,0,&hHash)==FALSE)     //初始化对数据流的hash，创建并返回一个与CSP的hash对象相关的句柄。这个句柄接下来将被CryptHashData调用。
-		{
-			break;
-		}
-
-		DWORD dwFileSizeHigh = 0;
-		DWORD dwFileSizeLow=GetFileSize(hFile,&dwFileSizeHigh);    //获取文件的大小
-		if (dwFileSizeLow==0xFFFFFFFF)               //如果获取文件大小失败
-		{
-			break;
-		}
-
-		hFileMap = CreateFileMappingW(hFile,NULL,PAGE_READONLY,dwFileSizeHigh,dwFileSizeLow,NULL);
-		if( NULL == hFileMap ||  INVALID_HANDLE_VALUE == hFileMap)
-		{
-			break;
-		}
-
-		pFileMapBuf = MapViewOfFile(hFileMap,FILE_MAP_READ,0,0,dwFileSizeLow);
-		if(NULL == pFileMapBuf)
-		{
-			break;
-		}
-
-		if(CryptHashData(hHash,(const BYTE *)pFileMapBuf,dwFileSizeLow,0)==FALSE)      //hash文件
-		{
-			break;
-		}
-
-		DWORD dwHashLen=sizeof(DWORD);
-
-		if (CryptGetHashParam(hHash,HP_HASHVAL,NULL,&dwHashLen,0))      //我也不知道为什么要先这样调用CryptGetHashParam，这块是参照的msdn       
-		{
-		}
-		else
-		{
-			break;
-		}
-
-		pbHash=new BYTE[dwHashLen];
-
-		if( NULL == pbHash )
-		{
-			break;
-		}
-		if(CryptGetHashParam(hHash,HP_HASHVAL,pbHash,&dwHashLen,0))            //获得md5值
-		{
-			if( dwHashLen >= (nBufLen+1)/2 )
-			{
-				break;
-			}
-			for(DWORD i=0;i<dwHashLen;i++)         //输出md5值
-			{
-				sprintf_s(pchFileMd5+i*2,nBufLen-i*2,"%02x",pbHash[i]);
-			}
-		}
-		else
-		{
-			break;
-		}
-
-		bRes = TRUE;
-	}
-	while(FALSE);
-
-	if (pbHash)
-	{
-		delete pbHash;
-	}
 
 
-
-	if(hHash)          //销毁hash对象
-	{
-		CryptDestroyHash(hHash);
-	}
-
-	if( hProv )
-	{
-		CryptReleaseContext(hProv,0);
-	}
-
-	if (pFileMapBuf)
-	{
-		UnmapViewOfFile(pFileMapBuf);
-	}
-
-	if( NULL != hFileMap &&  INVALID_HANDLE_VALUE != hFileMap)
-	{
-		CloseHandle(hFileMap);
-	}
-
-	if (hFile)
-	{
-		BOOL bRes = CloseHandle(hFile);
-		int a=0;
-	}
-
-	return bRes;
-}
-
-//////////////////////////////////////////////////////////////////////
-//获取当前模块句柄
-HMODULE ModuleHandleByAddr(const void* ptrAddr)  
-{  
-	MEMORY_BASIC_INFORMATION info;  
-	::VirtualQuery(ptrAddr, &info, sizeof(info));  
-	return (HMODULE)info.AllocationBase;  
-}  
-/*  
-功能：获取当前模块句柄
-返回值：当前模块句柄
-*/  
-HMODULE ThisModuleHandle()  
-{  
-	static HMODULE sInstance = ModuleHandleByAddr((void*)&ThisModuleHandle);  
-	return sInstance;  
-}
-//////////////////////////////////////////////////////////////////////
-
-
-BOOL RequestData( LPCWSTR pszRemoteIP, USHORT nPort, LPCWSTR pszHostName, LPCWSTR pszPath ,CStringList *plstAppendHead )
-{
-	WSADATA wsd;
-	if( WSAStartup( MAKEWORD(2,2),&wsd) != 0 )
-	{
-
-	}
-
-	BOOL bRequestRes = FALSE;
-
-
-	CString strAppendHeads;
-	if (plstAppendHead)
-	{
-		POSITION pos = plstAppendHead->GetHeadPosition();
-		while (pos)
-		{
-			CString strTemp;
-			strTemp = plstAppendHead->GetNext(pos);
-			strAppendHeads+=strTemp;
-			strAppendHeads+=L"\r\n";
-		}
-	}
-
-	CString strRequestData;
-	strRequestData.Format(L"GET %s HTTP/1.1\r\nHost: %s\r\n%s\r\n",pszPath,pszHostName,strAppendHeads);
-
-	CStringA straRequestData;
-	straRequestData = strRequestData;
-
-	CTcpSocket tcpSock;
-	BOOL bRes = tcpSock.CreateTcpSocket();
-	bRes = tcpSock.Connect( CStringA(pszRemoteIP) , nPort );
-
-	int nSendLen = tcpSock.SendData(straRequestData.GetBuffer(),straRequestData.GetLength());
-
-	BYTE *pRecvBuf = (BYTE *)malloc(4096);
-	int   nRecvBufTotalLen = 4096;
-	int   nRecvTotalLen = 0;
-
-	int nContentLen = 0;
-	int nContentStart = 0;
-	int nRecvLen = 0;
-	char chRecvBuf[4096];
-	while ( TRUE )
-	{
-		if( (nRecvLen = tcpSock.RecvData(chRecvBuf,4096)) <= 0)
-		{
-			if ( GetLastError() == WSAETIMEDOUT )
-			{
-				Sleep(100);
-				continue;
-			}
-
-			break;
-		}
-
-		//缓冲区不够
-		if ( nRecvBufTotalLen < nRecvTotalLen+nRecvLen )
-		{
-			pRecvBuf = (BYTE *)realloc(pRecvBuf,nRecvTotalLen+nRecvLen);
-		}
-
-		memcpy_s(pRecvBuf+nRecvTotalLen,nRecvBufTotalLen,chRecvBuf,nRecvLen);
-		nRecvTotalLen+=nRecvLen;
-
-
-		CHttpRecvParser recvparser;
-		if( 0 == nContentLen && recvparser.ParseData((const char *)pRecvBuf,nRecvTotalLen))
-		{
-			CStringA strContentLen;
-			strContentLen = recvparser.GetValueByName("Content-Length");
-			
-			nContentStart = recvparser.GetContentStart();
-			nContentLen = _ttoi(CString(strContentLen));
-		}
-		
-		if ( nContentLen && (nRecvTotalLen - nContentStart) >=nContentLen  )
-		{
-			bRequestRes = TRUE;
-			break;
-		}
-
-	}
-
-	if (bRequestRes)
-	{
-		//获取当前路径
-		WCHAR szLocalPath[MAX_PATH]={0};
-		GetModuleFileNameW(ThisModuleHandle()  ,szLocalPath,MAX_PATH);
-		WCHAR *pPathEnd = (WCHAR *)szLocalPath+wcslen(szLocalPath);
-		while (pPathEnd != szLocalPath && *pPathEnd != L'\\') pPathEnd--;
-		*(pPathEnd+1) = 0;
-		wcscat_s(szLocalPath,MAX_PATH,L"DownloadFiles\\");
-
-		CreateDirectory(szLocalPath,NULL);
-
-		CString strFileName;
-		strFileName.Format(L"%s[md5]_%s.txt",szLocalPath,pszRemoteIP);
-
-		HANDLE hFileContentWrite = CreateFile(strFileName,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,0,NULL);
-		if ( INVALID_HANDLE_VALUE != hFileContentWrite )
-		{
-			DWORD dwWriteLen = 0;
-			WriteFile(hFileContentWrite,pRecvBuf+nContentStart,nRecvTotalLen-nContentStart,&dwWriteLen,NULL);
-			CloseHandle(hFileContentWrite);
-
-			CStringA strFileMd5;
-			GetFileMd5(strFileName,strFileMd5.GetBuffer(50),50);
-			strFileMd5.ReleaseBuffer();
-			
-			CString strNewFileName;
-			strNewFileName = strFileName;
-			strNewFileName.Replace(L"[md5]",CString(strFileMd5));
-			MoveFileW(strFileName,strNewFileName);
-			int a=0;
-		}
-
-		wcscat_s(szLocalPath,MAX_PATH,L"Headers\\");
-		CreateDirectory(szLocalPath,NULL);
-
-		strFileName.Format(L"%s%s_head.txt",szLocalPath,pszRemoteIP);
-		HANDLE hFileHeadWrite = CreateFile(strFileName,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,0,NULL);
-		if ( INVALID_HANDLE_VALUE != hFileContentWrite )
-		{
-			DWORD dwWriteLen = 0;
-			WriteFile(hFileHeadWrite,pRecvBuf,nContentStart,&dwWriteLen,NULL);
-			CloseHandle(hFileHeadWrite);
-		}
-
-
-	}
-
-	free(pRecvBuf);
-	tcpSock.CloseTcpSocket();
-
-	return bRequestRes;
-}
 
 //临界区互斥锁
 class CCSLock
@@ -486,13 +198,14 @@ public:
 CCSLock     g_strLstIpsLock;
 CStringList g_strLstIps;
 CStringList g_strLstAppendHead;
-CString     g_strHostName;
-CString     g_strPath;
-DWORD       g_dwPort;
+CString     g_strCheckUrl;
 
 VOID DebugMsgOut( LPCWSTR pszMsg )
 {
-	
+	int nLen = wcslen(pszMsg);
+	WCHAR *pszMsgBuf = new WCHAR[nLen+1];
+	wcscpy_s(pszMsgBuf,nLen+1,pszMsg);
+	::PostMessage(hMsgWnd,WM_USER+1111,(WPARAM)pszMsgBuf,NULL);
 }
 
 DWORD WINAPI DownloadThread(PVOID pParam)
@@ -509,6 +222,7 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 		
 		if (g_strLstIps.GetCount() == 0 )
 		{
+			DebugMsgOut( L"所有IP均测试完成" );
 			bBreak = TRUE;
 		}
 		else
@@ -523,9 +237,36 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 		{
 			BOOL bRequestRes = FALSE;
 
+			CStringA strDataMd5;
+			CStringA strResponseHead;
+
+			BYTE *pRecvBuf = NULL;
+			LONGLONG llRecvDataLen = 0;
+			int   nContentStart = 0;
+			
 			for ( int i=0;i<3;i++)
 			{
-				bRequestRes = RequestData(strTestIp,g_dwPort,g_strHostName,g_strPath,&g_strLstAppendHead);
+				pRecvBuf = NULL;
+				llRecvDataLen = 0;
+				nContentStart = 0;
+
+				bRequestRes = RequestData(strTestIp,g_strCheckUrl,&g_strLstAppendHead,&pRecvBuf,&llRecvDataLen,&nContentStart);
+
+				GetDataMd5(pRecvBuf+nContentStart,llRecvDataLen-nContentStart,strDataMd5.GetBuffer(50),50);
+				strDataMd5.ReleaseBuffer();
+
+
+				if ( bRequestRes && pRecvBuf )
+				{
+					char *pHeadBuf = strResponseHead.GetBuffer(500);
+					memcpy_s(pHeadBuf,500,pRecvBuf,nContentStart);
+					pHeadBuf[nContentStart] = 0;
+					strResponseHead.ReleaseBuffer();
+
+					free(pRecvBuf);
+					pRecvBuf = NULL;
+				}
+
 				if (bRequestRes)
 				{
 					break;
@@ -533,8 +274,10 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 			}
 
 			CString strMsgOut;
-			strMsgOut.Format(L"RemoteIp: %s Result:%d\r\n",strTestIp,bRequestRes);
-			OutputDebugStringW(strMsgOut);
+			strMsgOut.Format(L"RemoteIp: %s\r\nResult:%d\r\nContentLen:%d\r\nMd5: %s\r\nHeader:\r\n%s\r\n------------------------------------------------",strTestIp,bRequestRes,(DWORD)(llRecvDataLen-nContentStart),CString(strDataMd5),CString(strResponseHead));
+			//OutputDebugStringW(strMsgOut);
+
+			DebugMsgOut( strMsgOut );
 		}
 	}
 
@@ -545,27 +288,7 @@ void CCDNTesterDlg::OnBnClickedOk()
 {
 	UpdateData();
 
-	CString   strHostName;
-	CString   strUrlPath;
-	INTERNET_PORT nPort = 80;
-
-	URL_COMPONENTSW UrlComp;
-	ZeroMemory(&UrlComp,sizeof(UrlComp));
-	UrlComp.dwStructSize = sizeof(UrlComp);
-	UrlComp.lpszHostName = strHostName.GetBuffer( MAX_PATH );
-	UrlComp.dwHostNameLength = MAX_PATH;
-	UrlComp.lpszUrlPath = strUrlPath.GetBuffer(2000);
-	UrlComp.dwUrlPathLength = 2000;
-
-	BOOL bCrackRes = InternetCrackUrlW( m_strTestUrl , m_strTestUrl.GetLength() , 0 , &UrlComp );
-
-	nPort = UrlComp.nPort;
-	strHostName.ReleaseBuffer();
-	strUrlPath.ReleaseBuffer();
-
-	g_strHostName = strHostName;
-	g_strPath = strUrlPath;
-	g_dwPort = nPort;
+	g_strCheckUrl = m_strTestUrl;
 
 	WCHAR szLineText[4000];
 
@@ -614,5 +337,19 @@ void CCDNTesterDlg::OnBnClickedOk()
 
 void CCDNTesterDlg::OnBnClickedButton1()
 {
-	// TODO: 在此添加控件通知处理程序代码
+	m_wndMsgOut.SetWindowText(L"");
+}
+
+
+LRESULT CCDNTesterDlg::OnMsgOut(WPARAM wParam,LPARAM lParam)
+{
+	LPCWSTR pszMsgOut = (LPCWSTR)wParam;
+	if (pszMsgOut)
+	{
+		int nTextLen = m_wndMsgOut.GetWindowTextLengthW();
+		m_wndMsgOut.SetSel(nTextLen,nTextLen);
+		m_wndMsgOut.ReplaceSel(CString(pszMsgOut)+L"\r\n");
+		delete pszMsgOut;
+	}
+	return 0;
 }
