@@ -217,12 +217,10 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 	{
 		CString strTestIp;
 
-
 		g_strLstIpsLock.Lock();
 		
 		if (g_strLstIps.GetCount() == 0 )
 		{
-			DebugMsgOut( L"所有IP均测试完成" );
 			bBreak = TRUE;
 		}
 		else
@@ -275,13 +273,24 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 
 			CString strMsgOut;
 			strMsgOut.Format(L"RemoteIp: %s\r\nResult:%d\r\nContentLen:%d\r\nMd5: %s\r\nHeader:\r\n%s\r\n------------------------------------------------",strTestIp,bRequestRes,(DWORD)(llRecvDataLen-nContentStart),CString(strDataMd5),CString(strResponseHead));
-			//OutputDebugStringW(strMsgOut);
-
 			DebugMsgOut( strMsgOut );
 		}
 	}
 
 	return 0;
+}
+
+DWORD WINAPI ThreadWatch( PVOID pParam )
+{
+	HANDLE *pWorkThread = (HANDLE *)pParam;
+
+	WaitForMultipleObjects((DWORD)pWorkThread[0],pWorkThread+1,TRUE,INFINITE);
+
+	delete pWorkThread;
+
+	DebugMsgOut( L"所有IP均已测试完毕" );
+
+	return 0;	
 }
 
 void CCDNTesterDlg::OnBnClickedOk()
@@ -327,12 +336,16 @@ void CCDNTesterDlg::OnBnClickedOk()
 		}
 	}
 
+#define WORK_THREAD_NUM 5
+	HANDLE *phWorkThreads = new HANDLE[WORK_THREAD_NUM+1];
+	phWorkThreads[0] = (HANDLE)WORK_THREAD_NUM;
 
-	for ( int i=0;i<5;i++)
+	for ( int i=0;i<WORK_THREAD_NUM;i++)
 	{
-		CreateThread(NULL,0,DownloadThread,NULL,0,NULL);
+		phWorkThreads[i+1] = CreateThread(NULL,0,DownloadThread,NULL,0,NULL);
 	}
-
+	
+	CreateThread(NULL,0,ThreadWatch,phWorkThreads,0,NULL);
 }
 
 void CCDNTesterDlg::OnBnClickedButton1()

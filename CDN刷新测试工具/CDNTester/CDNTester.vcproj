@@ -194,6 +194,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\EditEx.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\HttpRecvParser.cpp"
 				>
 			</File>
@@ -233,6 +237,10 @@
 			</File>
 			<File
 				RelativePath=".\CDNTesterDlg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\EditEx.h"
 				>
 			</File>
 			<File
