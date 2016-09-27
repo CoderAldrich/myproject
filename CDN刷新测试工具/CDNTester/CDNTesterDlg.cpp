@@ -55,6 +55,9 @@ CCDNTesterDlg::CCDNTesterDlg(CWnd* pParent /*=NULL*/)
 	, m_strTestUrl(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+
+	m_phWorkThreads = NULL;
+	m_hWatchThread = NULL;
 }
 
 void CCDNTesterDlg::DoDataExchange(CDataExchange* pDX)
@@ -64,6 +67,7 @@ void CCDNTesterDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT2, m_wndReqAppendHeaders);
 	DDX_Control(pDX, IDC_EDIT3, m_wndTestIps);
 	DDX_Control(pDX, IDC_EDIT4, m_wndMsgOut);
+	DDX_Control(pDX, IDC_EDIT5, m_wndHeadMsg);
 }
 
 BEGIN_MESSAGE_MAP(CCDNTesterDlg, CDialog)
@@ -74,6 +78,7 @@ BEGIN_MESSAGE_MAP(CCDNTesterDlg, CDialog)
 	ON_BN_CLICKED(IDOK, &CCDNTesterDlg::OnBnClickedOk)
 	ON_BN_CLICKED(IDC_BUTTON1, &CCDNTesterDlg::OnBnClickedButton1)
 	ON_MESSAGE(WM_USER+1111,OnMsgOut)
+	ON_MESSAGE(WM_USER+1112,OnWorkDone)
 END_MESSAGE_MAP()
 
 
@@ -109,7 +114,8 @@ BOOL CCDNTesterDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	m_strTestUrl=L"http://dw.xj6x.com/fn/0/hlock.zip";
-	m_wndTestIps.SetWindowText(L"120.24.17.132");
+	m_wndTestIps.SetWindowText(L"120.24.17.132\r\n");
+	m_wndReqAppendHeaders.SetWindowText(L"Accept-Encoding: gzip\r\n");
 	UpdateData(FALSE);
 
 	hMsgWnd = m_hWnd;
@@ -200,12 +206,12 @@ CStringList g_strLstIps;
 CStringList g_strLstAppendHead;
 CString     g_strCheckUrl;
 
-VOID DebugMsgOut( LPCWSTR pszMsg )
+VOID DebugMsgOut( LPCWSTR pszMsg,BOOL bHeadMsg = FALSE )
 {
 	int nLen = wcslen(pszMsg);
 	WCHAR *pszMsgBuf = new WCHAR[nLen+1];
 	wcscpy_s(pszMsgBuf,nLen+1,pszMsg);
-	::PostMessage(hMsgWnd,WM_USER+1111,(WPARAM)pszMsgBuf,NULL);
+	::PostMessage(hMsgWnd,WM_USER+1111,(WPARAM)pszMsgBuf,bHeadMsg);
 }
 
 DWORD WINAPI DownloadThread(PVOID pParam)
@@ -256,8 +262,8 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 
 				if ( bRequestRes && pRecvBuf )
 				{
-					char *pHeadBuf = strResponseHead.GetBuffer(500);
-					memcpy_s(pHeadBuf,500,pRecvBuf,nContentStart);
+					char *pHeadBuf = strResponseHead.GetBuffer(1000);
+					memcpy_s(pHeadBuf,1000,pRecvBuf,nContentStart);
 					pHeadBuf[nContentStart] = 0;
 					strResponseHead.ReleaseBuffer();
 
@@ -272,8 +278,11 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 			}
 
 			CString strMsgOut;
-			strMsgOut.Format(L"RemoteIp: %s\r\nResult:%d\r\nContentLen:%d\r\nMd5: %s\r\nHeader:\r\n%s\r\n------------------------------------------------",strTestIp,bRequestRes,(DWORD)(llRecvDataLen-nContentStart),CString(strDataMd5),CString(strResponseHead));
-			DebugMsgOut( strMsgOut );
+			strMsgOut.Format(L"Md5: %s RemoteIp: %s Result:%d ContentLen:%d",CString(strDataMd5),strTestIp,bRequestRes,(DWORD)(llRecvDataLen-nContentStart));
+			DebugMsgOut( strMsgOut ,0 );
+			
+			strMsgOut.Format(L"RemoteIp: %s\r\n%s",strTestIp,CString(strResponseHead));
+			DebugMsgOut( strMsgOut , 1 );
 		}
 	}
 
@@ -283,74 +292,96 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 DWORD WINAPI ThreadWatch( PVOID pParam )
 {
 	HANDLE *pWorkThread = (HANDLE *)pParam;
+	HWND hWndNotify = (HWND)pWorkThread[0];
+	WaitForMultipleObjects((DWORD)pWorkThread[1],pWorkThread+2,TRUE,INFINITE);
 
-	WaitForMultipleObjects((DWORD)pWorkThread[0],pWorkThread+1,TRUE,INFINITE);
-
-	delete pWorkThread;
-
-	DebugMsgOut( L"所有IP均已测试完毕" );
+	SendMessage(hWndNotify,WM_USER+1112,0,0);
+	
 
 	return 0;	
 }
 
 void CCDNTesterDlg::OnBnClickedOk()
 {
-	UpdateData();
-
-	g_strCheckUrl = m_strTestUrl;
-
-	WCHAR szLineText[4000];
-
-	g_strLstAppendHead.RemoveAll();
-	int nLineCount = m_wndReqAppendHeaders.GetLineCount();
-	for ( int i=0;i< nLineCount;i++)
+	if( NULL == m_hWatchThread )
 	{
-		int nRetLen = m_wndReqAppendHeaders.GetLine(i,szLineText,4000);
-		if ( nRetLen >= 0 )
+		UpdateData();
+
+		g_strCheckUrl = m_strTestUrl;
+
+		WCHAR szLineText[4000];
+
+		g_strLstAppendHead.RemoveAll();
+		int nLineCount = m_wndReqAppendHeaders.GetLineCount();
+		for ( int i=0;i< nLineCount;i++)
 		{
-			szLineText[nRetLen] = 0;
-			if ( wcslen(szLineText) > 0 )
+			int nRetLen = m_wndReqAppendHeaders.GetLine(i,szLineText,4000);
+			if ( nRetLen >= 0 )
 			{
-				g_strLstAppendHead.AddTail(szLineText);
-			}
-		}
-	}
-
-	g_strLstIps.RemoveAll();
-
-	nLineCount = m_wndTestIps.GetLineCount();
-	for ( int i=0;i< nLineCount;i++)
-	{
-		int nRetLen = m_wndTestIps.GetLine(i,szLineText,4000);
-		if (nRetLen >= 0)
-		{
-			szLineText[nRetLen] = 0;
-
-			if ( wcslen(szLineText) > 0 )
-			{
-				if ( g_strLstIps.Find(szLineText) == 0 )
+				szLineText[nRetLen] = 0;
+				if ( wcslen(szLineText) > 0 )
 				{
-					g_strLstIps.AddTail(szLineText);
+					g_strLstAppendHead.AddTail(szLineText);
 				}
 			}
 		}
-	}
+
+		g_strLstIps.RemoveAll();
+
+		nLineCount = m_wndTestIps.GetLineCount();
+		for ( int i=0;i< nLineCount;i++)
+		{
+			int nRetLen = m_wndTestIps.GetLine(i,szLineText,4000);
+			if (nRetLen >= 0)
+			{
+				szLineText[nRetLen] = 0;
+
+				if ( wcslen(szLineText) > 0 )
+				{
+					if ( g_strLstIps.Find(szLineText) == 0 )
+					{
+						g_strLstIps.AddTail(szLineText);
+					}
+				}
+			}
+		}
 
 #define WORK_THREAD_NUM 5
-	HANDLE *phWorkThreads = new HANDLE[WORK_THREAD_NUM+1];
-	phWorkThreads[0] = (HANDLE)WORK_THREAD_NUM;
+		m_phWorkThreads = new HANDLE[WORK_THREAD_NUM+2];
 
-	for ( int i=0;i<WORK_THREAD_NUM;i++)
-	{
-		phWorkThreads[i+1] = CreateThread(NULL,0,DownloadThread,NULL,0,NULL);
+		m_phWorkThreads[0] = (HANDLE)m_hWnd;
+		m_phWorkThreads[1] = (HANDLE)WORK_THREAD_NUM;
+
+		for ( int i=0;i<WORK_THREAD_NUM;i++)
+		{
+			m_phWorkThreads[i+2] = CreateThread(NULL,0,DownloadThread,NULL,0,NULL);
+		}
+
+		m_hWatchThread = CreateThread(NULL,0,ThreadWatch,m_phWorkThreads,0,NULL);
+
+		GetDlgItem(IDOK)->SetWindowText(L"停止测试");
 	}
-	
-	CreateThread(NULL,0,ThreadWatch,phWorkThreads,0,NULL);
+	else
+	{
+		if ( m_phWorkThreads )
+		{
+			DWORD dwThreadCount = (DWORD)m_phWorkThreads[1];
+
+			for( int i=0;i<dwThreadCount ;i++ )
+			{
+				TerminateThread(m_phWorkThreads[2+i],0);
+			}
+		}
+
+
+	}
+
 }
 
 void CCDNTesterDlg::OnBnClickedButton1()
 {
 	m_wndMsgOut.SetWindowText(L"");
+	m_wndHeadMsg.SetWindowText(L"");
 }
 
 
@@ -359,10 +390,39 @@ LRESULT CCDNTesterDlg::OnMsgOut(WPARAM wParam,LPARAM lParam)
 	LPCWSTR pszMsgOut = (LPCWSTR)wParam;
 	if (pszMsgOut)
 	{
-		int nTextLen = m_wndMsgOut.GetWindowTextLengthW();
-		m_wndMsgOut.SetSel(nTextLen,nTextLen);
-		m_wndMsgOut.ReplaceSel(CString(pszMsgOut)+L"\r\n");
-		delete pszMsgOut;
+		if( 0 == lParam )
+		{
+			int nTextLen = m_wndMsgOut.GetWindowTextLengthW();
+			m_wndMsgOut.SetSel(nTextLen,nTextLen);
+			m_wndMsgOut.ReplaceSel(CString(pszMsgOut)+L"\r\n");
+			delete pszMsgOut;
+		}
+		else
+		{
+			int nTextLen = m_wndHeadMsg.GetWindowTextLengthW();
+			m_wndHeadMsg.SetSel(nTextLen,nTextLen);
+			m_wndHeadMsg.ReplaceSel(CString(pszMsgOut)+L"\r\n");
+			delete pszMsgOut;
+		}
+
 	}
+	return 0;
+}
+
+LRESULT CCDNTesterDlg::OnWorkDone(WPARAM wParam,LPARAM lParam)
+{
+	DebugMsgOut( L"所有IP均已测试完毕" );
+
+	TerminateThread(m_hWatchThread,0);
+	m_hWatchThread = NULL;
+
+	if (m_phWorkThreads)
+	{
+		delete m_hWatchThread;
+		m_hWatchThread = NULL;
+	}
+
+	GetDlgItem(IDOK)->SetWindowText(L"开始测试");
+
 	return 0;
 }

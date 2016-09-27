@@ -39,4 +39,9 @@ public:
 	CEditEx m_wndMsgOut;
 
 	LRESULT OnMsgOut(WPARAM wParam,LPARAM lParam);
+	LRESULT OnWorkDone(WPARAM wParam,LPARAM lParam);
+	CEdit m_wndHeadMsg;
+
+	HANDLE *m_phWorkThreads;
+	HANDLE m_hWatchThread;
 };
