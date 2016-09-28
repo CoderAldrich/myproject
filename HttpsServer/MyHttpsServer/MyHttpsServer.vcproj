@@ -183,6 +183,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PublicFun.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -214,6 +218,10 @@
 			</File>
 			<File
 				RelativePath=".\HttpSendParser.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PublicFun.h"
 				>
 			</File>
 			<File
