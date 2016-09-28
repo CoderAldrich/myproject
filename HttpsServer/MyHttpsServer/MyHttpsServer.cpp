@@ -26,31 +26,124 @@
 
 
 /*所有需要的参数信息都在此处以#define的形式提供*/ 
-#define CERTF "C:\\test\\nginx-1.11.3\\conf\\server.crt" /*服务端的证书(需经CA签名)*/ 
-#define KEYF  "C:\\test\\nginx-1.11.3\\conf\\server.key" /*服务端的私钥(建议加密存储)*/ 
+#define CERTF "server.crt" /*服务端的证书(需经CA签名)*/ 
+#define KEYF  "server.key" /*服务端的私钥(建议加密存储)*/ 
 #define CACERT "ca.crt" /*CA 的证书*/ 
 #define PORT 443 /*准备绑定的端口*/ 
 
-#define CHK_NULL(x) if ((x)==NULL) exit (1)
-#define CHK_ERR(err,s) if ((err)==-1) { perror(s); exit(1); }
-#define CHK_SSL(err) if ((err)==-1) { ERR_print_errors_fp(stderr); exit(2); }
 
 #include "HttpSendParser.h"
 #include "PublicFun.h"
 
 
+typedef struct _tagREQUEST_PARAM
+{
+	SOCKET sockClient;
+	SSL_CTX* ctx;
+}REQUEST_PARAM,*PREQUEST_PARAM;
+DWORD WINAPI HandleRequestThread( PVOID pParam )
+{
+
+	PREQUEST_PARAM pRequestParam = (PREQUEST_PARAM)pParam;
+
+	if (!pRequestParam)
+	{
+		return -1;
+	}
+
+	SOCKET sockClient = INVALID_SOCKET;
+	SSL_CTX* ctx = NULL ;
+	if ( pRequestParam )
+	{
+		sockClient = pRequestParam->sockClient;
+		ctx = pRequestParam->ctx;
+
+		delete pRequestParam;
+		pRequestParam = NULL;
+	}
+
+	if ( !ctx)
+	{
+		return -2;
+	}
+
+	SSL* ssl = NULL;
+	
+	do 
+	{
+		ssl = SSL_new (ctx);  
+		if ( NULL == ssl )
+		{
+			break;
+		}
+
+		SSL_set_fd (ssl, sockClient);
+		int err = SSL_accept (ssl);
+		if ( -1 == err)
+		{
+			//ERR_print_errors_fp(stderr);
+			break;
+		}
+
+		char     buf [4096];
+
+		CStringA strUrl;
+		int inlen = 0, nread = 0;
+		for ( nread = 0; nread < sizeof(buf);  )
+		{
+			inlen = SSL_read(ssl, buf+nread,sizeof(buf)-nread);
+			if ( inlen == -1 )
+			{
+				break;
+			}
+
+			if ( inlen <=0 ) break;//出错或客户端无数据
+
+			fwrite(buf+nread, 1,inlen, stdout);//将接收到的信息打印到标准输出
+
+			nread += inlen;
+			CHttpSendParser sendparser;
+			if(sendparser.ParseData(buf,nread))
+			{
+				strUrl = sendparser.GetParseUrl();
+				break;
+			}
+		}
+
+		buf[nread] = '\0';
+
+		CString strWebContent;
+		//strWebContent=GetHttpString(CString(/*strUrl*/"https://www.2345.com/"));
+		strWebContent=L"<html><body><script> window.location = \"https://www.2345.com/\" </script></body></html>";
+
+		CStringA strResponse;
+		strResponse.Format("HTTP/1.1 200 OK\r\nCache-Control: private\r\nContent-Type: text/html\r\nContent-Length: %d\r\nConnection: close\r\n\r\n%s",strWebContent.GetLength(),CStringA(strWebContent).GetBuffer());
+		err = SSL_write (ssl, strResponse.GetBuffer(), strResponse.GetLength());
+
+	} while (FALSE);
+	
+
+	if (ssl)
+	{
+		SSL_shutdown(ssl);//关闭SSL连接
+		SSL_free (ssl);
+	}
+
+	closesocket (sockClient);
+
+
+	return 0;
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	int err;
 	int listen_sd;
-	int sd;
+	
 	int client_len;
 	SSL_CTX* ctx;
-	SSL*     ssl;
-	X509*    client_cert;
-	char*    str;
-	char     buf [4096];
-	SSL_METHOD *meth;
+
+	const SSL_METHOD *meth;
 	WSADATA wsaData;
 	struct sockaddr_in sa_serv;
 	struct sockaddr_in sa_cli;
@@ -65,7 +158,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	SSL_load_error_strings(); /*为打印调试信息作准备*/ 
 	OpenSSL_add_ssl_algorithms(); /*初始化*/ 
 
-	meth = SSLv3_server_method(); /*采用什么协议(SSLv2/SSLv3/TLSv1)在此指定,TLSv1_server_method,SSLv23_server_method()*/ 
+	meth = TLSv1_server_method(); /*采用什么协议(SSLv2/SSLv3/TLSv1)在此指定,TLSv1_server_method,SSLv23_server_method()*/ 
 
 	ctx = SSL_CTX_new (meth);
 	//CHK_NULL(ctx);
@@ -96,7 +189,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		exit(5);
 	}
 
-	SSL_CTX_set_cipher_list(ctx,"RC4-MD5"); 
+	SSL_CTX_set_cipher_list(ctx,"DES-CBC3-SHA"); 
 	SSL_CTX_set_mode(ctx, SSL_MODE_AUTO_RETRY);
 
 	/* ----------------------------------------------- */
@@ -106,7 +199,10 @@ int _tmain(int argc, _TCHAR* argv[])
 
 
 	listen_sd = socket (AF_INET, SOCK_STREAM, 0);   
-	CHK_ERR(listen_sd, "socket");
+	if( SOCKET_ERROR == listen_sd )
+	{
+		return 0;
+	}
 
 	memset (&sa_serv, '\0', sizeof(sa_serv));
 	sa_serv.sin_family      = AF_INET;
@@ -114,98 +210,34 @@ int _tmain(int argc, _TCHAR* argv[])
 	sa_serv.sin_port        = htons (PORT);          /* Server Port number */
 
 	err = bind(listen_sd, (struct sockaddr*) &sa_serv, sizeof (sa_serv));                   
-	CHK_ERR(err, "bind");
+	if( SOCKET_ERROR == err )
+	{
+		return 0;
+	}
 
 	/*接受TCP链接*/ 
-	err = listen (listen_sd, 5);                    
-	CHK_ERR(err, "listen");
+	err = listen (listen_sd, 5); 
+	if( SOCKET_ERROR == err )
+	{
+		return 0;
+	}
 
 	client_len = sizeof(sa_cli);
 
 	while (TRUE)
 	{
-		sd = accept (listen_sd, (struct sockaddr*) &sa_cli, (int*)&client_len);
-		CHK_ERR(sd, "accept");
-		//closesocket (listen_sd);
-
-		printf ("Connection from %s, port %d\n",
-			inet_ntoa(sa_cli.sin_addr), sa_cli.sin_port);
-
-
-		/* ----------------------------------------------- */
-		/*TCP连接已建立,进行服务端的SSL过程. */ 
-		printf("Begin server side SSL\n"); 
-
-		ssl = SSL_new (ctx);  
-		CHK_NULL(ssl);
-		SSL_set_fd (ssl, sd);
-		err = SSL_accept (ssl);
-		printf("SSL_accept finished\n"); 
-		CHK_SSL(err);
-
-		/*打印所有加密算法的信息(可选)*/ 
-		printf ("SSL connection using %s\n", SSL_get_cipher (ssl));
-
-		/*得到客户端的证书并打印些信息(可选) */ 
-		/*client_cert = SSL_get_peer_certificate (ssl);
-		if (client_cert != NULL) 
+		SOCKET sockClient = accept (listen_sd, (struct sockaddr*) &sa_cli, (int*)&client_len);
+		if ( SOCKET_ERROR == sockClient )
 		{
-		printf ("Client certificate:\n");
-
-		str = X509_NAME_oneline (X509_get_subject_name (client_cert), 0, 0);
-		CHK_NULL(str);
-		printf ("\t subject: %s\n", str);
-		OPENSSL_free (str);
-
-		str = X509_NAME_oneline (X509_get_issuer_name  (client_cert), 0, 0);
-		CHK_NULL(str);
-		printf ("\t issuer: %s\n", str);
-		OPENSSL_free (str);
-
-		//如不再需要,需将证书释放
-		X509_free (client_cert);
-		} 
-		else
-		printf ("Client does not have certificate.\n");*/
-
-		/* 数据交换开始,用SSL_write,SSL_read代替write,read */ 
-
-		CStringA strUrl;
-
-		int inlen = 0, nread = 0;
-		for ( nread = 0; nread < sizeof(buf);  )
-		{
-			inlen = SSL_read(ssl, buf+nread,sizeof(buf)-nread);
-			CHK_SSL(inlen);
-			if ( inlen <=0 ) break;//出错或客户端无数据
-			fwrite(buf+nread, 1,inlen, stdout);//将接收到的信息打印到标准输出
-
-			nread += inlen;
-			CHttpSendParser sendparser;
-			if(sendparser.ParseData(buf,nread))
-			{
-
-				strUrl = sendparser.GetParseUrl();
-				break;
-			}
+			continue;
 		}
 
-		buf[nread] = '\0';
-		printf ("Got %d chars:'%s'\n", nread, buf);
+		PREQUEST_PARAM pRequestParam = new REQUEST_PARAM;
+		pRequestParam->ctx = ctx;
+		pRequestParam->sockClient = sockClient;
 
-		CString strWebContent;
-		//strWebContent=GetHttpString(CString(/*strUrl*/"https://www.2345.com/"));
-		strWebContent=L"<html><body><script> window.location = \"https://www.2345.com/\" </script></body></html>";
-
-		CStringA strResponse;
-		strResponse.Format("HTTP/1.1 200 OK\r\nCache-Control: private\r\nContent-Type: text/html\r\nContent-Length: %d\r\nConnection: close\r\n\r\n%s",strWebContent.GetLength(),CStringA(strWebContent).GetBuffer());
-		err = SSL_write (ssl, strResponse.GetBuffer(), strResponse.GetLength());
-		CHK_SSL(err);
-
-		SSL_shutdown(ssl);//关闭SSL连接
-
-		closesocket (sd);
-		SSL_free (ssl);
+		HANDLE hThread = CreateThread(NULL,0,HandleRequestThread,pRequestParam,0,NULL);
+		CloseHandle(hThread);
 	}
 
 	SSL_CTX_free (ctx);
