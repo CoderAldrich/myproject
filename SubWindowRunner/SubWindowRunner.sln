@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SubWindowRunner", "SubWindowRunner\SubWindowRunner.vcproj", "{BF44FB39-E64F-4A6E-88E1-30E9F4AAAD47}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WindowHook", "WindowHook\WindowHook.vcproj", "{0BAFE8A0-B384-430A-9829-36E29728EE45}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BF44FB39-E64F-4A6E-88E1-30E9F4AAAD47}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BF44FB39-E64F-4A6E-88E1-30E9F4AAAD47}.Debug|Win32.Build.0 = Debug|Win32
+		{BF44FB39-E64F-4A6E-88E1-30E9F4AAAD47}.Release|Win32.ActiveCfg = Release|Win32
+		{BF44FB39-E64F-4A6E-88E1-30E9F4AAAD47}.Release|Win32.Build.0 = Release|Win32
+		{0BAFE8A0-B384-430A-9829-36E29728EE45}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0BAFE8A0-B384-430A-9829-36E29728EE45}.Debug|Win32.Build.0 = Debug|Win32
+		{0BAFE8A0-B384-430A-9829-36E29728EE45}.Release|Win32.ActiveCfg = Release|Win32
+		{0BAFE8A0-B384-430A-9829-36E29728EE45}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
