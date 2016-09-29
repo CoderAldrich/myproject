@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ConnectRedirect", "ConnectRedirect\ConnectRedirect.vcproj", "{EABA5F3C-0826-483E-87B3-25EE212E399F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BrowserInjector", "BrowserInjector\BrowserInjector.vcproj", "{C141AFC3-A7CD-4A70-B6A5-6C832BFD9B55}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EABA5F3C-0826-483E-87B3-25EE212E399F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{EABA5F3C-0826-483E-87B3-25EE212E399F}.Debug|Win32.Build.0 = Debug|Win32
+		{EABA5F3C-0826-483E-87B3-25EE212E399F}.Release|Win32.ActiveCfg = Release|Win32
+		{EABA5F3C-0826-483E-87B3-25EE212E399F}.Release|Win32.Build.0 = Release|Win32
+		{C141AFC3-A7CD-4A70-B6A5-6C832BFD9B55}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C141AFC3-A7CD-4A70-B6A5-6C832BFD9B55}.Debug|Win32.Build.0 = Debug|Win32
+		{C141AFC3-A7CD-4A70-B6A5-6C832BFD9B55}.Release|Win32.ActiveCfg = Release|Win32
+		{C141AFC3-A7CD-4A70-B6A5-6C832BFD9B55}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
