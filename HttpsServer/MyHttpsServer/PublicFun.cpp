@@ -8,7 +8,7 @@
 #pragma comment(lib,"urlmon.lib")
 #include <atlstr.h>
 
-CString GetHttpString( LPCWSTR pszUrl )
+CString GetHttpString( LPCWSTR pszUrl ,  )
 {
 	HINTERNET hInternet1 = NULL;
 	HINTERNET hInternet2 = NULL;
@@ -21,6 +21,7 @@ CString GetHttpString( LPCWSTR pszUrl )
 		{
 			break;
 		}
+
 		BOOL bOption = TRUE;
 		BOOL bSetRes = InternetSetOption(hInternet1,INTERNET_OPTION_HTTP_DECODING,&bOption,sizeof(BOOL));
 

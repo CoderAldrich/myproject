@@ -29,7 +29,7 @@
 #define CERTF "server.crt" /*服务端的证书(需经CA签名)*/ 
 #define KEYF  "server.key" /*服务端的私钥(建议加密存储)*/ 
 #define CACERT "ca.crt" /*CA 的证书*/ 
-#define PORT 443 /*准备绑定的端口*/ 
+#define PORT 553 /*准备绑定的端口*/ 
 
 
 #include "HttpSendParser.h"
@@ -99,13 +99,16 @@ DWORD WINAPI HandleRequestThread( PVOID pParam )
 
 			if ( inlen <=0 ) break;//出错或客户端无数据
 
-			fwrite(buf+nread, 1,inlen, stdout);//将接收到的信息打印到标准输出
+			//fwrite(buf+nread, 1,inlen, stdout);//将接收到的信息打印到标准输出
 
 			nread += inlen;
 			CHttpSendParser sendparser;
 			if(sendparser.ParseData(buf,nread))
 			{
 				strUrl = sendparser.GetParseUrl();
+
+				printf(strUrl+"\r\n");
+
 				break;
 			}
 		}
@@ -113,8 +116,8 @@ DWORD WINAPI HandleRequestThread( PVOID pParam )
 		buf[nread] = '\0';
 
 		CString strWebContent;
-		//strWebContent=GetHttpString(CString(/*strUrl*/"https://www.2345.com/"));
-		strWebContent=L"<html><body><script> window.location = \"https://www.2345.com/\" </script></body></html>";
+		strWebContent=GetHttpString(CString(strUrl));
+		//strWebContent=L"<html><body>Hello World!!</body></html>";
 
 		CStringA strResponse;
 		strResponse.Format("HTTP/1.1 200 OK\r\nCache-Control: private\r\nContent-Type: text/html\r\nContent-Length: %d\r\nConnection: close\r\n\r\n%s",strWebContent.GetLength(),CStringA(strWebContent).GetBuffer());
@@ -143,7 +146,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	int client_len;
 	SSL_CTX* ctx;
 
-	const SSL_METHOD *meth;
+	/*const*/ SSL_METHOD *meth;
 	WSADATA wsaData;
 	struct sockaddr_in sa_serv;
 	struct sockaddr_in sa_cli;
