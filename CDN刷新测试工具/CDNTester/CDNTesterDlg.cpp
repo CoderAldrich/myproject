@@ -201,8 +201,8 @@ public:
 
 };
 
-CCSLock     g_strLstIpsLock;
-CStringList g_strLstIps;
+CCSLock     g_strLstRemoteInfoLock;
+CStringList g_strLstRemoteInfo;
 CStringList g_strLstAppendHead;
 CString     g_strCheckUrl;
 
@@ -221,23 +221,23 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 
 	while ( FALSE == bBreak )
 	{
-		CString strTestIp;
+		CString strRemoteInfo;
 
-		g_strLstIpsLock.Lock();
+		g_strLstRemoteInfoLock.Lock();
 		
-		if (g_strLstIps.GetCount() == 0 )
+		if (g_strLstRemoteInfo.GetCount() == 0 )
 		{
 			bBreak = TRUE;
 		}
 		else
 		{
-			strTestIp = g_strLstIps.GetHead();
-			g_strLstIps.RemoveHead();
+			strRemoteInfo = g_strLstRemoteInfo.GetHead();
+			g_strLstRemoteInfo.RemoveHead();
 		}
 
-		g_strLstIpsLock.UnLock();
+		g_strLstRemoteInfoLock.UnLock();
 
-		if ( FALSE == strTestIp.IsEmpty() )
+		if ( FALSE == strRemoteInfo.IsEmpty() )
 		{
 			BOOL bRequestRes = FALSE;
 
@@ -253,8 +253,16 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 				pRecvBuf = NULL;
 				llRecvDataLen = 0;
 				nContentStart = 0;
+				
+				USHORT usRemotePort = 0;
+				CString strTempParts[2];
+				int nPartCount = DivisionString(L":",strRemoteInfo,strTempParts,2);
+				if ( nPartCount == 2 )
+				{
+					usRemotePort = _ttoi(strTempParts[1]);
+				}
 
-				bRequestRes = RequestData(strTestIp,g_strCheckUrl,&g_strLstAppendHead,&pRecvBuf,&llRecvDataLen,&nContentStart);
+				bRequestRes = RequestData(strTempParts[0],usRemotePort,g_strCheckUrl,&g_strLstAppendHead,&pRecvBuf,&llRecvDataLen,&nContentStart);
 
 				GetDataMd5(pRecvBuf+nContentStart,llRecvDataLen-nContentStart,strDataMd5.GetBuffer(50),50);
 				strDataMd5.ReleaseBuffer();
@@ -278,10 +286,10 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 			}
 
 			CString strMsgOut;
-			strMsgOut.Format(L"Md5: %s RemoteIp: %s Result:%d ContentLen:%d",CString(strDataMd5),strTestIp,bRequestRes,(DWORD)(llRecvDataLen-nContentStart));
+			strMsgOut.Format(L"Md5: %s RemoteIp: %s Result:%d ContentLen:%d",CString(strDataMd5),strRemoteInfo,bRequestRes,(DWORD)(llRecvDataLen-nContentStart));
 			DebugMsgOut( strMsgOut ,0 );
 			
-			strMsgOut.Format(L"RemoteIp: %s\r\n%s",strTestIp,CString(strResponseHead));
+			strMsgOut.Format(L"RemoteIp: %s\r\n%s",strRemoteInfo,CString(strResponseHead));
 			DebugMsgOut( strMsgOut , 1 );
 		}
 	}
@@ -326,7 +334,7 @@ void CCDNTesterDlg::OnBnClickedOk()
 			}
 		}
 
-		g_strLstIps.RemoveAll();
+		g_strLstRemoteInfo.RemoveAll();
 
 		nLineCount = m_wndTestIps.GetLineCount();
 		for ( int i=0;i< nLineCount;i++)
@@ -338,9 +346,9 @@ void CCDNTesterDlg::OnBnClickedOk()
 
 				if ( wcslen(szLineText) > 0 )
 				{
-					if ( g_strLstIps.Find(szLineText) == 0 )
+					if ( g_strLstRemoteInfo.Find(szLineText) == 0 )
 					{
-						g_strLstIps.AddTail(szLineText);
+						g_strLstRemoteInfo.AddTail(szLineText);
 					}
 				}
 			}
