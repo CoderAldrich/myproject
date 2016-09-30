@@ -4,215 +4,8 @@
 #include "stdafx.h"
 #include "TcpSocket.h"
 #include "HttpSendParser.h"
-
+#include "HelpFun.h"
 #include <atlstr.h>
-
-#include <WinInet.h>
-#pragma comment(lib,"wininet")
-
-BOOL UploadFile( LPCWSTR pszUploadUrl,LPCWSTR pszHeaders ,SOCKET sockClient )
-{
-	BOOL bUploadRes = FALSE;
-
-	// for clarity, error-checking has been removed
-	HINTERNET hSession = NULL;
-	HINTERNET hConnect = NULL;
-	HINTERNET hRequest = NULL;
-	PBYTE     pFileData = NULL;
-	do 
-	{
-		DWORD dwUrlLen = 0;
-		if ( NULL == pszUploadUrl || (dwUrlLen = wcslen(pszUploadUrl)) == 0 )
-		{
-			break;
-		}
-
-
-		CString   strHostName;
-		CString   strUrlPath;
-		INTERNET_PORT nPort = 80;
-
-		URL_COMPONENTSW UrlComp;
-		ZeroMemory(&UrlComp,sizeof(UrlComp));
-		UrlComp.dwStructSize = sizeof(UrlComp);
-		UrlComp.lpszHostName = strHostName.GetBuffer( MAX_PATH );
-		UrlComp.dwHostNameLength = MAX_PATH;
-		UrlComp.lpszUrlPath = strUrlPath.GetBuffer(2000);
-		UrlComp.dwUrlPathLength = 2000;
-
-		BOOL bCrackRes = InternetCrackUrlW( pszUploadUrl , dwUrlLen , 0 , &UrlComp );
-
-		nPort = UrlComp.nPort;
-		strHostName.ReleaseBuffer();
-		strUrlPath.ReleaseBuffer();
-
-		if ( FALSE == bCrackRes )
-		{
-			break;
-		}
-
-		hSession = InternetOpen(NULL,INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
-		if ( NULL == hSession )
-		{
-			break;
-		}
-
-		hConnect = InternetConnect(hSession, strHostName ,
-			nPort,
-			NULL,
-			NULL,
-			INTERNET_SERVICE_HTTP,
-			0,
-			1);
-
-		if ( NULL == hConnect )
-		{
-			break;
-		}
-
-		hRequest = HttpOpenRequestW(hConnect, 
-			L"GET",//,L"POST"
-			strUrlPath, 
-			NULL, 
-			NULL, 
-			NULL, 
-			0, 
-			1);
-
-		if( NULL == hRequest )
-		{
-			break;
-		}
-
-		DWORD dwDataSize = 0;
-		pFileData = NULL;//BuildPostData(pszFilePath,L"--"+CString(pszBoundary),&dwDataSize);
-
-		bUploadRes = HttpSendRequest(hRequest, 
-			pszHeaders, 
-			pszHeaders?wcslen(pszHeaders):0, 
-			pFileData, 
-			dwDataSize);
-		
-		if ( FALSE == bUploadRes )
-		{
-			break;
-		}
-		
-		char chReadBuffer[4097];
-		DWORD dwReadLen = 0;
-
-		while( InternetReadFile(hRequest,chReadBuffer,4096,&dwReadLen) && dwReadLen > 0 )
-		{
-			int nRes = send(sockClient,chReadBuffer,dwReadLen,0);
-			int a=0;
-		}
-
-	} while (FALSE);
-
-	if (pFileData)
-	{
-		delete pFileData;
-	}
-
-	if (hRequest)
-	{
-		InternetCloseHandle(hRequest);
-	}
-
-	if (hConnect)
-	{
-		InternetCloseHandle(hConnect);
-	}
-
-	if (hSession)
-	{
-		InternetCloseHandle(hSession);
-	}
-
-
-	return bUploadRes;
-
-}
-
-//调试信息输出
-
-#if defined(DEBUG) || defined(_DEBUG)
-#include <stdio.h>
-
-VOID DebugStringW(const WCHAR* fmt, ...)
-{
-	WCHAR mtBuff[MAX_PATH]={0};
-
-	va_list argptr;
-	va_start(argptr, fmt);//_vsntprintf
-	int cbBuf = _vsntprintf_s(mtBuff, MAX_PATH,_TRUNCATE, fmt, argptr) + 1;
-	WCHAR *lpBuf = new WCHAR[cbBuf+10];
-	_vsnwprintf_s(lpBuf, cbBuf, _TRUNCATE,fmt, argptr);
-	wcscat_s(lpBuf,cbBuf+10,L"\n");
-	OutputDebugStringW(lpBuf);
-
-	delete lpBuf;
-}
-
-
-VOID DebugStringA(const CHAR* fmt, ...)
-{
-	CHAR mtBuff[MAX_PATH]={0};
-
-	va_list argptr;
-	va_start(argptr, fmt);//_vsntprintf
-	int cbBuf = _vsnprintf_s(mtBuff, MAX_PATH,_TRUNCATE, fmt, argptr) + 1;
-	CHAR *lpBuf = new CHAR[cbBuf+10];
-	_vsnprintf_s(lpBuf, cbBuf, _TRUNCATE,fmt, argptr);
-	strcat_s(lpBuf,cbBuf+10,"\n");
-	OutputDebugStringA(lpBuf);
-
-	delete lpBuf;
-}
-
-#endif
-
-#if defined(DEBUG) || defined(_DEBUG)
-#define DebugStringEx(a,b) DebugStringA("%s",__FUNCTION__); DebugString(a, b);
-
-#ifdef UNICODE
-#define DebugString DebugStringW
-#else
-#define DebugString DebugStringA
-#endif
-
-VOID DebugStringW(const WCHAR* fmt, ...);
-VOID DebugStringA(const CHAR* fmt, ...);
-
-#else
-#define DebugString(a,b) 
-#define DebugStringW(a,b)
-#define DebugStringA(a,b)
-#define DebugStringEx(a,b)
-
-#endif
-
-DWORD WINAPI ClientConnectRecvDataThread( PVOID pParam )
-{
-	CTcpSocket clientSock;
-	clientSock.Attach((SOCKET)pParam);
-
-	char chRecvBuf[4096];
-	int  nRecvlen = 0;
-	while ( TRUE )
-	{
-		nRecvlen = clientSock.RecvData(chRecvBuf,4096);
-		if (nRecvlen <= 0)
-		{
-			break;
-		}
-
-		int a=0;
-	}
-
-	
-	return 0;
-}
 
 VOID HandleConnect( SOCKET sockClient,SOCKET sockRemote )
 {
@@ -389,6 +182,166 @@ VOID WINAPI ProxyRun()
 	}
 }
 
+#include "SSLTcpSocket.h";
+
+VOID HandleHttpsConnect( CSSLTcpSocket *pclientsock,CSSLTcpSocket *premotesock )
+{
+
+	do
+	{
+		char chRecvBuffer[4096];
+		while (TRUE)
+		{
+			FD_SET fdRead;
+			FD_ZERO( &fdRead );
+			FD_SET(pclientsock->GetHandle(),&fdRead);
+			FD_SET(premotesock->GetHandle(),&fdRead);
+			int nRet = select(0,&fdRead,NULL,NULL,NULL);
+
+			if ( nRet != SOCKET_ERROR )
+			{
+				//从远程服务器发来的数据
+				if(FD_ISSET(premotesock->GetHandle(),&fdRead)!=0)
+				{
+					int nRecvLen = premotesock->RecvData( chRecvBuffer,4096 );
+					if ( SOCKET_ERROR == nRecvLen || 0 == nRecvLen )
+					{
+						//	DebugStringA("remoteSock Break %d",nRecvLen);
+						break;
+					}
+
+					//	DebugStringA("remoteSock RecvData %d",nRecvLen);
+
+					int nSendLen = pclientsock->SendData(chRecvBuffer,nRecvLen);
+					if ( SOCKET_ERROR == nSendLen || 0 == nSendLen)
+					{
+						//	DebugStringA("clientSock Break %d",nSendLen);
+						break;
+					}
+
+					//DebugStringA("clientSock SendData %d",nSendLen);
+				}
+
+				//客户机利用已有TCP链接继续请求
+				if(FD_ISSET(pclientsock->GetHandle(),&fdRead)!=0)
+				{
+
+					int nRecvLen = pclientsock->RecvData( chRecvBuffer,4096 );
+					if ( SOCKET_ERROR == nRecvLen || 0 == nRecvLen )
+					{
+						//DebugStringA("clientSock Break %d",nRecvLen);
+						break;
+					}
+
+					//DebugStringA("clientSock RecvData %d",nRecvLen);
+					
+					BOOL bTransmitData = TRUE;
+					CHttpSendParser sendparser;
+					if(sendparser.ParseData(chRecvBuffer,nRecvLen))
+					{
+						CStringA strUrl;
+						strUrl = sendparser.GetParseUrl();
+						DebugStringA("Url:%s",strUrl);
+
+						if ( strUrl.Find("www.baidu.com/?tn=") >= 0 && strUrl.Find("www.baidu.com/?tn=123_pg") < 0 )
+						{
+							bTransmitData = FALSE;
+							LPCSTR pchResponseData = "HTTP/1.1 302 Move\r\nLocation: https://www.baidu.com/?tn=123_pg\r\n\r\n";
+							pclientsock->SendData((PVOID)pchResponseData,strlen(pchResponseData));
+						}
+
+					}
+					
+					if(bTransmitData)
+					{
+						int nSendLen = premotesock->SendData(chRecvBuffer,nRecvLen);
+						if ( SOCKET_ERROR == nSendLen || 0 == nSendLen)
+						{
+							//DebugStringA("remoteSock Break %d",nSendLen);
+							break;
+						}
+						//DebugStringA("remoteSock SendData %d",nSendLen);
+					}
+
+				}
+
+				//DebugStringA("--------------------------------------");
+
+			}
+			else
+			{
+				DebugStringA("select read error %d",WSAGetLastError());
+			}
+		}
+	}
+	while(FALSE);
+
+	DebugStringA("remoteSock Closed");
+
+	return;
+}
+
+DWORD WINAPI HttpsRequestHandleThread( PVOID pParam )
+{
+	CSSLTcpSocket *psslclient = (CSSLTcpSocket *)pParam;
+	
+	if ( NULL == psslclient )
+	{
+		return 0;
+	}
+	
+	char chReadBuffer[4096];
+	int  nReadTotalLen = 0;
+	CStringA strHost;
+	while (1)
+	{
+		int nRet = psslclient->RecvData( chReadBuffer+nReadTotalLen,4096-nReadTotalLen );
+		if (nRet == -1)
+		{
+			break;
+		}
+
+		nReadTotalLen+=nRet;
+
+		CHttpSendParser sendparser;
+		if(sendparser.ParseData(chReadBuffer,nReadTotalLen))
+		{
+			strHost = sendparser.GetHost();
+			DebugStringA("Url:%s",sendparser.GetParseUrl());
+			break;
+		}
+	}
+
+ 	CSSLTcpSocket *psslremote = new CSSLTcpSocket();
+ 	psslremote->CreateSSLTcpSocketForClient();
+ 	psslremote->SSLConnect(strHost,443);
+
+ 	int nRet = psslremote->SendData((PVOID)chReadBuffer,nReadTotalLen);
+
+	HandleHttpsConnect(psslclient,psslremote);
+
+	return 0;
+}
+
+VOID HttpsProxyServer()
+{
+	CSSLTcpSocket sslsock;
+	BOOL bRes = sslsock.CreateSSLTcpSocketForServer( "server.crt","server.key" );
+	if ( bRes )
+	{
+		sslsock.InitAccept(443);
+
+		while (TRUE)
+		{
+			CSSLTcpSocket *psslclient = sslsock.SSLAccept(NULL);
+			if (psslclient)
+			{
+				CreateThread( NULL,0,HttpsRequestHandleThread,psslclient,0,NULL );
+			}
+		}
+
+	}
+}
 
 #pragma comment(lib,"urlmon")
 int _tmain(int argc, _TCHAR* argv[])
@@ -432,7 +385,23 @@ int _tmain(int argc, _TCHAR* argv[])
 // 	}
 
 
-	ProxyRun();
+	//ProxyRun();
+
+
+// 	CSSLTcpSocket sslsock;
+// 	sslsock.CreateSSLTcpSocketForClient();
+// 	sslsock.SSLConnect("www.baidu.com",443);
+// 
+// 	LPCSTR pchSendData = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\n\r\n";
+// 	int nRet = sslsock.SendData((PVOID)pchSendData,strlen(pchSendData));
+// 
+// 	char chReadBuffer[4096];
+// 	sslsock.RecvData(chReadBuffer,4096);
+// 	
+// 	int a=0;
+
+	HttpsProxyServer();
+
 	Sleep(500);
 
 	getchar();

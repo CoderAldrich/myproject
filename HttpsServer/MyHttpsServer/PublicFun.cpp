@@ -8,7 +8,7 @@
 #pragma comment(lib,"urlmon.lib")
 #include <atlstr.h>
 
-CString GetHttpString( LPCWSTR pszUrl ,  )
+CString GetHttpString( LPCWSTR pszUrl )
 {
 	HINTERNET hInternet1 = NULL;
 	HINTERNET hInternet2 = NULL;

@@ -44,29 +44,41 @@ int DivisionString(CStringA strSeparate, CStringA strSourceString, CStringA * pS
 }
 
 
-//    对应Unicode的调试输出
-void WINAPI MyDbgPrintW(LPCTSTR strFormat, ...)
+//调试信息输出
+
+#if defined(DEBUG) || defined(_DEBUG)
+#include <stdio.h>
+
+VOID DebugStringW(const WCHAR* fmt, ...)
 {
-#ifdef _DEBUG
-	const int BUFFER_SIZE = 12800;
-	va_list args = NULL;
-	va_start(args, strFormat);
-	WCHAR szBuffer[BUFFER_SIZE] = { 0 };
-	_vsntprintf_s(szBuffer, BUFFER_SIZE, strFormat, args);//_vsnwprintf for Unicode
-	va_end(args);
-	::OutputDebugString(szBuffer);
+	WCHAR mtBuff[MAX_PATH]={0};
+
+	va_list argptr;
+	va_start(argptr, fmt);//_vsntprintf
+	int cbBuf = _vsntprintf_s(mtBuff, MAX_PATH,_TRUNCATE, fmt, argptr) + 1;
+	WCHAR *lpBuf = new WCHAR[cbBuf+10];
+	_vsnwprintf_s(lpBuf, cbBuf, _TRUNCATE,fmt, argptr);
+	wcscat_s(lpBuf,cbBuf+10,L"\n");
+	OutputDebugStringW(lpBuf);
+
+	delete lpBuf;
+}
+
+
+VOID DebugStringA(const CHAR* fmt, ...)
+{
+	CHAR mtBuff[MAX_PATH]={0};
+
+	va_list argptr;
+	va_start(argptr, fmt);//_vsntprintf
+	int cbBuf = _vsnprintf_s(mtBuff, MAX_PATH,_TRUNCATE, fmt, argptr) + 1;
+	CHAR *lpBuf = new CHAR[cbBuf+10];
+	_vsnprintf_s(lpBuf, cbBuf, _TRUNCATE,fmt, argptr);
+	strcat_s(lpBuf,cbBuf+10,"\n");
+	OutputDebugStringA(lpBuf);
+
+	delete lpBuf;
+}
+
 #endif
-}
-//    对应ASCII的调试输出
-void WINAPI MyDbgPrintA(const char* strFormat, ...)
-{
-#ifdef _DEBUG
-	const int BUFFER_SIZE = 12800;
-	char   szBuffer [BUFFER_SIZE] = {0};
-	va_list args = NULL;
-	va_start (args, strFormat) ;
-	_vsnprintf_s ( szBuffer, BUFFER_SIZE, strFormat, args) ;
-	va_end (args);
-	::OutputDebugStringA (szBuffer);
-#endif // _DEBUG
-}
+

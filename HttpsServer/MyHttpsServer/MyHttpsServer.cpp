@@ -29,7 +29,7 @@
 #define CERTF "server.crt" /*服务端的证书(需经CA签名)*/ 
 #define KEYF  "server.key" /*服务端的私钥(建议加密存储)*/ 
 #define CACERT "ca.crt" /*CA 的证书*/ 
-#define PORT 553 /*准备绑定的端口*/ 
+#define PORT 443 /*准备绑定的端口*/ 
 
 
 #include "HttpSendParser.h"
@@ -116,8 +116,8 @@ DWORD WINAPI HandleRequestThread( PVOID pParam )
 		buf[nread] = '\0';
 
 		CString strWebContent;
-		strWebContent=GetHttpString(CString(strUrl));
-		//strWebContent=L"<html><body>Hello World!!</body></html>";
+		//strWebContent=GetHttpString(CString(strUrl));
+		strWebContent=L"<html><body>Hello World!!</body></html>";
 
 		CStringA strResponse;
 		strResponse.Format("HTTP/1.1 200 OK\r\nCache-Control: private\r\nContent-Type: text/html\r\nContent-Length: %d\r\nConnection: close\r\n\r\n%s",strWebContent.GetLength(),CStringA(strWebContent).GetBuffer());
@@ -161,7 +161,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	SSL_load_error_strings(); /*为打印调试信息作准备*/ 
 	OpenSSL_add_ssl_algorithms(); /*初始化*/ 
 
-	meth = TLSv1_server_method(); /*采用什么协议(SSLv2/SSLv3/TLSv1)在此指定,TLSv1_server_method,SSLv23_server_method()*/ 
+	meth = (SSL_METHOD *)TLSv1_server_method(); /*采用什么协议(SSLv2/SSLv3/TLSv1)在此指定,TLSv1_server_method,SSLv23_server_method()*/ 
 
 	ctx = SSL_CTX_new (meth);
 	//CHK_NULL(ctx);

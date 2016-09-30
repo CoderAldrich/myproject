@@ -187,6 +187,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SSLContext.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\SSLTcpSocket.cpp"
 				>
 			</File>
@@ -230,6 +234,10 @@
 			</File>
 			<File
 				RelativePath=".\SocketBase.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SSLContext.h"
 				>
 			</File>
 			<File
