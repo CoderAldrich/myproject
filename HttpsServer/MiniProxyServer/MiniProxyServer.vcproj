@@ -187,6 +187,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SSLTcpSocket.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -226,6 +230,10 @@
 			</File>
 			<File
 				RelativePath=".\SocketBase.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SSLTcpSocket.h"
 				>
 			</File>
 			<File

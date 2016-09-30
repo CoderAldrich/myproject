@@ -60,40 +60,47 @@ BOOL CTcpSocket::CloseTcpSocket()
 
 	return TRUE;
 }
+SOCKET CTcpSocket::GetHandle()
+{
+	return m_TcpSock;
+}
 BOOL CTcpSocket::Connect(LPCSTR pszTargetIP,USHORT nTargetPort)
 {
-	BOOL bIsIP = FALSE;
-	sockaddr_in *psi = NULL;
-	unsigned long ulIP = inet_addr(pszTargetIP);
-	if( INADDR_NONE == ulIP )
+	if (pszTargetIP == NULL)
 	{
-		hostent *pHostEnt = gethostbyname(pszTargetIP);
-		if(pHostEnt && (pHostEnt->h_addrtype == AF_INET || pHostEnt->h_addrtype == AF_INET6))
+		WSASetLastError (WSAEINVAL);
+		return FALSE;
+	}
+
+	SOCKADDR_IN sockAddr;
+	memset(&sockAddr,0,sizeof(sockAddr));
+
+	LPSTR lpszAscii = (LPSTR)pszTargetIP;//T2A_EX((LPTSTR)pszTargetIP, _ATL_SAFE_ALLOCA_DEF_THRESHOLD);
+	if (lpszAscii == NULL)
+	{
+		WSASetLastError(ERROR_NOT_ENOUGH_MEMORY);
+		return FALSE;
+	}
+
+	sockAddr.sin_family = AF_INET;
+	sockAddr.sin_addr.s_addr = inet_addr(lpszAscii);
+
+	if (sockAddr.sin_addr.s_addr == INADDR_NONE)
+	{
+		LPHOSTENT lphost;
+		lphost = gethostbyname(lpszAscii);
+		if (lphost != NULL)
+			sockAddr.sin_addr.s_addr = ((LPIN_ADDR)lphost->h_addr)->s_addr;
+		else
 		{
-			psi = (sockaddr_in *)pHostEnt->h_addr;
+			WSASetLastError(WSAEINVAL);
+			return FALSE;
 		}
 	}
-	else
-	{
-		bIsIP = TRUE;
-	}
 
+	sockAddr.sin_port = htons((u_short)nTargetPort);
 
-	sockaddr_in si;
-
-	if (bIsIP)
-	{
-		si.sin_addr.s_addr = inet_addr(pszTargetIP);
-	}
-	else
-	{
-		si.sin_addr.s_addr = psi->sin_addr.s_addr;
-	}
-	
-
-	si.sin_port = htons(nTargetPort);
-	si.sin_family = AF_INET;
-	int bRes = WSAConnect(m_TcpSock,(sockaddr *)&si,sizeof(si),NULL,NULL,NULL,NULL);
+	int bRes = WSAConnect(m_TcpSock,(sockaddr *)&sockAddr,sizeof(sockAddr),NULL,NULL,NULL,NULL);
 	return bRes == 0;
 }
 

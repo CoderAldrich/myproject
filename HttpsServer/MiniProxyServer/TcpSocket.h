@@ -16,6 +16,7 @@ public:
 	BOOL Detach();
 	BOOL CreateTcpSocket();
 	BOOL CloseTcpSocket();
+	SOCKET GetHandle();
 	BOOL Connect(LPCSTR pszTargetIP,USHORT nTargetPort);
 	BOOL   InitAccept(USHORT nAcceptPort = 0 );
 	SOCKET Accept(sockaddr_in *psiconnect);
