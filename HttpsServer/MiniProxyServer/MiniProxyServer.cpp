@@ -84,6 +84,8 @@ VOID HandleConnect( SOCKET sockClient,SOCKET sockRemote )
 			{
 				DebugStringA("select read error %d",WSAGetLastError());
 			}
+
+			Sleep(1);
 		}
 	}
 	while(FALSE);
@@ -127,6 +129,8 @@ DWORD WINAPI RequestHandleThread(PVOID pParam)
  			}
  			break;
  		}
+
+		Sleep(1);
  	}
  	
 	do 
@@ -176,6 +180,8 @@ VOID WINAPI ProxyRun()
 				DebugStringA("New Client Connected Socket:0x%x",sockclient);
 
 				CreateThread(NULL,0,RequestHandleThread,(PVOID)sockclient,0,NULL);
+
+				Sleep(1);
 			}
 		}
 
@@ -225,14 +231,15 @@ VOID HandleHttpsConnect( CSSLTcpSocket *pclientsock,CSSLTcpSocket *premotesock )
 				//客户机利用已有TCP链接继续请求
 				if(FD_ISSET(pclientsock->GetHandle(),&fdRead)!=0)
 				{
-
 					int nRecvLen = pclientsock->RecvData( chRecvBuffer,4096 );
 					if ( SOCKET_ERROR == nRecvLen || 0 == nRecvLen )
 					{
-						//DebugStringA("clientSock Break %d",nRecvLen);
+						DebugStringA("clientSock Break %d",nRecvLen);
 						break;
 					}
 
+					//OutputDebugStringA(chRecvBuffer);
+					//OutputDebugStringA("\r\n");
 					//DebugStringA("clientSock RecvData %d",nRecvLen);
 					
 					BOOL bTransmitData = TRUE;
@@ -241,9 +248,11 @@ VOID HandleHttpsConnect( CSSLTcpSocket *pclientsock,CSSLTcpSocket *premotesock )
 					{
 						CStringA strUrl;
 						strUrl = sendparser.GetParseUrl();
-						DebugStringA("Url:%s",strUrl);
-
-						if ( strUrl.Find("www.baidu.com/?tn=") >= 0 && strUrl.Find("www.baidu.com/?tn=123_pg") < 0 )
+						OutputDebugStringA("Url: "+strUrl+"\r\n");
+						if ( 
+							(strUrl.Find("www.baidu.com/?tn=") >= 0 && strUrl.Find("www.baidu.com/?tn=123_pg") < 0)
+							|| strUrl == "http://www.baidu.com/"
+							)
 						{
 							bTransmitData = FALSE;
 							LPCSTR pchResponseData = "HTTP/1.1 302 Move\r\nLocation: https://www.baidu.com/?tn=123_pg\r\n\r\n";
@@ -272,6 +281,8 @@ VOID HandleHttpsConnect( CSSLTcpSocket *pclientsock,CSSLTcpSocket *premotesock )
 			{
 				DebugStringA("select read error %d",WSAGetLastError());
 			}
+
+			Sleep(1);
 		}
 	}
 	while(FALSE);
@@ -296,7 +307,7 @@ DWORD WINAPI HttpsRequestHandleThread( PVOID pParam )
 	while (1)
 	{
 		int nRet = psslclient->RecvData( chReadBuffer+nReadTotalLen,4096-nReadTotalLen );
-		if (nRet == -1)
+		if (nRet == -1 || 0 == nRet )
 		{
 			break;
 		}
@@ -307,18 +318,41 @@ DWORD WINAPI HttpsRequestHandleThread( PVOID pParam )
 		if(sendparser.ParseData(chReadBuffer,nReadTotalLen))
 		{
 			strHost = sendparser.GetHost();
-			DebugStringA("Url:%s",sendparser.GetParseUrl());
+			OutputDebugStringA("Host: "+strHost+"\r\n");
+
+			CStringA strUrl;
+			strUrl = sendparser.GetParseUrl();
+			OutputDebugStringA("Url: "+strUrl+"\r\n");
+			if (
+				(strUrl.Find("www.baidu.com/?tn=") >= 0 && strUrl.Find("www.baidu.com/?tn=123_pg") < 0)
+				|| strUrl == "http://www.baidu.com/"
+				)
+			{
+				//bTransmitData = FALSE;
+				LPCSTR pchResponseData = "HTTP/1.1 302 Move\r\nLocation: https://www.baidu.com/?tn=123_pg\r\n\r\n";
+				psslclient->SendData((PVOID)pchResponseData,strlen(pchResponseData));
+
+				return 0;
+			}
+
+
 			break;
 		}
+
+		Sleep(1);
+	}
+	
+	if ( strHost.GetLength() > 0 )
+	{
+		CSSLTcpSocket *psslremote = new CSSLTcpSocket();
+		psslremote->CreateSSLTcpSocketForClient();
+		psslremote->SSLConnect(strHost,443);
+
+		int nRet = psslremote->SendData((PVOID)chReadBuffer,nReadTotalLen);
+
+		HandleHttpsConnect(psslclient,psslremote);
 	}
 
- 	CSSLTcpSocket *psslremote = new CSSLTcpSocket();
- 	psslremote->CreateSSLTcpSocketForClient();
- 	psslremote->SSLConnect(strHost,443);
-
- 	int nRet = psslremote->SendData((PVOID)chReadBuffer,nReadTotalLen);
-
-	HandleHttpsConnect(psslclient,psslremote);
 
 	return 0;
 }
@@ -329,7 +363,7 @@ VOID HttpsProxyServer()
 	BOOL bRes = sslsock.CreateSSLTcpSocketForServer( "server.crt","server.key" );
 	if ( bRes )
 	{
-		sslsock.InitAccept(443);
+		sslsock.InitAccept(553);
 
 		while (TRUE)
 		{
@@ -338,6 +372,7 @@ VOID HttpsProxyServer()
 			{
 				CreateThread( NULL,0,HttpsRequestHandleThread,psslclient,0,NULL );
 			}
+			Sleep(1);
 		}
 
 	}

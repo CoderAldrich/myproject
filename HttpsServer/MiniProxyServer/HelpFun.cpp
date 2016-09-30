@@ -49,13 +49,15 @@ int DivisionString(CStringA strSeparate, CStringA strSourceString, CStringA * pS
 #if defined(DEBUG) || defined(_DEBUG)
 #include <stdio.h>
 
+#define DEBUG_STRING_BUFFER_LEN MAX_PATH*4
+
 VOID DebugStringW(const WCHAR* fmt, ...)
 {
-	WCHAR mtBuff[MAX_PATH]={0};
+	WCHAR mtBuff[DEBUG_STRING_BUFFER_LEN]={0};
 
 	va_list argptr;
 	va_start(argptr, fmt);//_vsntprintf
-	int cbBuf = _vsntprintf_s(mtBuff, MAX_PATH,_TRUNCATE, fmt, argptr) + 1;
+	int cbBuf = _vsntprintf_s(mtBuff, DEBUG_STRING_BUFFER_LEN,_TRUNCATE, fmt, argptr) + 1;
 	WCHAR *lpBuf = new WCHAR[cbBuf+10];
 	_vsnwprintf_s(lpBuf, cbBuf, _TRUNCATE,fmt, argptr);
 	wcscat_s(lpBuf,cbBuf+10,L"\n");
@@ -67,11 +69,11 @@ VOID DebugStringW(const WCHAR* fmt, ...)
 
 VOID DebugStringA(const CHAR* fmt, ...)
 {
-	CHAR mtBuff[MAX_PATH]={0};
+	CHAR mtBuff[DEBUG_STRING_BUFFER_LEN*10]={0};
 
 	va_list argptr;
 	va_start(argptr, fmt);//_vsntprintf
-	int cbBuf = _vsnprintf_s(mtBuff, MAX_PATH,_TRUNCATE, fmt, argptr) + 1;
+	int cbBuf = _vsnprintf_s(mtBuff, DEBUG_STRING_BUFFER_LEN,_TRUNCATE, fmt, argptr) + 1;
 	CHAR *lpBuf = new CHAR[cbBuf+10];
 	_vsnprintf_s(lpBuf, cbBuf, _TRUNCATE,fmt, argptr);
 	strcat_s(lpBuf,cbBuf+10,"\n");

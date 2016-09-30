@@ -332,7 +332,15 @@ VOID CALLBACK MyShellHookCallBack(HWND hWnd,WPARAM wParam,LPARAM lParam)
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	g_strThisDllPath = L"F:\\伟纳\\Https劫持\\Debug\\ConnectRedirect.dll";
+	//获取当前模块路径
+	WCHAR szLocalPath[MAX_PATH]={0};
+	GetModuleFileNameW( NULL ,szLocalPath,MAX_PATH);
+	WCHAR *pPathEnd = (WCHAR *)szLocalPath+wcslen(szLocalPath);
+	while (pPathEnd != szLocalPath && *pPathEnd != L'\\') pPathEnd--;
+	*(pPathEnd+1) = 0;
+
+	g_strThisDllPath = szLocalPath;
+	g_strThisDllPath+=L"ConnectRedirect.dll";
 
 	StartShellHook(HSHELL_WINDOWCREATED,MyShellHookCallBack);
 
