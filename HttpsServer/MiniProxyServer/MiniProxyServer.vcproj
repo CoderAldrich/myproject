@@ -218,6 +218,10 @@
 				RelativePath=".\TcpSocket.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\UrlParser.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -254,6 +258,10 @@
 			</File>
 			<File
 				RelativePath=".\TcpSocket.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UrlParser.h"
 				>
 			</File>
 		</Filter>

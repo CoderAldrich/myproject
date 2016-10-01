@@ -353,6 +353,16 @@ int WINAPI Myconnect(
 
 		if ( CheckBaiduIP(pchIpAddr) && (443 == nPort) )
 		{
+			static BOOL bSockClosed = FALSE;
+			if ( FALSE == bSockClosed )
+			{
+				bSockClosed = TRUE;
+				closesocket(s);
+				WSASetLastError(WSAECONNREFUSED);
+
+				OutputDebugStringA("close socket");
+				return SOCKET_ERROR;
+			}
 			OutputDebugStringW(L"Myconnect Connect Redirect");
 			pia->sin_port = htons(553);
 			pia->sin_addr.s_addr = ( inet_addr("127.0.0.1") );
