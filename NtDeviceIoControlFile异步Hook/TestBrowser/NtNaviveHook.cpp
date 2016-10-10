@@ -69,7 +69,6 @@ typedef LONG NTSTATUS;
 
 TypeNtDeviceIoControlFile pNtDeviceIoControlFile = NULL;
 
-DWORD dwTlsIndex = 0; 
 
 
 class CCSLock
@@ -97,12 +96,6 @@ public:
 
 };
 
-
-#include <list>
-#include <hash_map>
-using namespace std;
-using namespace stdext;
-
 typedef struct tagNOTIFY_PARAM
 {
 	HANDLE hMyEvent;
@@ -111,182 +104,44 @@ typedef struct tagNOTIFY_PARAM
 	char * pRecvBuf;
 	ULONG nRecvBufLen;
 	IO_STATUS_BLOCK *pIoStatus;
+	HANDLE hTest;
 }NOTIFY_PARAM,*PNOTIFY_PARAM;
 
-typedef list<PNOTIFY_PARAM> LIST_TASK,*PQUEUE_TASK;
-typedef LIST_TASK::iterator LIST_TASK_PTR;
-
-typedef struct tagQUEUE_WAIT_TASK
+void CALLBACK WaitOrTimerCallback(PVOID lpParam, BOOLEAN bReason)//事件处理函数
 {
-	HANDLE hEventTask;
-	CCSLock locker;
-	LIST_TASK QueueTask;
-}QUEUE_WAIT_TASK,*PQUEUE_WAIT_TASK;
-
-typedef hash_map<HANDLE,char> HANDLE_HASH_MAP,*PHANDLE_HASH_MAP;
-typedef HANDLE_HASH_MAP::iterator HANDLE_HASH_MAP_PTR;
-
-CCSLock         *pHandleMapLock = NULL;
-HANDLE_HASH_MAP *pHandleMap = NULL;
-
-VOID RecordHandle( HANDLE hFile )
-{
-	pHandleMapLock->Lock();
-
-	HANDLE_HASH_MAP_PTR it = pHandleMap->find(hFile);
-	if (it == pHandleMap->end())
+	NOTIFY_PARAM *pInfo = (NOTIFY_PARAM *)lpParam;
+	if ( NULL == pInfo )
 	{
-		(*pHandleMap)[hFile] = 1;
+		return;
 	}
+	if(bReason == FALSE)//reason为FALSE表示为事件响应，为TRUE表示为超时响应
+	{
+		//此处处理数据
 
-	pHandleMapLock->UnLock();
+   		if(pInfo->hEvent)
+   		{
+   			SetEvent(pInfo->hEvent);
+   		}
+   		else
+   		{
+   			SetEvent(pInfo->hFile);
+   		}
+  
+		UnregisterWait(pInfo->hTest);
+  		CloseHandle(pInfo->hMyEvent);
+
+
+ 		delete pInfo;
+ 		pInfo = NULL;
+	}
+	return ;
 }
 
-BOOL CheckHandle(HANDLE hFile)
-{
-	BOOL bRes = FALSE;
-
-	pHandleMapLock->Lock();
-
-	HANDLE_HASH_MAP_PTR it = pHandleMap->find(hFile);
-	if (it != pHandleMap->end())
-	{
-		bRes = TRUE;
-	}
-
-	pHandleMapLock->UnLock();
-
-	return bRes;
-}
-
-VOID DelHandle(HANDLE hFile)
-{
-	pHandleMapLock->Lock();
-
-	HANDLE_HASH_MAP_PTR it = pHandleMap->find(hFile);
-	if (it != pHandleMap->end())
-	{
-		pHandleMap->erase(it);
-	}
-
-	pHandleMapLock->UnLock();
-}
-
-DWORD WINAPI WaitThread(PVOID pParam)
-{
-	PQUEUE_WAIT_TASK pQueueTask = (PQUEUE_WAIT_TASK)pParam;
-
-	while (TRUE)
-	{
-		WaitForSingleObject(pQueueTask->hEventTask,500);
-		LIST_TASK TmpTask;
-		pQueueTask->locker.Lock();
-
-		for(LIST_TASK_PTR it = pQueueTask->QueueTask.begin();it!=pQueueTask->QueueTask.end();it++)
-		{
-			TmpTask.push_back(*it);
-		}
-
-		CString strMsgOut;
-		strMsgOut.Format(L"******TaskSize: %d \r\n",pQueueTask->QueueTask.size());
-		OutputDebugStringW(strMsgOut);
-
-		pQueueTask->QueueTask.clear();
-
-		pQueueTask->locker.UnLock();
-
-		
-		while ( TmpTask.size() > 0 )
-		{
-	
-			LIST_TASK TmpTmpTask;
-
-			for(LIST_TASK_PTR it = TmpTask.begin();it!=TmpTask.end();it++)
-			{
-				BOOL bCanRemove = TRUE;
-
-				if ( CheckHandle((*it)->hFile) )
-				{
-					bCanRemove = FALSE;
-
-					DWORD dwWaitRes = WaitForSingleObject((*it)->hMyEvent,50);
-					
-					if ( dwWaitRes == WAIT_OBJECT_0 )
-					{
-						bCanRemove = TRUE;
-					}
-					else
-					{
-						bCanRemove = FALSE;
-					}
-
-				}
-
-				if ( bCanRemove )
-				{
-					if((*it)->hEvent)
-					{
-						SetEvent((*it)->hEvent);
-					}
-					else
-					{
-						SetEvent((*it)->hFile);
-					}
-
-					CloseHandle((*it)->hMyEvent);
-
-					OutputDebugStringA((*it)->pRecvBuf);
-					OutputDebugStringA("\r\n");
-
-					delete *it;
-				}
-				else
-				{
-					TmpTmpTask.push_back(*it);
-				}
-			}
-			
-			TmpTask.clear();
-			
-			for(LIST_TASK_PTR it = TmpTmpTask.begin();it!=TmpTmpTask.end();it++)
-			{
-				TmpTask.push_back(*it);
-			}
-
-			CString strMsgOut;
-			strMsgOut.Format(L"******RemainTaskSize: %d \r\n",TmpTask.size());
-			OutputDebugStringW(strMsgOut);
-
-			Sleep(1);
-
-		}
-
-
-	}
-
-
-	return 0;
-}
 
 
 VOID AddTask(NOTIFY_PARAM *pInfo)
 {
-	PQUEUE_WAIT_TASK pTlsData = (PQUEUE_WAIT_TASK)TlsGetValue(dwTlsIndex);
-	if ( NULL == pTlsData)
-	{
-		pTlsData = new QUEUE_WAIT_TASK;
-		pTlsData->hEventTask = CreateEvent(NULL,FALSE,FALSE,NULL);
-
-		TlsSetValue(dwTlsIndex,pTlsData);
-		CreateThread(NULL,0,WaitThread,pTlsData,0,NULL);
-	}
-
-	RecordHandle( pInfo->hFile );
-
-	pTlsData->locker.Lock();
-	pTlsData->QueueTask.push_back(pInfo);
-	SetEvent(pTlsData->hEventTask);
-	pTlsData->locker.UnLock();
+	RegisterWaitForSingleObject(&(pInfo->hTest), pInfo->hMyEvent, WaitOrTimerCallback, (LPVOID)pInfo, INFINITE, WT_EXECUTEINPERSISTENTTHREAD);
 }
 
 NTSTATUS WINAPI MyNtDeviceIoControlFile(
@@ -375,7 +230,7 @@ BOOL WINAPI MyCloseHandle(
 		hObject
 		);
 
-	DelHandle(hObject);
+	//DelHandle(hObject);
 	
 	return TReturn;
 };
@@ -388,7 +243,7 @@ int WINAPI Myclosesocket(
 						 )
 {
 	int TReturn = pclosesocket(s);
-	DelHandle((HANDLE)s);
+	//DelHandle((HANDLE)s);
 	return TReturn;
 };
 
@@ -398,19 +253,20 @@ int WINAPI Myclosesocket(
 
 VOID StartHook()
 {
-	if ((dwTlsIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES) 
-	{
-		return;
-	}
+	//return ;
+// 	if ((dwTlsIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES) 
+// 	{
+// 		return;
+// 	}
 	
-	pHandleMapLock = new CCSLock;
-	pHandleMap = new HANDLE_HASH_MAP;
+// 	pHandleMapLock = new CCSLock;
+// 	pHandleMap = new HANDLE_HASH_MAP;
 
 	pNtDeviceIoControlFile = (TypeNtDeviceIoControlFile)::GetProcAddress(GetModuleHandle(L"ntdll.dll"),"NtDeviceIoControlFile");
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach((PVOID *)&pNtDeviceIoControlFile,MyNtDeviceIoControlFile);
-	DetourAttach((PVOID *)&pCloseHandle,MyCloseHandle);
-	DetourAttach((PVOID *)&pclosesocket,Myclosesocket);
+	//DetourAttach((PVOID *)&pCloseHandle,MyCloseHandle);
+	//DetourAttach((PVOID *)&pclosesocket,Myclosesocket);
 	DetourTransactionCommit();
 }
