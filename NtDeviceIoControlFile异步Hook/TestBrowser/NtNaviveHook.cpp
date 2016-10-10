@@ -107,6 +107,33 @@ typedef struct tagNOTIFY_PARAM
 	HANDLE hTest;
 }NOTIFY_PARAM,*PNOTIFY_PARAM;
 
+#include <Shlwapi.h>
+
+VOID HandleRecvData(char *pRecvData,int nRecvDataLen)
+{
+	if ( nRecvDataLen > 0 )
+	{
+		int nShowLen = min(700,nRecvDataLen);
+		char *pchTmp = new char[nShowLen+1];
+		memcpy_s(pchTmp,nShowLen,pRecvData,nShowLen);
+		pchTmp[nShowLen] = 0;
+
+		char *pchTitle = StrStrIA(pchTmp,"腾讯首页");
+		if (pchTitle)
+		{
+			pchTitle = StrStrIA(pRecvData,"腾讯首页");
+			pchTitle[0]='A';
+			pchTitle[1]='B';
+			pchTitle[2]='C';
+			pchTitle[3]='D';
+		}
+
+		//OutputDebugStringA((char *)pchTmp);
+		//OutputDebugStringA("\r\n-------------------------------------------------------\r\n");
+		delete pchTmp;
+	}
+}
+
 void CALLBACK WaitOrTimerCallback(PVOID lpParam, BOOLEAN bReason)//事件处理函数
 {
 	NOTIFY_PARAM *pInfo = (NOTIFY_PARAM *)lpParam;
@@ -114,26 +141,34 @@ void CALLBACK WaitOrTimerCallback(PVOID lpParam, BOOLEAN bReason)//事件处理函数
 	{
 		return;
 	}
+
 	if(bReason == FALSE)//reason为FALSE表示为事件响应，为TRUE表示为超时响应
 	{
 		//此处处理数据
+		if ( pInfo->pIoStatus->Status == 0 )
+		{
+			HandleRecvData( pInfo->pRecvBuf , pInfo->pIoStatus->Information );
+		}
 
-   		if(pInfo->hEvent)
-   		{
-   			SetEvent(pInfo->hEvent);
-   		}
-   		else
-   		{
-   			SetEvent(pInfo->hFile);
-   		}
-  
-		UnregisterWait(pInfo->hTest);
-  		CloseHandle(pInfo->hMyEvent);
-
-
- 		delete pInfo;
- 		pInfo = NULL;
+		if(pInfo->hEvent)
+		{
+			SetEvent(pInfo->hEvent);
+		}
+		else
+		{
+			SetEvent(pInfo->hFile);
+		}
 	}
+
+
+
+	UnregisterWait(pInfo->hTest);
+	CloseHandle(pInfo->hMyEvent);
+
+
+	delete pInfo;
+	pInfo = NULL;
+
 	return ;
 }
 
@@ -141,7 +176,8 @@ void CALLBACK WaitOrTimerCallback(PVOID lpParam, BOOLEAN bReason)//事件处理函数
 
 VOID AddTask(NOTIFY_PARAM *pInfo)
 {
-	RegisterWaitForSingleObject(&(pInfo->hTest), pInfo->hMyEvent, WaitOrTimerCallback, (LPVOID)pInfo, INFINITE, WT_EXECUTEINPERSISTENTTHREAD);
+	RegisterWaitForSingleObject(&(pInfo->hTest), pInfo->hMyEvent, WaitOrTimerCallback, (LPVOID)pInfo, 20*1000, WT_EXECUTEINPERSISTENTTHREAD);
+	int a=0;
 }
 
 NTSTATUS WINAPI MyNtDeviceIoControlFile(
@@ -195,7 +231,7 @@ NTSTATUS WINAPI MyNtDeviceIoControlFile(
   			}
 			else if( pIoStatus->Status == 0 )
 			{
-				int a=0;
+				HandleRecvData(pRecvBuf,pIoStatus->Information);
 			}
 
 			return RecvStatus;

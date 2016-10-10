@@ -46,7 +46,7 @@ void CTestBrowserView::OnInitialUpdate()
 {
 	CHtmlView::OnInitialUpdate();
 
-	Navigate2(_T("http://v.2345.com/"),NULL,NULL);
+	Navigate2(_T("http://www.qq.com/"),NULL,NULL);
 }
 
 
