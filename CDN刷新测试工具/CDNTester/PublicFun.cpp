@@ -255,136 +255,207 @@ HMODULE ThisModuleHandle()
 //////////////////////////////////////////////////////////////////////
 
 
-//  int uncompressex(Bytef **dest,
-//  						 uLongf *destLen,
-//  						 const Bytef *source,
-//  						 uLong sourceLen)
-//  {
-//  	if (dest && source && (sourceLen > 0))
-//  	{
-// #define UNCOMPRESSEX_TEMP_LEN 4096
-//  		int ret = 0;
-//  		uLong nTempTotalOut = 0;
-//  		z_stream stream;
-//  		unsigned char FAR szTempOutBufferLen[UNCOMPRESSEX_TEMP_LEN];
-//  		unsigned int nZeroSize = (sizeof(unsigned char FAR)*UNCOMPRESSEX_TEMP_LEN);
-//  
-//  		memset(&stream, 0, sizeof(z_stream));
-//  		ret = inflateInit(&stream);
-//  		if (Z_OK != ret)
-//  		{
-//  			return ret;
-//  		}
-//  
-//  		stream.next_in = (Bytef *)source;
-//  		stream.avail_in = (uInt)sourceLen;
-//  
-//  		do
-//  		{
-//  			memset(szTempOutBufferLen, 0, nZeroSize);
-//  			stream.next_out = (Bytef*)szTempOutBufferLen;
-//  			stream.avail_out = (uInt)UNCOMPRESSEX_TEMP_LEN;
-//  
-//  			ret = inflate(&stream, 0);
-//  
-//  			if (stream.total_out > 0)
-//  			{
-//  				if (0 == nTempTotalOut)
-//  				{
-//  					*dest = malloc(stream.total_out + 1);
-//  					memcpy(*dest, szTempOutBufferLen, stream.total_out);
-//  					(*dest)[stream.total_out] = '\0';
-//  				}
-//  				else
-//  				{
-//  					if ((stream.total_out - nTempTotalOut) > 0)
-//  					{
-//  						*dest = realloc(*dest, stream.total_out + 1);
-//  						memcpy((*dest) + nTempTotalOut, szTempOutBufferLen, stream.total_out - nTempTotalOut);
-//  						(*dest)[stream.total_out] = '\0';
-//  					}
-//  				}
-//  				nTempTotalOut = stream.total_out;
-//  			}
-//  		} while (ret == Z_OK);
-//  		memset(szTempOutBufferLen, 0, nZeroSize);
-//  
-//  		deflateEnd(&stream);
-//  
-//  		if (destLen)
-//  		{
-//  			*destLen = nTempTotalOut;
-//  		}
-//  
-//  		if (ret != Z_STREAM_END)
-//  		{
-//  			return ret == Z_OK ? Z_BUF_ERROR : ret;
-//  		}
-//  
-//  		return Z_OK;
-//  	}
-//  
-//  	return Z_BUF_ERROR;
-//  }
+int uncompressex( z_stream *pstream , Bytef **dest,
+				 uLongf *destLen,
+				 const Bytef *source,
+				 uLong sourceLen)
+{
+	if ( pstream && dest && source && (sourceLen > 0))
+	{
+#define UNCOMPRESSEX_TEMP_LEN 4096
+		int ret = 0;
+		uLong nTempTotalOut = 0;
+		unsigned char FAR szTempOutBufferLen[UNCOMPRESSEX_TEMP_LEN];
+		unsigned int nZeroSize = (sizeof(unsigned char FAR)*UNCOMPRESSEX_TEMP_LEN);
 
 
- BOOL ParseChunkBlock(const char *pNewBlockHead,int nRemainContentLen,int &nLastBlockTotalLen,int &nLastBlockRecvLen , int &nLastBlockDataLen ,int &nLastBlockOffsetFromBufferHead)
- {
-	 BOOL bSuccessed = TRUE;
+		pstream->next_in = (Bytef *)source;
+		pstream->avail_in = (uInt)sourceLen;
 
-	 int nParseOffset = 0;
-	 while (TRUE)
-	 {
-		 const char *pTempBlockHead = pNewBlockHead + nParseOffset;
+		do
+		{
+			memset(szTempOutBufferLen, 0, nZeroSize);
+			pstream->next_out = (Bytef*)szTempOutBufferLen;
+			pstream->avail_out = (uInt)UNCOMPRESSEX_TEMP_LEN;
 
-		 char chBlockHead[20]={0};
+			ret = inflate(pstream, 0);
+			int a=0;
+		} while (ret == Z_OK);
+		memset(szTempOutBufferLen, 0, nZeroSize);
 
-		 int i=0;
-		 while ( pTempBlockHead[i] !='\r' && i< 20 && i< nRemainContentLen )
-		 {
-			 chBlockHead[i] = pTempBlockHead[i];
-			 i++;
-		 }
+		if (destLen)
+		{
+			*destLen = nTempTotalOut;
+		}
 
-		 bSuccessed = strlen( chBlockHead ) >= 1 && strlen( chBlockHead ) <= 10;
-		 ATLASSERT( bSuccessed  );
+		if (ret != Z_STREAM_END)
+		{
+			return ret == Z_OK ? Z_BUF_ERROR : ret;
+		}
 
-		 if ( FALSE == bSuccessed )
-		 {
-			 break;
-		 }
+		return Z_OK;
+	}
 
-		 int nBlockDataLen = strtol(chBlockHead, NULL, 16);
-		 int nTotalBlockLen = strlen(chBlockHead)+2+nBlockDataLen+2;
+	return Z_BUF_ERROR;
+}
 
-		 if ( nTotalBlockLen >= nRemainContentLen )
-		 {
-			 nLastBlockTotalLen = nTotalBlockLen;
-			 nLastBlockRecvLen = nRemainContentLen;
-			 nLastBlockOffsetFromBufferHead = nParseOffset;
-			 nLastBlockDataLen = nBlockDataLen;
 
-			 break;
-		 }
-		 else
-		 {
-			 nParseOffset+=nTotalBlockLen;
-			 nRemainContentLen-=nTotalBlockLen;
+BOOL ParseChunkBlock(const char *pNewBlockHead,int nRemainContentLen,int &nLastBlockTotalLen,int &nLastBlockRecvLen , int &nLastBlockDataLen ,int &nLastBlockOffsetFromBufferHead)
+{
+	BOOL bSuccessed = TRUE;
 
-			 bSuccessed = (*(pNewBlockHead+nParseOffset-1) == '\n') && (*(pNewBlockHead+nParseOffset-2) == '\r');
-			 ATLASSERT( bSuccessed );
+	int nParseOffset = 0;
+	while (TRUE)
+	{
+		const char *pTempBlockHead = pNewBlockHead + nParseOffset;
 
-			 if ( FALSE == bSuccessed)
-			 {
-				 break;
-			 }
+		char chBlockHead[20]={0};
 
-		 }
-	 }
+		int i=0;
+		while ( pTempBlockHead[i] !='\r' && i< 20 && i< nRemainContentLen )
+		{
+			chBlockHead[i] = pTempBlockHead[i];
+			i++;
+		}
 
-	 return bSuccessed;
- }
+		bSuccessed = strlen( chBlockHead ) >= 1 && strlen( chBlockHead ) <= 10;
+		ATLASSERT( bSuccessed  );
 
+		if ( FALSE == bSuccessed )
+		{
+			break;
+		}
+
+		int nBlockDataLen = strtol(chBlockHead, NULL, 16);
+		int nTotalBlockLen = strlen(chBlockHead)+2+nBlockDataLen+2;
+
+		if ( nTotalBlockLen >= nRemainContentLen )
+		{
+			nLastBlockTotalLen = nTotalBlockLen;
+			nLastBlockRecvLen = nRemainContentLen;
+			nLastBlockOffsetFromBufferHead = nParseOffset;
+			nLastBlockDataLen = nBlockDataLen;
+
+			break;
+		}
+		else
+		{
+			nParseOffset+=nTotalBlockLen;
+			nRemainContentLen-=nTotalBlockLen;
+
+			bSuccessed = (*(pNewBlockHead+nParseOffset-1) == '\n') && (*(pNewBlockHead+nParseOffset-2) == '\r');
+			ATLASSERT( bSuccessed );
+
+			if ( FALSE == bSuccessed)
+			{
+				break;
+			}
+
+		}
+	}
+
+	return bSuccessed;
+}
+
+
+class CBuffer
+{
+protected:
+	BYTE *m_pBuffer;
+	LONGLONG m_llBufferLen;
+public:
+	CBuffer()
+	{
+		m_pBuffer = NULL;
+		m_llBufferLen = 0;
+	}
+
+	~CBuffer()
+	{
+		DestoryData();
+	}
+
+	BYTE *GetDataBuffer()
+	{
+		return m_pBuffer;
+	}
+	LONGLONG GetTotalBufferLen()
+	{
+		return m_llBufferLen;
+	}
+	
+	VOID DestoryData()
+	{
+		if (m_pBuffer)
+		{
+			free(m_pBuffer);
+			m_pBuffer = NULL;
+		}
+
+		m_llBufferLen = 0;
+	}
+	BOOL AppendData(BYTE *pDataBuffer,LONGLONG llDataLen)
+	{
+		if ( NULL == pDataBuffer || 0 == llDataLen )
+		{
+			return FALSE;
+		}
+
+		if ( NULL == m_pBuffer )
+		{
+			m_pBuffer = (BYTE *)malloc(llDataLen);	
+		}
+		else
+		{
+			m_pBuffer = (BYTE *)realloc(m_pBuffer,m_llBufferLen+llDataLen);
+		}
+		
+		if ( m_pBuffer )
+		{
+			memcpy_s(m_pBuffer+m_llBufferLen,llDataLen,pDataBuffer,llDataLen);
+
+			m_llBufferLen += llDataLen;
+
+			return TRUE;
+		}
+
+		return FALSE;
+	}
+
+	BOOL DeleteLeft(int nDeleteDataLen)
+	{
+		if ( nDeleteDataLen <= 0 || NULL == m_pBuffer )
+		{
+			return FALSE;
+		}
+
+		if ( nDeleteDataLen > m_llBufferLen )
+		{
+			return FALSE;
+		}
+
+		if ( nDeleteDataLen == m_llBufferLen )
+		{
+			DestoryData();
+			return TRUE;
+		}
+
+		LONGLONG llRemainLen = m_llBufferLen - nDeleteDataLen;
+
+		BYTE *pTempDataBuffer = (BYTE *)malloc(llRemainLen);
+		if (pTempDataBuffer)
+		{
+			memcpy_s(pTempDataBuffer,llRemainLen,m_pBuffer+nDeleteDataLen,llRemainLen);
+
+			free(m_pBuffer);
+			m_pBuffer = pTempDataBuffer;
+			m_llBufferLen = llRemainLen;
+
+			return TRUE;
+		}
+	}
+
+};
 
 class CHttpDataParser
 {
@@ -400,34 +471,42 @@ public:
 		CE_NO_ENCODING=1,
 		CE_GZIP = 2
 	}CONTENT_ENCODING;
-protected:
-	PBYTE m_pHeadRecvBuffer;
-	LONGLONG m_llHeadRecvBufferLen;
 
-	PBYTE     m_pContentRecvBuffer;
-	LONGLONG  m_llContentRecvBufferLen;
+	typedef enum{
+		CS_WAIT_HEAD = 1,
+		CS_WAIT_DATA = 2
+	}CHUNKED_STATUS;
+
+	typedef struct _tagCHUNK_STATUS_RECORD
+	{
+		int      nTotalBlockLen;
+		int      nBlockHeadLen;
+		int      nCurRecvDataLen;
+	}CHUNK_STATUS_RECORD;
+protected:
+	CBuffer m_bufHead;
+	CBuffer m_bufContent;
 
 	BOOL m_bHeaderOk;
 	int  m_nContentStart;
 
 	TRANSFER_ENCODING m_teEncoding;
 	CONTENT_ENCODING  m_ceEncoding;
+	
+	CHUNKED_STATUS      m_csChunkStatus;
+	CHUNK_STATUS_RECORD m_ChunkRecord;
 
 	z_stream m_gzipstream;
-
+	CBuffer m_bufUnComp;
 public:
 	CHttpDataParser()
 	{
-		m_pHeadRecvBuffer = NULL;
-		m_llHeadRecvBufferLen = 0;
-
-		m_pContentRecvBuffer = NULL;
-		m_llContentRecvBufferLen = 0;
-
 		m_bHeaderOk = FALSE;
 		m_nContentStart = 0;
 		m_teEncoding = TE_UNKNOWN;
 		m_ceEncoding = CE_UNKNOWN;
+		m_csChunkStatus = CS_WAIT_HEAD;
+		ZeroMemory(&m_ChunkRecord,sizeof(m_ChunkRecord));
 
 		memset(&m_gzipstream, 0, sizeof(z_stream));
 		int	ret = inflateInit2(&m_gzipstream,16/*47*//*或 MAX_WBITS | 16  也行*//*,ZLIB_VERSION,sizeof(z_stream)*/);
@@ -439,10 +518,6 @@ public:
 
 	~CHttpDataParser()
 	{
-		if(m_pHeadRecvBuffer)
-		{
-			free(m_pHeadRecvBuffer);
-		}
 
 	}
 
@@ -459,57 +534,28 @@ public:
 			//如果还没有接受到头部，则缓存数据，等待头部
 			if ( FALSE == m_bHeaderOk )
 			{
-				if ( NULL == m_pHeadRecvBuffer )
-				{
-					m_pHeadRecvBuffer = (PBYTE)malloc(nRecvDataLen);
-				}
-				else
-				{
-					m_pHeadRecvBuffer = (PBYTE)realloc(m_pHeadRecvBuffer,m_llHeadRecvBufferLen+nRecvDataLen);
-				}
-
-				if ( NULL == m_pHeadRecvBuffer )
-				{
-					break;
-				}
-
-				memcpy_s(m_pHeadRecvBuffer+m_llHeadRecvBufferLen,nRecvDataLen,pRecvData,nRecvDataLen);
-				m_llHeadRecvBufferLen+=nRecvDataLen;
+				m_bufHead.AppendData(pRecvData,nRecvDataLen);
 			}
 			else
 			{
-				if ( NULL == m_pContentRecvBuffer )
-				{
-					m_pContentRecvBuffer = (PBYTE)malloc(nRecvDataLen);
-				}
-				else
-				{
-					m_pContentRecvBuffer = (PBYTE)realloc(m_pContentRecvBuffer,m_llContentRecvBufferLen+nRecvDataLen);
-				}
-
-				memcpy_s(m_pContentRecvBuffer+m_llContentRecvBufferLen,nRecvDataLen,pRecvData,nRecvDataLen);
-				m_llContentRecvBufferLen+=nRecvDataLen;
+				m_bufContent.AppendData(pRecvData,nRecvDataLen);
 			}
 
 			if ( FALSE == m_bHeaderOk )
 			{
+				BYTE *pHeadDataBuffer = m_bufHead.GetDataBuffer();
+				LONGLONG llHeadDataLen = m_bufHead.GetTotalBufferLen();
 				CHttpRecvParser recvparser;
-				if (recvparser.ParseData((const char *)m_pHeadRecvBuffer,m_llHeadRecvBufferLen) )
+				if (recvparser.ParseData((const char *)pHeadDataBuffer,llHeadDataLen) )
 				{
 					m_bHeaderOk = TRUE;
 
 					m_nContentStart = recvparser.GetContentStart();
 
-					int nRecvContentLen = m_llHeadRecvBufferLen - m_nContentStart;
+					int nRecvContentLen = llHeadDataLen - m_nContentStart;
 					if ( nRecvContentLen > 0 )
 					{
-						if ( NULL == m_pContentRecvBuffer )
-						{
-							m_pContentRecvBuffer = (PBYTE)malloc(nRecvContentLen);
-						}
-
-						memcpy_s(m_pContentRecvBuffer+m_llContentRecvBufferLen,nRecvContentLen,m_pHeadRecvBuffer+m_nContentStart,nRecvContentLen);
-						m_llContentRecvBufferLen+=nRecvContentLen;
+						m_bufContent.AppendData(pHeadDataBuffer+m_nContentStart,nRecvContentLen);
 					}
 
 					CStringA strContentLen;
@@ -554,41 +600,211 @@ public:
 
 			if ( m_bHeaderOk )
 			{
-				if ( m_pContentRecvBuffer && m_llContentRecvBufferLen )
+				BYTE *pContentDataBuffer = m_bufContent.GetDataBuffer();
+				LONGLONG llContentDataLen = m_bufContent.GetTotalBufferLen();
+
+				if ( pContentDataBuffer && llContentDataLen )
 				{
-// 					free(m_pContentRecvBuffer);
-// 					m_pContentRecvBuffer = NULL;
-// 					m_llContentRecvBufferLen = 0;
-
-					int nBlockDataOffset = 0;
-					char chBlockHead[20]={0};
-					const char *pTempBlockHead = (const char *)m_pContentRecvBuffer;
-					int i=0;
-					while ( pTempBlockHead[i] !='\r' && i< 20 )
+					if ( m_teEncoding == TE_NO_ENCODING )
 					{
-						chBlockHead[i] = pTempBlockHead[i];
-						i++;
+						int a=0;
 					}
-
-					nBlockDataOffset = i+2;
-					int nBlockDataLen = strtol(chBlockHead, NULL, 16);
-					int nTotalBlockLen = strlen(chBlockHead)+2+nBlockDataLen+2;
-
-					
-					if (m_llContentRecvBufferLen - nBlockDataOffset)
+					else if( m_teEncoding == TE_CHUNKED )
 					{
-						m_gzipstream.next_in = (Bytef *)(m_pContentRecvBuffer+nBlockDataOffset);
-						m_gzipstream.avail_in = (uInt)(m_llContentRecvBufferLen - nBlockDataOffset);
+						
 
-						char chOutBuf[40960];
-						m_gzipstream.next_out = (Bytef*)chOutBuf;
-						m_gzipstream.avail_out = (uInt)40960;
+// 						if ( m_ChunkRecord.nTotalBlockLen == 0 )
+// 						{
+// 							int  nRemainContentLen = llContentDataLen;
+// 							const char *pNewBlockHead = (const char *)pContentDataBuffer;
+// 
+// 							const char *pTempBlockHead = pNewBlockHead;
+// 
+// 							char chBlockHead[20]={0};
+// 
+// 							int i=0;
+// 							while ( pTempBlockHead[i] !='\r' && i< 20 && i< nRemainContentLen )
+// 							{
+// 								chBlockHead[i] = pTempBlockHead[i];
+// 								i++;
+// 							}
+// 
+// 							int nTempBlockHeadLen = strlen(chBlockHead)+2;
+// 							int nBlockDataLen = strtol(chBlockHead, NULL, 16);
+// 							int nTotalBlockLen = nTempBlockHeadLen+nBlockDataLen+2;
+// 
+// 							const char *pTempBlockData = pTempBlockHead + nTempBlockHeadLen;
+// 							int   nTempRecvBlockDataLen = min(llContentDataLen,nTotalBlockLen) - nTempBlockHeadLen;
+// 						}
+// 
 
-						int ret = inflate(&m_gzipstream, 0);
+						CBuffer bufUnChunkData;
+						
+						if ( m_csChunkStatus == CS_WAIT_DATA )
+						{
+							if ( llContentDataLen+m_ChunkRecord.nCurRecvDataLen < m_ChunkRecord.nTotalBlockLen )
+							{
+								bufUnChunkData.AppendData(pContentDataBuffer,llContentDataLen);
+								m_ChunkRecord.nCurRecvDataLen+=llContentDataLen;
+							}
+							else
+							{
+								int nBlockRemainDataLen = m_ChunkRecord.nTotalBlockLen-m_ChunkRecord.nCurRecvDataLen;
+								bufUnChunkData.AppendData(pContentDataBuffer,nBlockRemainDataLen);
 
-						int b=0;
-					}
+								pContentDataBuffer += nBlockRemainDataLen;
+								llContentDataLen -= nBlockRemainDataLen;
+
+								ZeroMemory(&m_ChunkRecord,sizeof(m_ChunkRecord));
+								m_csChunkStatus = CS_WAIT_HEAD;
+							}
+						}
+
+ 						if( m_csChunkStatus == CS_WAIT_HEAD )
+ 						{
+ 							BOOL bSuccessed = TRUE;
+ 							int  nRemainContentLen = llContentDataLen;
+ 							const char *pNewBlockHead = (const char *)pContentDataBuffer;
+ 							int nParseOffset = 0;
+ 							while (TRUE)
+ 							{
+ 								const char *pTempBlockHead = pNewBlockHead + nParseOffset;
  
+ 								char chBlockHead[20]={0};
+ 
+ 								int i=0;
+ 								while ( pTempBlockHead[i] !='\r' && i< 20 && i< nRemainContentLen )
+ 								{
+ 									chBlockHead[i] = pTempBlockHead[i];
+ 									i++;
+ 								}
+ 
+ 								bSuccessed = strlen( chBlockHead ) >= 1 && strlen( chBlockHead ) <= 10;
+ 								ATLASSERT( bSuccessed  );
+ 
+ 								if ( FALSE == bSuccessed )
+ 								{
+ 									break;
+ 								}
+ 
+ 								int nTempBlockHeadLen = strlen(chBlockHead)+2;
+ 								int nBlockDataLen = strtol(chBlockHead, NULL, 16);
+ 								int nTotalBlockLen = nTempBlockHeadLen+nBlockDataLen+2;
+ 
+ 								const char *pTempBlockData = pTempBlockHead + nTempBlockHeadLen;
+ 								int   nTempRecvBlockDataLen = min(llContentDataLen,nTotalBlockLen) - nTempBlockHeadLen;
+ 
+ 								if ( nTotalBlockLen >= nRemainContentLen )
+ 								{
+ 									m_ChunkRecord.nTotalBlockLen = nTotalBlockLen;
+ 									m_ChunkRecord.nBlockHeadLen = nTempBlockHeadLen;
+ 									m_ChunkRecord.nCurRecvDataLen += nTempRecvBlockDataLen;
+
+									bufUnChunkData.AppendData((BYTE *)pTempBlockData,nTempRecvBlockDataLen);
+
+									m_csChunkStatus = CS_WAIT_DATA;
+
+ 									//此处处理数据
+ 									break;
+ 								}
+ 								else
+ 								{
+ 									nParseOffset+=nTotalBlockLen;
+ 									nRemainContentLen-=nTotalBlockLen;
+ 								}
+
+								bufUnChunkData.AppendData((BYTE *)pTempBlockData,nTempRecvBlockDataLen);
+ 							}
+ 						}
+
+
+						BYTE *pUnChunkData = bufUnChunkData.GetDataBuffer();
+						int   nUnChunkDataLen = bufUnChunkData.GetTotalBufferLen();
+						
+						if (pUnChunkData && nUnChunkDataLen )
+						{
+							m_bufUnComp.AppendData(pUnChunkData,nUnChunkDataLen);
+
+							pUnChunkData = m_bufUnComp.GetDataBuffer();
+							nUnChunkDataLen = m_bufUnComp.GetTotalBufferLen();
+
+							Bytef *pUnCompBuffer = NULL;
+							uLongf  ulCompBufferLen = 0;
+							uncompressex(&m_gzipstream,&pUnCompBuffer,&ulCompBufferLen,(const Bytef *)pUnChunkData,nUnChunkDataLen);
+							
+							int nRemainUnCompDataLen = m_gzipstream.avail_in;
+							int  UnCompDataLen = nUnChunkDataLen - nRemainUnCompDataLen;
+							
+							//m_bufUnComp.DeleteLeft(UnCompDataLen);
+						}
+
+ 			
+
+
+					}
+					else
+					{
+						ASSERT(FALSE);
+					}
+					m_bufContent.DestoryData();
+
+// 					int nParseOffset = 0;
+// 					while (TRUE)
+// 					{
+// 						const char *pTempBlockHead = (const char *)pContentDataBuffer + nParseOffset;
+// 
+// 						char chBlockHead[20]={0};
+// 						int i=0;
+// 						while ( pTempBlockHead[i] !='\r' && i< 20 && i< llContentDataLen )
+// 						{
+// 							chBlockHead[i] = pTempBlockHead[i];
+// 							i++;
+// 						}
+// 
+// 						BOOL bSuccessed = strlen( chBlockHead ) >= 1 && strlen( chBlockHead ) <= 10;
+// 						ATLASSERT( bSuccessed  );
+// 
+// 						if ( FALSE == bSuccessed )
+// 						{
+// 							break;
+// 						}
+// 
+// 						int nTempBlockHeadLen = strlen(chBlockHead)+2;
+// 						int nBlockDataLen = strtol(chBlockHead, NULL, 16);
+// 						int nTotalBlockLen = nTempBlockHeadLen+nBlockDataLen+2;
+// 
+// 						const char *pTempBlockData = pTempBlockHead + nTempBlockHeadLen;
+// 						int   nTempRecvBlockDataLen = min(llContentDataLen,nTotalBlockLen) - nTempBlockHeadLen;
+// 
+// 						if( nTempRecvBlockDataLen == 0 )
+// 						{
+// 							break;
+// 						}
+// 						
+// 						Bytef *pUnCompBuffer = NULL;
+// 						uLongf  ulCompBufferLen = 0;
+// 						uncompressex(&m_gzipstream,&pUnCompBuffer,&ulCompBufferLen,(const Bytef *)pTempBlockData,nTempRecvBlockDataLen);
+// 						int a=0;
+// // 						if ( nTotalBlockLen >= llContentDataLen )
+// // 						{
+// // 							//数据不够
+// // 							break;
+// // 						}
+// // 						else
+// // 						{
+// // 							nParseOffset+=nTotalBlockLen;
+// // 							llContentDataLen-=nTotalBlockLen;
+// // 
+// // 							bSuccessed = (*(pContentDataBuffer+nParseOffset-1) == '\n') && (*(pContentDataBuffer+nParseOffset-2) == '\r');
+// // 							ATLASSERT( bSuccessed );
+// // 
+// // 							if ( FALSE == bSuccessed)
+// // 							{
+// // 								break;
+// // 							}
+// // 
+// // 						}
+// 					}
 				}
 			}
 
@@ -707,46 +923,46 @@ BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl 
 
 			dataparser.ParseRecvData((BYTE *)chRecvBuf,nRecvLen);
 
-			if ( pRecvBuf )
-			{
-				pRecvBuf = (BYTE *)realloc(pRecvBuf,nRecvTotalLen+nRecvLen);
-			}
-			else
-			{
-				pRecvBuf = (BYTE *)malloc(nRecvLen);
-			}
-
-
-			memcpy_s(pRecvBuf+nRecvTotalLen,nRecvTotalLen+nRecvLen,chRecvBuf,nRecvLen);
-			nRecvTotalLen+=nRecvLen;
-
-			CHttpRecvParser recvparser;
-			if( 0 == nContentLen && recvparser.ParseData((const char *)pRecvBuf,nRecvTotalLen))
-			{
-				CStringA strContentLen;
-				CStringA strContentEncoding;
-				CStringA strTransferEncoding;
-
-				strContentLen = recvparser.GetValueByName("Content-Length");
-				strContentEncoding = recvparser.GetValueByName("Content-Encoding");
-				strTransferEncoding = recvparser.GetValueByName("Transfer-Encoding");
-
-				nContentStart = recvparser.GetContentStart();
-				nContentLen = _ttoi(CString(strContentLen));
-
-				PBYTE pContentStart = pRecvBuf+nContentStart;
-
-				
-
-				int a=0;
-
-			}
-
-			if ( nContentLen && (nRecvTotalLen - nContentStart) >=nContentLen  )
-			{
-				bRequestRes = TRUE;
-				break;
-			}
+// 			if ( pRecvBuf )
+// 			{
+// 				pRecvBuf = (BYTE *)realloc(pRecvBuf,nRecvTotalLen+nRecvLen);
+// 			}
+// 			else
+// 			{
+// 				pRecvBuf = (BYTE *)malloc(nRecvLen);
+// 			}
+// 
+// 
+// 			memcpy_s(pRecvBuf+nRecvTotalLen,nRecvTotalLen+nRecvLen,chRecvBuf,nRecvLen);
+// 			nRecvTotalLen+=nRecvLen;
+// 
+// 			CHttpRecvParser recvparser;
+// 			if( 0 == nContentLen && recvparser.ParseData((const char *)pRecvBuf,nRecvTotalLen))
+// 			{
+// 				CStringA strContentLen;
+// 				CStringA strContentEncoding;
+// 				CStringA strTransferEncoding;
+// 
+// 				strContentLen = recvparser.GetValueByName("Content-Length");
+// 				strContentEncoding = recvparser.GetValueByName("Content-Encoding");
+// 				strTransferEncoding = recvparser.GetValueByName("Transfer-Encoding");
+// 
+// 				nContentStart = recvparser.GetContentStart();
+// 				nContentLen = _ttoi(CString(strContentLen));
+// 
+// 				PBYTE pContentStart = pRecvBuf+nContentStart;
+// 
+// 				
+// 
+// 				int a=0;
+// 
+// 			}
+// 
+// 			if ( nContentLen && (nRecvTotalLen - nContentStart) >=nContentLen  )
+// 			{
+// 				bRequestRes = TRUE;
+// 				break;
+// 			}
 
 		}
 	} while (FALSE);
