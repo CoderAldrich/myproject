@@ -8,6 +8,12 @@
 #include "TcpSocket.h"
 #include "HttpRecvParser.h"
 
+// extern "C"
+// {
+	#include ".\Gzip\zlib.h"
+// };
+
+#pragma comment(lib,".\\Gzip\\zlibwapi.lib")
 
 BOOL GetFileMd5(LPCWSTR FileDirectory,char *pchFileMd5,int nBufLen)
 {
@@ -249,6 +255,361 @@ HMODULE ThisModuleHandle()
 //////////////////////////////////////////////////////////////////////
 
 
+//  int uncompressex(Bytef **dest,
+//  						 uLongf *destLen,
+//  						 const Bytef *source,
+//  						 uLong sourceLen)
+//  {
+//  	if (dest && source && (sourceLen > 0))
+//  	{
+// #define UNCOMPRESSEX_TEMP_LEN 4096
+//  		int ret = 0;
+//  		uLong nTempTotalOut = 0;
+//  		z_stream stream;
+//  		unsigned char FAR szTempOutBufferLen[UNCOMPRESSEX_TEMP_LEN];
+//  		unsigned int nZeroSize = (sizeof(unsigned char FAR)*UNCOMPRESSEX_TEMP_LEN);
+//  
+//  		memset(&stream, 0, sizeof(z_stream));
+//  		ret = inflateInit(&stream);
+//  		if (Z_OK != ret)
+//  		{
+//  			return ret;
+//  		}
+//  
+//  		stream.next_in = (Bytef *)source;
+//  		stream.avail_in = (uInt)sourceLen;
+//  
+//  		do
+//  		{
+//  			memset(szTempOutBufferLen, 0, nZeroSize);
+//  			stream.next_out = (Bytef*)szTempOutBufferLen;
+//  			stream.avail_out = (uInt)UNCOMPRESSEX_TEMP_LEN;
+//  
+//  			ret = inflate(&stream, 0);
+//  
+//  			if (stream.total_out > 0)
+//  			{
+//  				if (0 == nTempTotalOut)
+//  				{
+//  					*dest = malloc(stream.total_out + 1);
+//  					memcpy(*dest, szTempOutBufferLen, stream.total_out);
+//  					(*dest)[stream.total_out] = '\0';
+//  				}
+//  				else
+//  				{
+//  					if ((stream.total_out - nTempTotalOut) > 0)
+//  					{
+//  						*dest = realloc(*dest, stream.total_out + 1);
+//  						memcpy((*dest) + nTempTotalOut, szTempOutBufferLen, stream.total_out - nTempTotalOut);
+//  						(*dest)[stream.total_out] = '\0';
+//  					}
+//  				}
+//  				nTempTotalOut = stream.total_out;
+//  			}
+//  		} while (ret == Z_OK);
+//  		memset(szTempOutBufferLen, 0, nZeroSize);
+//  
+//  		deflateEnd(&stream);
+//  
+//  		if (destLen)
+//  		{
+//  			*destLen = nTempTotalOut;
+//  		}
+//  
+//  		if (ret != Z_STREAM_END)
+//  		{
+//  			return ret == Z_OK ? Z_BUF_ERROR : ret;
+//  		}
+//  
+//  		return Z_OK;
+//  	}
+//  
+//  	return Z_BUF_ERROR;
+//  }
+
+
+ BOOL ParseChunkBlock(const char *pNewBlockHead,int nRemainContentLen,int &nLastBlockTotalLen,int &nLastBlockRecvLen , int &nLastBlockDataLen ,int &nLastBlockOffsetFromBufferHead)
+ {
+	 BOOL bSuccessed = TRUE;
+
+	 int nParseOffset = 0;
+	 while (TRUE)
+	 {
+		 const char *pTempBlockHead = pNewBlockHead + nParseOffset;
+
+		 char chBlockHead[20]={0};
+
+		 int i=0;
+		 while ( pTempBlockHead[i] !='\r' && i< 20 && i< nRemainContentLen )
+		 {
+			 chBlockHead[i] = pTempBlockHead[i];
+			 i++;
+		 }
+
+		 bSuccessed = strlen( chBlockHead ) >= 1 && strlen( chBlockHead ) <= 10;
+		 ATLASSERT( bSuccessed  );
+
+		 if ( FALSE == bSuccessed )
+		 {
+			 break;
+		 }
+
+		 int nBlockDataLen = strtol(chBlockHead, NULL, 16);
+		 int nTotalBlockLen = strlen(chBlockHead)+2+nBlockDataLen+2;
+
+		 if ( nTotalBlockLen >= nRemainContentLen )
+		 {
+			 nLastBlockTotalLen = nTotalBlockLen;
+			 nLastBlockRecvLen = nRemainContentLen;
+			 nLastBlockOffsetFromBufferHead = nParseOffset;
+			 nLastBlockDataLen = nBlockDataLen;
+
+			 break;
+		 }
+		 else
+		 {
+			 nParseOffset+=nTotalBlockLen;
+			 nRemainContentLen-=nTotalBlockLen;
+
+			 bSuccessed = (*(pNewBlockHead+nParseOffset-1) == '\n') && (*(pNewBlockHead+nParseOffset-2) == '\r');
+			 ATLASSERT( bSuccessed );
+
+			 if ( FALSE == bSuccessed)
+			 {
+				 break;
+			 }
+
+		 }
+	 }
+
+	 return bSuccessed;
+ }
+
+
+class CHttpDataParser
+{
+public:
+	typedef enum{
+		TE_UNKNOWN = 0,
+		TE_NO_ENCODING = 1,
+		TE_CHUNKED = 2
+	}TRANSFER_ENCODING;
+
+	typedef enum{
+		CE_UNKNOWN = 0,
+		CE_NO_ENCODING=1,
+		CE_GZIP = 2
+	}CONTENT_ENCODING;
+protected:
+	PBYTE m_pHeadRecvBuffer;
+	LONGLONG m_llHeadRecvBufferLen;
+
+	PBYTE     m_pContentRecvBuffer;
+	LONGLONG  m_llContentRecvBufferLen;
+
+	BOOL m_bHeaderOk;
+	int  m_nContentStart;
+
+	TRANSFER_ENCODING m_teEncoding;
+	CONTENT_ENCODING  m_ceEncoding;
+
+	z_stream m_gzipstream;
+
+public:
+	CHttpDataParser()
+	{
+		m_pHeadRecvBuffer = NULL;
+		m_llHeadRecvBufferLen = 0;
+
+		m_pContentRecvBuffer = NULL;
+		m_llContentRecvBufferLen = 0;
+
+		m_bHeaderOk = FALSE;
+		m_nContentStart = 0;
+		m_teEncoding = TE_UNKNOWN;
+		m_ceEncoding = CE_UNKNOWN;
+
+		memset(&m_gzipstream, 0, sizeof(z_stream));
+		int	ret = inflateInit2(&m_gzipstream,16/*47*//*或 MAX_WBITS | 16  也行*//*,ZLIB_VERSION,sizeof(z_stream)*/);
+ 		if (Z_OK != ret)
+ 		{
+ 			int a=0;
+ 		}
+	}
+
+	~CHttpDataParser()
+	{
+		if(m_pHeadRecvBuffer)
+		{
+			free(m_pHeadRecvBuffer);
+		}
+
+	}
+
+	BOOL ParseRecvData( PBYTE pRecvData,int nRecvDataLen )
+	{
+		BOOL bAddRes = FALSE;
+		do 
+		{
+			if ( NULL == pRecvData || nRecvDataLen == 0 )
+			{
+				break;
+			}
+			
+			//如果还没有接受到头部，则缓存数据，等待头部
+			if ( FALSE == m_bHeaderOk )
+			{
+				if ( NULL == m_pHeadRecvBuffer )
+				{
+					m_pHeadRecvBuffer = (PBYTE)malloc(nRecvDataLen);
+				}
+				else
+				{
+					m_pHeadRecvBuffer = (PBYTE)realloc(m_pHeadRecvBuffer,m_llHeadRecvBufferLen+nRecvDataLen);
+				}
+
+				if ( NULL == m_pHeadRecvBuffer )
+				{
+					break;
+				}
+
+				memcpy_s(m_pHeadRecvBuffer+m_llHeadRecvBufferLen,nRecvDataLen,pRecvData,nRecvDataLen);
+				m_llHeadRecvBufferLen+=nRecvDataLen;
+			}
+			else
+			{
+				if ( NULL == m_pContentRecvBuffer )
+				{
+					m_pContentRecvBuffer = (PBYTE)malloc(nRecvDataLen);
+				}
+				else
+				{
+					m_pContentRecvBuffer = (PBYTE)realloc(m_pContentRecvBuffer,m_llContentRecvBufferLen+nRecvDataLen);
+				}
+
+				memcpy_s(m_pContentRecvBuffer+m_llContentRecvBufferLen,nRecvDataLen,pRecvData,nRecvDataLen);
+				m_llContentRecvBufferLen+=nRecvDataLen;
+			}
+
+			if ( FALSE == m_bHeaderOk )
+			{
+				CHttpRecvParser recvparser;
+				if (recvparser.ParseData((const char *)m_pHeadRecvBuffer,m_llHeadRecvBufferLen) )
+				{
+					m_bHeaderOk = TRUE;
+
+					m_nContentStart = recvparser.GetContentStart();
+
+					int nRecvContentLen = m_llHeadRecvBufferLen - m_nContentStart;
+					if ( nRecvContentLen > 0 )
+					{
+						if ( NULL == m_pContentRecvBuffer )
+						{
+							m_pContentRecvBuffer = (PBYTE)malloc(nRecvContentLen);
+						}
+
+						memcpy_s(m_pContentRecvBuffer+m_llContentRecvBufferLen,nRecvContentLen,m_pHeadRecvBuffer+m_nContentStart,nRecvContentLen);
+						m_llContentRecvBufferLen+=nRecvContentLen;
+					}
+
+					CStringA strContentLen;
+					CStringA strContentEncoding;
+					CStringA strTransferEncoding;
+
+					strContentLen = recvparser.GetValueByName("Content-Length");
+					strContentEncoding = recvparser.GetValueByName("Content-Encoding");
+					strTransferEncoding = recvparser.GetValueByName("Transfer-Encoding");
+
+					
+					if ( !strContentLen.IsEmpty() )
+					{
+						//没有传输编码
+
+						m_teEncoding = TE_NO_ENCODING;
+					}
+					else if( !strTransferEncoding.IsEmpty() )
+					{
+						//有传输编码
+						if ( strTransferEncoding.CompareNoCase("chunked") == 0 )
+						{
+							m_teEncoding = TE_CHUNKED;
+						}
+					}
+
+					if( !strContentEncoding.IsEmpty() )
+					{
+						//内容有压缩编码
+						if ( strContentEncoding.Find("gzip") >= 0 )
+						{
+							m_ceEncoding = CE_GZIP;
+						}
+					}
+					else
+					{
+						m_ceEncoding = CE_UNKNOWN;
+					}
+
+				}
+			}
+
+			if ( m_bHeaderOk )
+			{
+				if ( m_pContentRecvBuffer && m_llContentRecvBufferLen )
+				{
+// 					free(m_pContentRecvBuffer);
+// 					m_pContentRecvBuffer = NULL;
+// 					m_llContentRecvBufferLen = 0;
+
+					int nBlockDataOffset = 0;
+					char chBlockHead[20]={0};
+					const char *pTempBlockHead = (const char *)m_pContentRecvBuffer;
+					int i=0;
+					while ( pTempBlockHead[i] !='\r' && i< 20 )
+					{
+						chBlockHead[i] = pTempBlockHead[i];
+						i++;
+					}
+
+					nBlockDataOffset = i+2;
+					int nBlockDataLen = strtol(chBlockHead, NULL, 16);
+					int nTotalBlockLen = strlen(chBlockHead)+2+nBlockDataLen+2;
+
+					
+					if (m_llContentRecvBufferLen - nBlockDataOffset)
+					{
+						m_gzipstream.next_in = (Bytef *)(m_pContentRecvBuffer+nBlockDataOffset);
+						m_gzipstream.avail_in = (uInt)(m_llContentRecvBufferLen - nBlockDataOffset);
+
+						char chOutBuf[40960];
+						m_gzipstream.next_out = (Bytef*)chOutBuf;
+						m_gzipstream.avail_out = (uInt)40960;
+
+						int ret = inflate(&m_gzipstream, 0);
+
+						int b=0;
+					}
+ 
+				}
+			}
+
+			bAddRes = TRUE;
+
+		} while (FALSE);
+
+		return bAddRes;
+	}
+
+	PBYTE GetHeadBuffer( LONGLONG &llBufferLen )
+	{
+		return NULL;
+	}
+
+	PBYTE GetContentBuffer( LONGLONG &llBufferLen  )
+	{
+		return NULL;
+	}
+};
+
 BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl ,CStringList *plstAppendHead , BYTE **ppDataBuffer,LONGLONG *pllDataLen,int *pnContentStart )
 {
 	CString   strHostName;
@@ -303,6 +664,7 @@ BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl 
 	CStringA straRequestData;
 	straRequestData = strRequestData;
 
+	CHttpDataParser dataparser;
 	CTcpSocket tcpSock;
 
 	do 
@@ -343,6 +705,8 @@ BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl 
 				break;
 			}
 
+			dataparser.ParseRecvData((BYTE *)chRecvBuf,nRecvLen);
+
 			if ( pRecvBuf )
 			{
 				pRecvBuf = (BYTE *)realloc(pRecvBuf,nRecvTotalLen+nRecvLen);
@@ -360,10 +724,22 @@ BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl 
 			if( 0 == nContentLen && recvparser.ParseData((const char *)pRecvBuf,nRecvTotalLen))
 			{
 				CStringA strContentLen;
+				CStringA strContentEncoding;
+				CStringA strTransferEncoding;
+
 				strContentLen = recvparser.GetValueByName("Content-Length");
+				strContentEncoding = recvparser.GetValueByName("Content-Encoding");
+				strTransferEncoding = recvparser.GetValueByName("Transfer-Encoding");
 
 				nContentStart = recvparser.GetContentStart();
 				nContentLen = _ttoi(CString(strContentLen));
+
+				PBYTE pContentStart = pRecvBuf+nContentStart;
+
+				
+
+				int a=0;
+
 			}
 
 			if ( nContentLen && (nRecvTotalLen - nContentStart) >=nContentLen  )
@@ -419,58 +795,6 @@ BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl 
 
 	return bRequestRes;
 
-// 	if (bRequestRes)
-// 	{
-// 		//获取当前路径
-// 		WCHAR szLocalPath[MAX_PATH]={0};
-// 		GetModuleFileNameW(ThisModuleHandle()  ,szLocalPath,MAX_PATH);
-// 		WCHAR *pPathEnd = (WCHAR *)szLocalPath+wcslen(szLocalPath);
-// 		while (pPathEnd != szLocalPath && *pPathEnd != L'\\') pPathEnd--;
-// 		*(pPathEnd+1) = 0;
-// 		wcscat_s(szLocalPath,MAX_PATH,L"DownloadFiles\\");
-// 
-// 		CreateDirectory(szLocalPath,NULL);
-// 
-// 		CString strFileName;
-// 		strFileName.Format(L"%s[md5]_%s.txt",szLocalPath,pszRemoteIP);
-// 
-// 		HANDLE hFileContentWrite = CreateFile(strFileName,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,0,NULL);
-// 		if ( INVALID_HANDLE_VALUE != hFileContentWrite )
-// 		{
-// 			DWORD dwWriteLen = 0;
-// 			WriteFile(hFileContentWrite,pRecvBuf+nContentStart,nRecvTotalLen-nContentStart,&dwWriteLen,NULL);
-// 			CloseHandle(hFileContentWrite);
-// 
-// 			CStringA strFileMd5;
-// 			GetFileMd5(strFileName,strFileMd5.GetBuffer(50),50);
-// 			strFileMd5.ReleaseBuffer();
-// 
-// 			CString strNewFileName;
-// 			strNewFileName = strFileName;
-// 			strNewFileName.Replace(L"[md5]",CString(strFileMd5));
-// 			MoveFileW(strFileName,strNewFileName);
-// 			int a=0;
-// 		}
-// 
-// 		wcscat_s(szLocalPath,MAX_PATH,L"Headers\\");
-// 		CreateDirectory(szLocalPath,NULL);
-// 
-// 		strFileName.Format(L"%s%s_head.txt",szLocalPath,pszRemoteIP);
-// 		HANDLE hFileHeadWrite = CreateFile(strFileName,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,0,NULL);
-// 		if ( INVALID_HANDLE_VALUE != hFileContentWrite )
-// 		{
-// 			DWORD dwWriteLen = 0;
-// 			WriteFile(hFileHeadWrite,pRecvBuf,nContentStart,&dwWriteLen,NULL);
-// 			CloseHandle(hFileHeadWrite);
-// 		}
-// 
-// 
-// 	}
-
-	
-	
-
-	
 }
 
 
