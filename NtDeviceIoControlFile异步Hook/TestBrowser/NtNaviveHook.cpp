@@ -194,6 +194,12 @@ NTSTATUS WINAPI MyNtDeviceIoControlFile(
 										)
 {
 
+	/*
+	Once the service is complete the Event, 
+	if specified, is set to the signaled state.
+	If no Event parameter is specified, then the file object specified by the FileHandle is set to the signaled state. 
+	If an ApcRoutine is specified, it is invoked with the ApcContext and the IoStatusBlock as its arguments.
+	*/
 	if( IoControlCode == AFD_RECV )
 	{
 
@@ -202,7 +208,12 @@ NTSTATUS WINAPI MyNtDeviceIoControlFile(
 			CONST ULONG nRecvBufLen = AfdInfo->BufferArray->len;
 			IO_STATUS_BLOCK *pIoStatus = (IO_STATUS_BLOCK *)IoStatusBlock;
 
-			HANDLE hMyEvent = CreateEvent(NULL,FALSE,FALSE,NULL);
+			HANDLE hMyEvent = NULL;
+			if (Event)
+			{
+				hMyEvent = CreateEvent(NULL,FALSE,FALSE,NULL);
+			}
+
 			NTSTATUS RecvStatus = pNtDeviceIoControlFile(
 				FileHandle,
 				hMyEvent/*Event*/,
@@ -218,20 +229,29 @@ NTSTATUS WINAPI MyNtDeviceIoControlFile(
 
   			if ( pIoStatus->Status == 259 )
   			{
-   				NOTIFY_PARAM *ppp = new NOTIFY_PARAM;
-				
-				ppp->hMyEvent = hMyEvent;
-				ppp->hEvent = Event;
-				ppp->hFile = FileHandle;
-   				ppp->pRecvBuf = pRecvBuf;
-				ppp->nRecvBufLen = nRecvBufLen;
-				ppp->pIoStatus = pIoStatus;
-
-				AddTask(ppp);
+    			NOTIFY_PARAM *ppp = new NOTIFY_PARAM;
+ 				
+ 				ppp->hMyEvent = hMyEvent;
+ 				ppp->hEvent = Event;
+ 				ppp->hFile = FileHandle;
+    			ppp->pRecvBuf = pRecvBuf;
+ 				ppp->nRecvBufLen = nRecvBufLen;
+ 				ppp->pIoStatus = pIoStatus;
+ 
+ 				AddTask(ppp);
   			}
-			else if( pIoStatus->Status == 0 )
+			else
 			{
-				HandleRecvData(pRecvBuf,pIoStatus->Information);
+				if (hMyEvent)
+				{
+					CloseHandle(hMyEvent);
+				}
+				
+
+				if( pIoStatus->Status == 0 )
+				{
+					HandleRecvData(pRecvBuf,pIoStatus->Information);
+				}
 			}
 
 			return RecvStatus;
