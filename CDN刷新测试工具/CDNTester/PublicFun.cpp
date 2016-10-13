@@ -634,10 +634,14 @@ public:
 						{
 							m_ceEncoding = CE_GZIP;
 						}
+						else
+						{
+							m_ceEncoding = CE_UNKNOWN;
+						}
 					}
 					else
 					{
-						m_ceEncoding = CE_UNKNOWN;
+						m_ceEncoding = CE_NO_ENCODING;
 					}
 
 					int a=0;
@@ -655,13 +659,6 @@ public:
 					if ( m_teEncoding == TE_NO_ENCODING )
 					{
 						m_llCurRecvContentLen += llContentDataLen;
-						if ( m_llCurRecvContentLen >= m_llTotalContentLen )
-						{
-							int a=0;
-						}
-
-						
-						
 
 						BYTE *pUnCompBuffer = NULL;
 						ULONG  ulUnCompBufferLen = 0;
@@ -676,9 +673,6 @@ public:
 						}
 
 						free(pUnCompBuffer);
-						int a=0;
-
-			
 
 					}
 					else if( m_teEncoding == TE_CHUNKED )
@@ -741,36 +735,37 @@ public:
  								const char *pTempBlockData = pTempBlockHead + nTempBlockHeadLen;
  								int   nTempRecvBlockDataLen = min(llContentDataLen,nTotalBlockLen) - nTempBlockHeadLen;
  
-								if ( 0 != nBlockDataLen )
-								{
-									if ( nTotalBlockLen >= nRemainContentLen )
-									{
-										m_ChunkRecord.nTotalBlockLen = nTotalBlockLen;
-										m_ChunkRecord.nBlockHeadLen = nTempBlockHeadLen;
-										m_ChunkRecord.nCurRecvDataLen += nTempRecvBlockDataLen;
-
-										bufUnChunkData.AppendData((BYTE *)pTempBlockData,nTempRecvBlockDataLen);
-
-										m_csChunkStatus = CS_WAIT_DATA;
-
-										//此处处理数据
-										break;
-									}
-									else
-									{
-										nParseOffset+=nTotalBlockLen;
-										nRemainContentLen-=nTotalBlockLen;
-									}
-
-									bufUnChunkData.AppendData((BYTE *)pTempBlockData,nTempRecvBlockDataLen);	
-								}
-								else
+								//最后一个块
+								if ( 0 == nBlockDataLen )
 								{
 									m_csChunkStatus = CS_CHUNK_END;
 									break;
 								}
 
+								
+								//数据不够一个完整的块
+								if ( nTotalBlockLen > nRemainContentLen )
+								{
+									m_ChunkRecord.nTotalBlockLen = nTotalBlockLen;
+									m_ChunkRecord.nBlockHeadLen = nTempBlockHeadLen;
+									m_ChunkRecord.nCurRecvDataLen += nTempRecvBlockDataLen;
 
+									bufUnChunkData.AppendData((BYTE *)pTempBlockData,nTempRecvBlockDataLen);
+
+									m_csChunkStatus = CS_WAIT_DATA;
+
+									//此处处理数据
+									break;
+								}
+								else
+								{
+									//数据够一个完整的块
+									bufUnChunkData.AppendData((BYTE *)pTempBlockData,nTempRecvBlockDataLen);
+
+									//准备处理下一个块
+									nParseOffset+=nTotalBlockLen;
+									nRemainContentLen-=nTotalBlockLen;
+								}
  							}
  						}
 
@@ -792,14 +787,8 @@ public:
 								WriteFile(hWriteFile,pUnCompBuffer,ulUnCompBufferLen,&dwWriteLen,NULL);
 							}
 
-
 							free(pUnCompBuffer);
-							
-							//m_bufUnComp.DeleteLeft(UnCompDataLen);
 						}
-
- 			
-
 
 					}
 					else
