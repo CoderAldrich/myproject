@@ -417,6 +417,12 @@ public:
 		return m_llBufferLen;
 	}
 	
+	VOID DetachDataBuffer( )
+	{
+		m_pBuffer = NULL;
+		m_llBufferLen = 0;
+	}
+
 	VOID DestoryData()
 	{
 		if (m_pBuffer)
@@ -915,8 +921,6 @@ BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl 
 
 	////////////////////////////
 
-	BYTE *pRecvBuf = NULL;//(BYTE *)malloc(4096);
-	int   nRecvTotalLen = 0;
 	int nContentStart = 0;
 
 
@@ -970,6 +974,7 @@ BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl 
 			dataparser.ParseRecvData((BYTE *)chRecvBuf,nRecvLen,&bFinalData);
 			if (bFinalData)
 			{
+				bRequestRes = TRUE;
 				break;
 			}
 
@@ -980,11 +985,6 @@ BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl 
 
 	if ( FALSE == bRequestRes )
 	{
-		if (pRecvBuf)
-		{
-			free(pRecvBuf);
-		}
-
 		if (ppDataBuffer)
 		{
 			*ppDataBuffer = NULL;
@@ -1004,13 +1004,15 @@ BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl 
 	{
 		if (ppDataBuffer)
 		{
-			*ppDataBuffer = pRecvBuf;
+			*ppDataBuffer = bufRecv.GetDataBuffer();
 		}
 
 		if (pllDataLen)
 		{
-			*pllDataLen = nRecvTotalLen;
+			*pllDataLen = bufRecv.GetTotalBufferLen();
 		}
+		
+		bufRecv.DetachDataBuffer();
 
 		if (pnContentStart)
 		{

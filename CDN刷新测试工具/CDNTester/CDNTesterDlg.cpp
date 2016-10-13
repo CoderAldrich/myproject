@@ -248,7 +248,7 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 			LONGLONG llRecvDataLen = 0;
 			int   nContentStart = 0;
 			
-			//for ( int i=0;i<3;i++)
+			for ( int i=0;i<3;i++)
 			{
 				pRecvBuf = NULL;
 				llRecvDataLen = 0;
