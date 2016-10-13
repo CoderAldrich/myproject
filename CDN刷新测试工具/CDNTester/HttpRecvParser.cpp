@@ -120,12 +120,12 @@ BOOL CHttpRecvParser::ParseData(const char * pBuffer,int nLen)
 
 				
 			}
-			int a=0;
+			
 		}
 	}
 	else
 	{
-		int a=0;
+		
 	}
 
 	return bRes;
