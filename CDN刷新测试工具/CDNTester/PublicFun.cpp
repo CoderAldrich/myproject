@@ -140,7 +140,7 @@ BOOL GetFileMd5(LPCWSTR FileDirectory,char *pchFileMd5,int nBufLen)
 	if (hFile)
 	{
 		BOOL bRes = CloseHandle(hFile);
-		int a=0;
+		
 	}
 
 	return bRes;
@@ -490,6 +490,8 @@ public:
 
 };
 
+typedef VOID (CALLBACK *TypeDataRecvedCallback)( PVOID pParam , BYTE *pData,int nDataLen );
+
 class CHttpDataParser
 {
 public:
@@ -538,9 +540,16 @@ protected:
 
 	z_stream m_gzipstream;
 
+
+	TypeDataRecvedCallback m_pCallback;
+	PVOID m_pCallbackParam;
+
 public:
-	CHttpDataParser()
+	CHttpDataParser(TypeDataRecvedCallback pCallback,PVOID pCallbackParam)
 	{
+		m_pCallback = pCallback;
+		m_pCallbackParam = pCallbackParam;
+
 		m_bHeaderOk = FALSE;
 		m_nContentStart = 0;
 		m_llTotalContentLen = 0;
@@ -554,7 +563,7 @@ public:
 		int	ret = inflateInit2(&m_gzipstream,47/*或 MAX_WBITS | 16  也行*//*,ZLIB_VERSION,sizeof(z_stream)*/);
  		if (Z_OK != ret)
  		{
- 			int a=0;
+ 			
  		}
 	}
 
@@ -563,7 +572,178 @@ public:
 
 	}
 
-	BOOL ParseRecvData( PBYTE pRecvData,int nRecvDataLen )
+	BOOL HandleTransferData( PBYTE pData,int nDataLen ) 
+	{
+
+		if ( m_ceEncoding == CE_GZIP )
+		{
+ 			BYTE *pUnCompBuffer = NULL;
+ 			ULONG  ulUnCompBufferLen = 0;
+ 			BOOL bUnCompRes = UnCompressGzipData(&m_gzipstream,&pUnCompBuffer,&ulUnCompBufferLen,pData,nDataLen);
+ 			ASSERT(bUnCompRes);
+			
+			if ( bUnCompRes && m_pCallback )
+			{
+				m_pCallback(m_pCallbackParam,pUnCompBuffer,ulUnCompBufferLen);
+			}
+
+ 			free(pUnCompBuffer);
+
+			return bUnCompRes;
+		}
+
+		if (m_pCallback)
+		{
+			m_pCallback(m_pCallbackParam,pData,nDataLen);
+		}
+
+		return TRUE;;
+	}
+
+	BOOL HandleContentData( PBYTE pContentData,int nContentDataLen,BOOL *pbFinalData)
+	{
+		if (pbFinalData)
+		{
+			*pbFinalData = FALSE;
+		}
+
+		BYTE *pContentDataBuffer = pContentData;
+		LONGLONG llContentDataLen = nContentDataLen;
+
+		if ( m_teEncoding == TE_NO_ENCODING )
+		{
+			m_llCurRecvContentLen += llContentDataLen;
+
+			HandleTransferData(pContentDataBuffer,llContentDataLen);
+
+			if ( m_llCurRecvContentLen >= m_llTotalContentLen )
+			{
+				if (pbFinalData)
+				{
+					*pbFinalData = TRUE;
+				}
+			}
+
+		}
+		else if( m_teEncoding == TE_CHUNKED )
+		{
+			CBuffer bufUnChunkData;
+
+			if ( m_csChunkStatus == CS_WAIT_DATA )
+			{
+				//当前块还没有接受完
+				if ( llContentDataLen+m_ChunkRecord.nCurRecvDataLen+m_ChunkRecord.nBlockHeadLen < m_ChunkRecord.nTotalBlockLen )
+				{
+					bufUnChunkData.AppendData(pContentDataBuffer,llContentDataLen);
+					m_ChunkRecord.nCurRecvDataLen+=llContentDataLen;
+				}
+				else
+				{
+					//当前块已经接受完
+					int nBlockRemainDataLen = m_ChunkRecord.nTotalBlockLen-m_ChunkRecord.nCurRecvDataLen-m_ChunkRecord.nBlockHeadLen;
+					bufUnChunkData.AppendData(pContentDataBuffer,nBlockRemainDataLen-2);
+
+					pContentDataBuffer += nBlockRemainDataLen;
+					llContentDataLen -= nBlockRemainDataLen;
+
+					ZeroMemory(&m_ChunkRecord,sizeof(m_ChunkRecord));
+					m_csChunkStatus = CS_WAIT_HEAD;
+				}
+			}
+
+			if( m_csChunkStatus == CS_WAIT_HEAD )
+			{
+				BOOL bSuccessed = TRUE;
+				int  nRemainContentLen = llContentDataLen;
+				const char *pNewBlockHead = (const char *)pContentDataBuffer;
+				int nParseOffset = 0;
+				while (TRUE)
+				{
+					const char *pTempBlockHead = pNewBlockHead + nParseOffset;
+
+					char chBlockHead[20]={0};
+
+					int i=0;
+					while ( pTempBlockHead[i] !='\r' && i< 20 && i< nRemainContentLen )
+					{
+						chBlockHead[i] = pTempBlockHead[i];
+						i++;
+					}
+
+					bSuccessed = strlen( chBlockHead ) >= 1 && strlen( chBlockHead ) <= 10;
+					ATLASSERT( bSuccessed  );
+
+					if ( FALSE == bSuccessed )
+					{
+						break;
+					}
+
+					int nTempBlockHeadLen = strlen(chBlockHead)+2;
+					int nBlockDataLen = strtol(chBlockHead, NULL, 16);
+					int nTotalBlockLen = nTempBlockHeadLen+nBlockDataLen+2;
+
+					const char *pTempBlockData = pTempBlockHead + nTempBlockHeadLen;
+					int   nTempRecvBlockDataLen = min(llContentDataLen,nTotalBlockLen) - nTempBlockHeadLen;
+
+					//最后一个块
+					if ( 0 == nBlockDataLen )
+					{
+						m_csChunkStatus = CS_CHUNK_END;
+
+						if (pbFinalData)
+						{
+							*pbFinalData = TRUE;
+						}
+
+						break;
+					}
+
+
+					//数据不够一个完整的块
+					if ( nTotalBlockLen > nRemainContentLen )
+					{
+						m_ChunkRecord.nTotalBlockLen = nTotalBlockLen;
+						m_ChunkRecord.nBlockHeadLen = nTempBlockHeadLen;
+						m_ChunkRecord.nCurRecvDataLen += nTempRecvBlockDataLen;
+
+						bufUnChunkData.AppendData((BYTE *)pTempBlockData,nTempRecvBlockDataLen);
+
+						m_csChunkStatus = CS_WAIT_DATA;
+
+						//此处处理数据
+						break;
+					}
+					else
+					{
+						//数据够一个完整的块
+						bufUnChunkData.AppendData((BYTE *)pTempBlockData,nTempRecvBlockDataLen);
+
+						//准备处理下一个块
+						nParseOffset+=nTotalBlockLen;
+						nRemainContentLen-=nTotalBlockLen;
+					}
+				}
+			}
+
+
+			BYTE *pUnChunkData = bufUnChunkData.GetDataBuffer();
+			int   nUnChunkDataLen = bufUnChunkData.GetTotalBufferLen();
+
+			if (pUnChunkData && nUnChunkDataLen )
+			{
+				HandleTransferData(pUnChunkData,nUnChunkDataLen);
+			}
+
+		}
+		else
+		{
+			ASSERT(FALSE);
+		}
+
+		return FALSE;
+	}
+
+	BOOL ParseRecvData( PBYTE pRecvData,int nRecvDataLen,BOOL *pbFinalData)
 	{
 		BOOL bAddRes = FALSE;
 		do 
@@ -615,8 +795,6 @@ public:
 						m_teEncoding = TE_NO_ENCODING;
 						m_llTotalContentLen = _ttoi64(CString(strContentLen));
 						m_llCurRecvContentLen = nRecvContentLen;
-
-						int a=0;
 					}
 					else if( !strTransferEncoding.IsEmpty() )
 					{
@@ -643,9 +821,6 @@ public:
 					{
 						m_ceEncoding = CE_NO_ENCODING;
 					}
-
-					int a=0;
-
 				}
 			}
 
@@ -656,148 +831,8 @@ public:
 
 				if ( pContentDataBuffer && llContentDataLen )
 				{
-					if ( m_teEncoding == TE_NO_ENCODING )
-					{
-						m_llCurRecvContentLen += llContentDataLen;
-
-						BYTE *pUnCompBuffer = NULL;
-						ULONG  ulUnCompBufferLen = 0;
-						BOOL bUnCompRes = UnCompressGzipData(&m_gzipstream,&pUnCompBuffer,&ulUnCompBufferLen,pContentDataBuffer,llContentDataLen);
-						ASSERT(bUnCompRes);
-
-						static HANDLE hWriteFile = CreateFile(L"C:\\test\\recvdata.txt",GENERIC_WRITE,0,NULL,CREATE_ALWAYS,0,NULL);
-						if ( INVALID_HANDLE_VALUE != hWriteFile )
-						{
-							DWORD dwWriteLen = 0 ;
-							WriteFile(hWriteFile,pUnCompBuffer,ulUnCompBufferLen,&dwWriteLen,NULL);
-						}
-
-						free(pUnCompBuffer);
-
-					}
-					else if( m_teEncoding == TE_CHUNKED )
-					{
-						CBuffer bufUnChunkData;
-						
-						if ( m_csChunkStatus == CS_WAIT_DATA )
-						{
-							//当前块还没有接受完
-							if ( llContentDataLen+m_ChunkRecord.nCurRecvDataLen+m_ChunkRecord.nBlockHeadLen < m_ChunkRecord.nTotalBlockLen )
-							{
-								bufUnChunkData.AppendData(pContentDataBuffer,llContentDataLen);
-								m_ChunkRecord.nCurRecvDataLen+=llContentDataLen;
-							}
-							else
-							{
-								//当前块已经接受完
-								int nBlockRemainDataLen = m_ChunkRecord.nTotalBlockLen-m_ChunkRecord.nCurRecvDataLen-m_ChunkRecord.nBlockHeadLen;
-								bufUnChunkData.AppendData(pContentDataBuffer,nBlockRemainDataLen-2);
-
-								pContentDataBuffer += nBlockRemainDataLen;
-								llContentDataLen -= nBlockRemainDataLen;
-
-								ZeroMemory(&m_ChunkRecord,sizeof(m_ChunkRecord));
-								m_csChunkStatus = CS_WAIT_HEAD;
-							}
-						}
-
- 						if( m_csChunkStatus == CS_WAIT_HEAD )
- 						{
- 							BOOL bSuccessed = TRUE;
- 							int  nRemainContentLen = llContentDataLen;
- 							const char *pNewBlockHead = (const char *)pContentDataBuffer;
- 							int nParseOffset = 0;
- 							while (TRUE)
- 							{
- 								const char *pTempBlockHead = pNewBlockHead + nParseOffset;
- 
- 								char chBlockHead[20]={0};
- 
- 								int i=0;
- 								while ( pTempBlockHead[i] !='\r' && i< 20 && i< nRemainContentLen )
- 								{
- 									chBlockHead[i] = pTempBlockHead[i];
- 									i++;
- 								}
- 
- 								bSuccessed = strlen( chBlockHead ) >= 1 && strlen( chBlockHead ) <= 10;
- 								ATLASSERT( bSuccessed  );
- 
- 								if ( FALSE == bSuccessed )
- 								{
- 									break;
- 								}
- 
- 								int nTempBlockHeadLen = strlen(chBlockHead)+2;
- 								int nBlockDataLen = strtol(chBlockHead, NULL, 16);
- 								int nTotalBlockLen = nTempBlockHeadLen+nBlockDataLen+2;
- 
- 								const char *pTempBlockData = pTempBlockHead + nTempBlockHeadLen;
- 								int   nTempRecvBlockDataLen = min(llContentDataLen,nTotalBlockLen) - nTempBlockHeadLen;
- 
-								//最后一个块
-								if ( 0 == nBlockDataLen )
-								{
-									m_csChunkStatus = CS_CHUNK_END;
-									break;
-								}
-
-								
-								//数据不够一个完整的块
-								if ( nTotalBlockLen > nRemainContentLen )
-								{
-									m_ChunkRecord.nTotalBlockLen = nTotalBlockLen;
-									m_ChunkRecord.nBlockHeadLen = nTempBlockHeadLen;
-									m_ChunkRecord.nCurRecvDataLen += nTempRecvBlockDataLen;
-
-									bufUnChunkData.AppendData((BYTE *)pTempBlockData,nTempRecvBlockDataLen);
-
-									m_csChunkStatus = CS_WAIT_DATA;
-
-									//此处处理数据
-									break;
-								}
-								else
-								{
-									//数据够一个完整的块
-									bufUnChunkData.AppendData((BYTE *)pTempBlockData,nTempRecvBlockDataLen);
-
-									//准备处理下一个块
-									nParseOffset+=nTotalBlockLen;
-									nRemainContentLen-=nTotalBlockLen;
-								}
- 							}
- 						}
-
-
-						BYTE *pUnChunkData = bufUnChunkData.GetDataBuffer();
-						int   nUnChunkDataLen = bufUnChunkData.GetTotalBufferLen();
-						
-						if (pUnChunkData && nUnChunkDataLen )
-						{
-							BYTE *pUnCompBuffer = NULL;
-							ULONG  ulUnCompBufferLen = 0;
-							BOOL bUnCompRes = UnCompressGzipData(&m_gzipstream,&pUnCompBuffer,&ulUnCompBufferLen,pUnChunkData,nUnChunkDataLen);
-							ASSERT(bUnCompRes);
-							
-							static HANDLE hWriteFile = CreateFile(L"C:\\test\\recvdata11.txt",GENERIC_WRITE,0,NULL,CREATE_ALWAYS,0,NULL);
-							if ( INVALID_HANDLE_VALUE != hWriteFile )
-							{
-								DWORD dwWriteLen = 0 ;
-								WriteFile(hWriteFile,pUnCompBuffer,ulUnCompBufferLen,&dwWriteLen,NULL);
-							}
-
-							free(pUnCompBuffer);
-						}
-
-					}
-					else
-					{
-						ASSERT(FALSE);
-					}
-
+					HandleContentData( pContentDataBuffer , llContentDataLen,pbFinalData);
 					m_bufContent.DestoryData();
-
 				}
 			}
 
@@ -818,6 +853,21 @@ public:
 		return NULL;
 	}
 };
+
+VOID CALLBACK DataRecvedCallback( PVOID pParam , BYTE *pData,int nDataLen )
+{
+	if ( NULL == pData || nDataLen == 0 )
+	{
+		return ;
+	}
+
+	CBuffer *pRecvBuffer = (CBuffer *)pParam;
+	if (pRecvBuffer)
+	{
+		pRecvBuffer->AppendData(pData,nDataLen);
+	}
+
+}
 
 BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl ,CStringList *plstAppendHead , BYTE **ppDataBuffer,LONGLONG *pllDataLen,int *pnContentStart )
 {
@@ -872,8 +922,9 @@ BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl 
 
 	CStringA straRequestData;
 	straRequestData = strRequestData;
-
-	CHttpDataParser dataparser;
+	
+	CBuffer bufRecv;
+	CHttpDataParser dataparser(DataRecvedCallback,(PVOID)&bufRecv);
 	CTcpSocket tcpSock;
 
 	do 
@@ -914,8 +965,13 @@ BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl 
 
 				break;
 			}
-
-			dataparser.ParseRecvData((BYTE *)chRecvBuf,nRecvLen);
+			
+			BOOL bFinalData = FALSE;
+			dataparser.ParseRecvData((BYTE *)chRecvBuf,nRecvLen,&bFinalData);
+			if (bFinalData)
+			{
+				break;
+			}
 
 		}
 	} while (FALSE);
