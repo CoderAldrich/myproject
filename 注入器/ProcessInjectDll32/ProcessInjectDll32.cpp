@@ -10,6 +10,7 @@
 
 #pragma comment(lib,"shlwapi.lib")
 
+#include "LibCreateRemoteThread.h"
 
 BOOL InjectDll_RemoteThread(DWORD ProcessID,LPCWSTR szDllPath,DWORD dwTimeOut)
 {
@@ -37,7 +38,7 @@ BOOL InjectDll_RemoteThread(DWORD ProcessID,LPCWSTR szDllPath,DWORD dwTimeOut)
 
 		LPTHREAD_START_ROUTINE pfn=(LPTHREAD_START_ROUTINE)GetProcAddress(GetModuleHandleW(TEXT("Kernel32.dll")),"LoadLibraryW");
 
-		HANDLE hRemoteThread = CreateRemoteThread(ProcessHandle,NULL,0,pfn,pRemoteBase,0,NULL);
+		HANDLE hRemoteThread = LibCreateRemoteThread(ProcessHandle,pfn,pRemoteBase,0,NULL);
 		if (hRemoteThread==NULL)
 		{
 			VirtualFreeEx(ProcessHandle,pRemoteBase,0x1000,MEM_DECOMMIT);
@@ -102,53 +103,91 @@ BOOL EnableDebugPrivilege()
 	return TRUE;  
 }
 
+
+//解析命令行参数
+VOID ParseCommandLine(
+					  LPCWSTR pszRunCmd,
+					  CString &strPid,
+					  CString &strDllPath
+					  )
+{
+	CString strRunCmd;
+	strRunCmd = pszRunCmd;
+	int nCmdLen = strRunCmd.GetLength();
+
+	BOOL bInParamName = FALSE;
+	BOOL bInParamValue = FALSE;
+	CString strTempParamName;
+	CString strTempParamValue;
+
+	for ( int i=0;i<nCmdLen;i++ )
+	{
+		WCHAR wChar = strRunCmd.GetAt(i);
+
+		if ( FALSE == bInParamName )
+		{
+			if ( wChar == L'-'|| i+1==nCmdLen/*最后一个字符*/)
+			{
+				bInParamName = TRUE;
+				bInParamValue = FALSE;
+
+				if ( i+ 1== nCmdLen )//如果是最后一个字符
+				{
+					strTempParamValue+=wChar;
+				}
+
+				strTempParamValue.Trim();
+
+				//此处解析命令行参数
+				if ( strTempParamName.CompareNoCase(L"-pid") == 0 )
+				{
+					strPid = strTempParamValue;
+				}
+
+				if ( strTempParamName.CompareNoCase(L"-dll") == 0 )
+				{
+					strDllPath = strTempParamValue;
+				}
+
+				strTempParamName = L"";
+				strTempParamValue = L"";
+			}
+		}
+
+		if ( bInParamName )
+		{
+			if (wChar == L' ')
+			{
+				bInParamName = FALSE;
+				bInParamValue = TRUE;
+				strTempParamValue = L"";
+			}
+			else
+			{
+				strTempParamName+=wChar;
+			}
+		}
+
+		if ( bInParamValue )
+		{
+			strTempParamValue+=wChar;
+		}
+
+	}
+}
+
 /*
 调用参数：  -pid 1234 -dll C:\\test.dll
 */
 int main(int argc, _TCHAR* argv[])
 {
 	EnableDebugPrivilege();
-
-	LPWSTR *szArglist = NULL;  //命令行字符串指针,szArglist[i]代表第i个字符串变量
-	int nArgs = 0; //nArgs命令行参数的个数  
-	szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);//命令行参数解析函数
-
-	DWORD dwTargetPid = 0;
-	WCHAR szDllPath[MAX_PATH]={0};
-	if(szArglist!= NULL)   
-	{
-		for (int i=0;i<nArgs;i++)
-		{
-			if(StrCmpIW(szArglist[i],L"-pid") == 0)
-			{
-				if( i+1 < nArgs )
-				{
-					dwTargetPid = _ttoi(szArglist[i+1]);
-					i++;
-				}
-				
-			}
-
-			if(StrCmpIW(szArglist[i],L"-dll") == 0)
-			{
-				if( i+1 < nArgs )
-				{
-					wcscpy_s(szDllPath,MAX_PATH,szArglist[i+1]);
-					i++;
-				}
-
-			}
-		}
-		LocalFree(szArglist);  
-	}
-
-	WCHAR szMsgOut[500];
-	wsprintfW(szMsgOut,L"PID %d DLL %s\n",dwTargetPid,szDllPath);
-	OutputDebugStringW(szMsgOut);
-
+	
+	CString strPid;
 	CString strDllPath;
-	strDllPath = szDllPath;
-	strDllPath.Replace(L"[space]",L" ");
+
+	ParseCommandLine(GetCommandLineW(),strPid,strDllPath);
+	DWORD dwTargetPid = _ttoi(strPid);
 
 	return InjectDll_RemoteThread(dwTargetPid,strDllPath,4000);
 }

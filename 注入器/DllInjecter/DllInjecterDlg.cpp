@@ -232,7 +232,6 @@ BOOL InjectDLL(DWORD dwProcessID,LPCWSTR pszDllPath)
 
 	CString strDllPath;
 	strDllPath = pszDllPath;
-	strDllPath.Replace(L" ",L"[space]");
 
 	CString strCmdLine;
 	strCmdLine.Format(L" -pid %d -dll %s",dwProcessID,strDllPath);
