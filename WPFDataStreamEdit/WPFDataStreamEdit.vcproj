@@ -104,6 +104,7 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|x64"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			>
@@ -126,7 +127,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="$(WDKPATH)\inc\ddk;$(WDKPATH)\inc\api;$(WDKPATH)\inc\crt"
-				PreprocessorDefinitions="WIN32;_CONSOLE;_AMD64_;_DDK_;_DEBUG;DBG=1"
+				PreprocessorDefinitions="WIN32;_CONSOLE;_AMD64_;_DDK_;_DEBUG;DBG=1;NDIS_SUPPORT_NDIS6"
 				IgnoreStandardIncludePath="true"
 				ExceptionHandling="0"
 				BasicRuntimeChecks="0"
@@ -149,7 +150,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ntoskrnl.lib hal.lib ntstrsafe.libntoskrnl.lib ndis.lib fwpkclnt.lib ksecdd.lib"
+				AdditionalDependencies="ntoskrnl.lib hal.lib ntstrsafe.lib ndis.lib fwpkclnt.lib ksecdd.lib"
 				OutputFile="$(OutDir)\$(ProjectName).sys"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(WDKPATH)\lib\WIN7\amd64"
