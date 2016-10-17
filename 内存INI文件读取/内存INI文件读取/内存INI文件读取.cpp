@@ -22,7 +22,7 @@ public:
 	CMemIniFile( ){}
 
 	~CMemIniFile(){}
-	
+protected:
 	BOOL ParseDataLineW( LPCWSTR pszData,LONGLONG llLen,LONGLONG &llLineStart,LONGLONG &llLineEnd )
 	{
 		llLineStart = 0;
@@ -131,6 +131,7 @@ public:
 		return FALSE;
 	}
 
+public:
 	BOOL ParseMemoryDataW( CONST BYTE *pData , int nDataLen )
 	{
 		LONGLONG llStrLen = nDataLen/sizeof(WCHAR);
