@@ -69,8 +69,6 @@ typedef LONG NTSTATUS;
 
 TypeNtDeviceIoControlFile pNtDeviceIoControlFile = NULL;
 
-
-
 class CCSLock
 {
 private:
@@ -96,89 +94,106 @@ public:
 
 };
 
-typedef struct tagNOTIFY_PARAM
+typedef struct _tagCALL_PROXY
 {
-	HANDLE hMyEvent;
 	HANDLE hFile;
 	HANDLE hEvent;
-	char * pRecvBuf;
-	ULONG nRecvBufLen;
-	IO_STATUS_BLOCK *pIoStatus;
+	HANDLE hOrgEvent;
+	PVOID  ApcRoutine;
+	PVOID ApcContext;
+	IO_STATUS_BLOCK	IoStatusBlock;
+	IO_STATUS_BLOCK *porgIoStatusBlock;
+	BYTE *pRecvBuffer;
+	LONGLONG llRecvBufferLen;
 	HANDLE hTest;
-}NOTIFY_PARAM,*PNOTIFY_PARAM;
+}CALL_PROXY,*PCALL_PROXY;
 
-#include <Shlwapi.h>
-
-VOID HandleRecvData(char *pRecvData,int nRecvDataLen)
-{
-	if ( nRecvDataLen > 0 )
-	{
-		int nShowLen = min(700,nRecvDataLen);
-		char *pchTmp = new char[nShowLen+1];
-		memcpy_s(pchTmp,nShowLen,pRecvData,nShowLen);
-		pchTmp[nShowLen] = 0;
-
-		char *pchTitle = StrStrIA(pchTmp,"腾讯首页");
-		if (pchTitle)
-		{
-			pchTitle = StrStrIA(pRecvData,"腾讯首页");
-			pchTitle[0]='A';
-			pchTitle[1]='B';
-			pchTitle[2]='C';
-			pchTitle[3]='D';
-		}
-
-		//OutputDebugStringA((char *)pchTmp);
-		//OutputDebugStringA("\r\n-------------------------------------------------------\r\n");
-		delete pchTmp;
-	}
-}
 
 void CALLBACK WaitOrTimerCallback(PVOID lpParam, BOOLEAN bReason)//事件处理函数
 {
-	NOTIFY_PARAM *pInfo = (NOTIFY_PARAM *)lpParam;
-	if ( NULL == pInfo )
+	CALL_PROXY *pCallProxy = (CALL_PROXY *)lpParam;
+	if ( NULL == pCallProxy )
 	{
 		return;
 	}
 
+	memcpy_s(pCallProxy->porgIoStatusBlock,sizeof(IO_STATUS_BLOCK),&(pCallProxy->IoStatusBlock),sizeof(IO_STATUS_BLOCK));
+
 	if(bReason == FALSE)//reason为FALSE表示为事件响应，为TRUE表示为超时响应
 	{
-		//此处处理数据
-		if ( pInfo->pIoStatus->Status == 0 )
+
+		if (pCallProxy->hOrgEvent)
 		{
-			HandleRecvData( pInfo->pRecvBuf , pInfo->pIoStatus->Information );
+			SetEvent(pCallProxy->hOrgEvent);
 		}
 
-		if(pInfo->hEvent)
-		{
-			SetEvent(pInfo->hEvent);
-		}
-		else
-		{
-			SetEvent(pInfo->hFile);
-		}
+
+//  		NTSTATUS RecvStatus = pNtDeviceIoControlFile(
+//  			pCallProxy->hFile,
+//  			(HANDLE)NULL,
+//  			0,
+//  			pCallProxy->porgIoStatusBlock,
+//  			pCallProxy->porgIoStatusBlock,
+//  			0x120EF,
+//  			NULL,
+//  			0,
+//  			0,
+//  			0);
+
+		int a=0;
 	}
 
+	UnregisterWait(pCallProxy->hTest);
+	
 
-
-	UnregisterWait(pInfo->hTest);
-	CloseHandle(pInfo->hMyEvent);
-
-
-	delete pInfo;
-	pInfo = NULL;
+	
+	CloseHandle(pCallProxy->hEvent);
+	delete pCallProxy;
+	pCallProxy = NULL;
 
 	return ;
 }
 
 
-
-VOID AddTask(NOTIFY_PARAM *pInfo)
+DWORD WINAPI TestThread(PVOID lpParam)
 {
-	RegisterWaitForSingleObject(&(pInfo->hTest), pInfo->hMyEvent, WaitOrTimerCallback, (LPVOID)pInfo, 20*1000, WT_EXECUTEINPERSISTENTTHREAD);
-	int a=0;
+
+	CALL_PROXY *pCallProxy = (CALL_PROXY *)lpParam;
+	if ( NULL == pCallProxy )
+	{
+ 		return 0;
+	}
+
+	WaitForSingleObject(pCallProxy->hEvent,5000);
+
+	memcpy_s(pCallProxy->porgIoStatusBlock,sizeof(IO_STATUS_BLOCK),&(pCallProxy->IoStatusBlock),sizeof(IO_STATUS_BLOCK));
+
+	if (pCallProxy->hOrgEvent)
+	{
+		SetEvent(pCallProxy->hOrgEvent);
+	}
+	else
+	{
+		BOOL bRes = SetEvent(pCallProxy->hFile);
+		DWORD dwErrorCode = GetLastError();
+		int a=0;
+	}
+
+	CloseHandle(pCallProxy->hEvent);
+	delete pCallProxy;
+	pCallProxy = NULL;
+
+	return 0;
 }
+
+
+VOID AddTask( PCALL_PROXY pProxyInfo )
+{
+	CreateThread(NULL,0,TestThread,pProxyInfo,0,NULL);
+	//RegisterWaitForSingleObject(&(pProxyInfo->hTest), pProxyInfo->hEvent, WaitOrTimerCallback, (LPVOID)pProxyInfo, 5*1000, WT_EXECUTEINPERSISTENTTHREAD);
+}
+
+HANDLE g_hFileHandle = NULL;
 
 NTSTATUS WINAPI MyNtDeviceIoControlFile(
 										HANDLE FileHandle,
@@ -200,6 +215,12 @@ NTSTATUS WINAPI MyNtDeviceIoControlFile(
 	If no Event parameter is specified, then the file object specified by the FileHandle is set to the signaled state. 
 	If an ApcRoutine is specified, it is invoked with the ApcContext and the IoStatusBlock as its arguments.
 	*/
+
+	if ( IoControlCode == 0x120EF )
+	{
+		int a=0;
+	}
+
 	if( IoControlCode == AFD_RECV )
 	{
 
@@ -208,51 +229,72 @@ NTSTATUS WINAPI MyNtDeviceIoControlFile(
 			CONST ULONG nRecvBufLen = AfdInfo->BufferArray->len;
 			IO_STATUS_BLOCK *pIoStatus = (IO_STATUS_BLOCK *)IoStatusBlock;
 
-			HANDLE hMyEvent = NULL;
-			if (Event)
-			{
-				hMyEvent = CreateEvent(NULL,FALSE,FALSE,NULL);
-			}
+			CALL_PROXY *pCallProxy = new CALL_PROXY;
+			pCallProxy->hFile = FileHandle;
+			pCallProxy->hEvent = CreateEvent(NULL,FALSE,FALSE,NULL);
+			pCallProxy->hOrgEvent = Event;
+			pCallProxy->ApcRoutine = ApcRoutine;
+			pCallProxy->ApcContext = ApcContext;
+			ZeroMemory(&(pCallProxy->IoStatusBlock),sizeof(pCallProxy->IoStatusBlock));
+			pCallProxy->porgIoStatusBlock = pIoStatus;
 
+			//替换成自己的参数
 			NTSTATUS RecvStatus = pNtDeviceIoControlFile(
 				FileHandle,
-				hMyEvent/*Event*/,
-				ApcRoutine,
-				ApcContext,
-				IoStatusBlock,
+				pCallProxy->hEvent/*Event*/,
+				NULL/*ApcRoutine*/,
+
+				NULL,
+				//ApcContext,
+				//&(pCallProxy->IoStatusBlock),
+
+				&(pCallProxy->IoStatusBlock)/*IoStatusBlock*/,
 				IoControlCode,
 				InputBuffer,
 				InputBufferLength,
 				OutputBuffer,
 				OutputBufferLength
-				);  
+				);
 
-  			if ( pIoStatus->Status == 259 )
-  			{
-    			NOTIFY_PARAM *ppp = new NOTIFY_PARAM;
- 				
- 				ppp->hMyEvent = hMyEvent;
- 				ppp->hEvent = Event;
- 				ppp->hFile = FileHandle;
-    			ppp->pRecvBuf = pRecvBuf;
- 				ppp->nRecvBufLen = nRecvBufLen;
- 				ppp->pIoStatus = pIoStatus;
- 
- 				AddTask(ppp);
-  			}
-			else
+
+			if ( RecvStatus == 259 )
 			{
-				if (hMyEvent)
-				{
-					CloseHandle(hMyEvent);
-				}
-				
+				PVOID pData = &(pIoStatus->Status);
+				g_hFileHandle = FileHandle;
 
-				if( pIoStatus->Status == 0 )
-				{
-					HandleRecvData(pRecvBuf,pIoStatus->Information);
-				}
+//  				memcpy_s(IoStatusBlock,sizeof(IO_STATUS_BLOCK),&(pCallProxy->IoStatusBlock),sizeof(IO_STATUS_BLOCK));
+//  				AddTask(pCallProxy);
+
+//   				DWORD dwWaitRes = WaitForSingleObject(pCallProxy->hEvent,5000);
+//   				if ( WAIT_OBJECT_0 == dwWaitRes )
+//   				{
+//   
+//   					memcpy_s(IoStatusBlock,sizeof(IO_STATUS_BLOCK),&(pCallProxy->IoStatusBlock),sizeof(IO_STATUS_BLOCK));
+//   					if ( Event  )
+//   					{
+//   						SetEvent(Event);
+//   					}
+//   
+//   					RecvStatus = 0;
+//   				}
+//  				else
+//  				{
+//  					int a=0;
+//  				}
+			
 			}
+			else 
+			{
+// 				if (Event)
+// 				{
+// 					SetEvent(Event);
+// 				}
+				memcpy_s(IoStatusBlock,sizeof(IO_STATUS_BLOCK),&(pCallProxy->IoStatusBlock),sizeof(IO_STATUS_BLOCK));
+				CloseHandle(pCallProxy->hEvent);
+				delete pCallProxy;
+			}
+
+			
 
 			return RecvStatus;
 
@@ -306,6 +348,126 @@ int WINAPI Myclosesocket(
 #include <detours.h>
 #pragma comment(lib,"detours.lib")
 
+BOOL (WSAAPI *pWSAGetOverlappedResult)(
+									   IN SOCKET s,
+									   IN LPWSAOVERLAPPED lpOverlapped,
+									   OUT LPDWORD lpcbTransfer,
+									   IN BOOL fWait,
+									   OUT LPDWORD lpdwFlags 
+									   ) = WSAGetOverlappedResult;
+BOOL WSAAPI MyWSAGetOverlappedResult(
+									 IN SOCKET s,
+									 IN LPWSAOVERLAPPED lpOverlapped,
+									 OUT LPDWORD lpcbTransfer,
+									 IN BOOL fWait,
+									 OUT LPDWORD lpdwFlags 
+									 )
+{
+	if (g_hFileHandle == (HANDLE)s)
+	{
+		int a=0;
+	}
+	BOOL TReturn = pWSAGetOverlappedResult(
+		s,
+		lpOverlapped,
+		lpcbTransfer,
+		fWait,
+		lpdwFlags
+		);
+	return TReturn;
+};
+
+int (WSAAPI *pWSARecv)(
+					   IN SOCKET s,
+					   LPWSABUF lpBuffers,
+					   IN DWORD dwBufferCount,
+					   __out_opt LPDWORD lpNumberOfBytesRecvd,
+					   IN OUT LPDWORD lpFlags,
+					   __in_opt LPWSAOVERLAPPED lpOverlapped,
+					   __in_opt LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine 
+					   ) = WSARecv;
+int WSAAPI MyWSARecv(
+					 IN SOCKET s,
+					 LPWSABUF lpBuffers,
+					 IN DWORD dwBufferCount,
+					 __out_opt LPDWORD lpNumberOfBytesRecvd,
+					 IN OUT LPDWORD lpFlags,
+					 __in_opt LPWSAOVERLAPPED lpOverlapped,
+					 __in_opt LPWSAOVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine 
+					 )
+{
+	int TReturn = pWSARecv(
+		s,
+		lpBuffers,
+		dwBufferCount,
+		lpNumberOfBytesRecvd,
+		lpFlags,
+		lpOverlapped,
+		lpCompletionRoutine
+		);
+	return TReturn;
+};
+
+
+PTP_WIN32_IO_CALLBACK pCompletionRoutine = NULL;
+
+VOID WINAPI MyCompletionRoutine(
+	__inout     PTP_CALLBACK_INSTANCE Instance,
+	__inout_opt PVOID                 Context,
+	__inout_opt PVOID                 Overlapped,
+	__in        ULONG                 IoResult,
+	__in        ULONG_PTR             NumberOfBytesTransferred,
+	__inout     PTP_IO                Io
+	)
+{
+	if (NumberOfBytesTransferred)
+	{
+		int a=0;
+	}
+	return pCompletionRoutine(
+		Instance,
+		Context,
+		Overlapped,
+		IoResult,
+		NumberOfBytesTransferred,
+		Io
+		);
+}
+
+PTP_IO (WINAPI *pCreateThreadpoolIo)(
+									 _In_ HANDLE fl,
+									 _In_ PTP_WIN32_IO_CALLBACK pfnio,
+									 _Inout_opt_ PVOID pv,
+									 _In_opt_ PTP_CALLBACK_ENVIRON pcbe  
+									 ) = CreateThreadpoolIo;
+PTP_IO WINAPI MyCreateThreadpoolIo(
+								   _In_ HANDLE fl,
+								   _In_ PTP_WIN32_IO_CALLBACK pfnio,
+								   _Inout_opt_ PVOID pv,
+								   _In_opt_ PTP_CALLBACK_ENVIRON pcbe  
+								   )
+{
+	static BOOL bHooked = FALSE;
+	if ( FALSE == bHooked )
+	{
+		 bHooked = TRUE;
+
+		 pCompletionRoutine = pfnio;
+		 DetourTransactionBegin();
+		 DetourUpdateThread(GetCurrentThread());
+		 DetourAttach((PVOID *)&pCompletionRoutine,MyCompletionRoutine);
+		 DetourTransactionCommit();
+
+	}
+	PTP_IO TReturn = pCreateThreadpoolIo(
+		fl,
+		pfnio,
+		pv,
+		pcbe
+		);
+	return TReturn;
+};
+
 
 VOID StartHook()
 {
@@ -322,6 +484,11 @@ VOID StartHook()
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 	DetourAttach((PVOID *)&pNtDeviceIoControlFile,MyNtDeviceIoControlFile);
+	DetourAttach((PVOID *)&pWSARecv,MyWSARecv);
+	DetourAttach((PVOID *)&pCreateThreadpoolIo,MyCreateThreadpoolIo);
+	
+	//DetourAttach((PVOID *)&pWSAGetOverlappedResult,MyWSAGetOverlappedResult);
+	//DetourAttach((PVOID *)&pWaitForSingleObject,MyWaitForSingleObject);
 	//DetourAttach((PVOID *)&pCloseHandle,MyCloseHandle);
 	//DetourAttach((PVOID *)&pclosesocket,Myclosesocket);
 	DetourTransactionCommit();
