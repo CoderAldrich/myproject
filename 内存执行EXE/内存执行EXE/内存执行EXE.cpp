@@ -56,25 +56,28 @@ VOID ImportReloc( BYTE *pPeData,PIMAGE_NT_HEADERS32 pNtHeader,int nImportType )
 	{
 		BYTE *pDllName = pPeData+pImportTable->Name;
 		HMODULE hImportDll = LoadLibraryA((char *)pDllName);
-
-		//PIMAGE_THUNK_DATA32 pThunkData = (PIMAGE_THUNK_DATA32)(pPeData + pImportTable->OriginalFirstThunk/*FirstThunk*/);
-		PIMAGE_THUNK_DATA32 pThunkData = (PIMAGE_THUNK_DATA32)(pPeData + pImportTable->FirstThunk);
-
-		while (pThunkData->u1.AddressOfData && pThunkData->u1.AddressOfData < 0x80000000 )
+		if (hImportDll)
 		{
-			PIMAGE_IMPORT_BY_NAME pImportByName = (PIMAGE_IMPORT_BY_NAME)(pPeData+pThunkData->u1.AddressOfData);
+			//PIMAGE_THUNK_DATA32 pThunkData = (PIMAGE_THUNK_DATA32)(pPeData + pImportTable->OriginalFirstThunk/*FirstThunk*/);
+			PIMAGE_THUNK_DATA32 pThunkData = (PIMAGE_THUNK_DATA32)(pPeData + pImportTable->FirstThunk);
 
-			BYTE *pFunAddr = (BYTE *)GetProcAddress(hImportDll,(char *)(pImportByName->Name));
+			while (pThunkData->u1.AddressOfData && pThunkData->u1.AddressOfData < 0x80000000 )
+			{
+				PIMAGE_IMPORT_BY_NAME pImportByName = (PIMAGE_IMPORT_BY_NAME)(pPeData+pThunkData->u1.AddressOfData);
 
-			BYTE *pIATAddr = (BYTE *)(pThunkData);
+				BYTE *pFunAddr = (BYTE *)GetProcAddress(hImportDll,(char *)(pImportByName->Name));
 
-			DWORD dwOldProtectFlag = 0;
-			BOOL bRes = VirtualProtect(pIATAddr,4,PAGE_EXECUTE_READWRITE,&dwOldProtectFlag);
+				BYTE *pIATAddr = (BYTE *)(pThunkData);
 
-			*((DWORD *)pIATAddr) = (DWORD)pFunAddr;
+				DWORD dwOldProtectFlag = 0;
+				BOOL bRes = VirtualProtect(pIATAddr,4,PAGE_EXECUTE_READWRITE,&dwOldProtectFlag);
 
-			pThunkData++;
+				*((DWORD *)pIATAddr) = (DWORD)pFunAddr;
+
+				pThunkData++;
+			}
 		}
+
 
 		pImportTable++;
 	}
@@ -94,8 +97,8 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	//hExeModule = LoadLibraryW(L"C:\\Users\\GAOZAN\\Documents\\Tencent Files\\2592705588\\FileRecv\\NewTool.exe");
 	//hExeModule = LoadLibraryW(L"G:\\调试工具\\工具.exe");
 	//hExeModule = LoadLibraryW(L"F:\\软件项目\\WN58Soft\\58网维新软件\\网维项目\\游戏退弹业务\\Release\\IEWebPage.exe");
-	hExeModule = LoadLibraryW(L"G:\\开发工具\\DLL Export Viewer v1.50\\DLL Export Viewer v1.50\\dllexp.exe");
-	
+	//hExeModule = LoadLibraryW(L"G:\\开发工具\\DLL Export Viewer v1.50\\DLL Export Viewer v1.50\\dllexp.exe");
+	hExeModule = LoadLibraryW(L"TestPE.exe");
 
 	BYTE *pPeData = (BYTE *)hExeModule;
 
@@ -106,42 +109,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		PIMAGE_NT_HEADERS32 pNtHeader = (PIMAGE_NT_HEADERS32)(pPeData+pDosHeader->e_lfanew);
 		if ( pNtHeader->Signature == 0x00004550 )
 		{
-
-//  			PIMAGE_IMPORT_DESCRIPTOR pImportTable = (PIMAGE_IMPORT_DESCRIPTOR)(pPeData + pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);   
-// 			DWORD                    dwImportTableSize= pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size;
-// 			
-// 			
-// 			while ( pImportTable->Characteristics)
-// 			{
-// 				BYTE *pDllName = pPeData+pImportTable->Name;
-// 				HMODULE hImportDll = LoadLibraryA((char *)pDllName);
-// 
-// 				//PIMAGE_THUNK_DATA32 pThunkData = (PIMAGE_THUNK_DATA32)(pPeData + pImportTable->OriginalFirstThunk/*FirstThunk*/);
-// 				PIMAGE_THUNK_DATA32 pThunkData = (PIMAGE_THUNK_DATA32)(pPeData + pImportTable->FirstThunk);
-// 
-// 				while (pThunkData->u1.AddressOfData && pThunkData->u1.AddressOfData < 0x80000000 )
-// 				{
-// 					PIMAGE_IMPORT_BY_NAME pImportByName = (PIMAGE_IMPORT_BY_NAME)(pPeData+pThunkData->u1.AddressOfData);
-// 
-// 					BYTE *pFunAddr = (BYTE *)GetProcAddress(hImportDll,(char *)(pImportByName->Name));
-// 
-// 					BYTE *pIATAddr = (BYTE *)(pThunkData);
-// 
-//  					DWORD dwOldProtectFlag = 0;
-//  					BOOL bRes = VirtualProtect(pIATAddr,4,PAGE_EXECUTE_READWRITE,&dwOldProtectFlag);
-// 
-// 					*((DWORD *)pIATAddr) = (DWORD)pFunAddr;
-// 
-// 					pThunkData++;
-// 				}
-// 
-// 				pImportTable++;
-// 			}
-
-
 			ImportReloc( pPeData,pNtHeader,IMAGE_DIRECTORY_ENTRY_IMPORT );
-			//ImportReloc( pPeData,pNtHeader,IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT );
-			//ImportReloc( pPeData,pNtHeader,IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT );
+			ImportReloc( pPeData,pNtHeader,IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT );
+			ImportReloc( pPeData,pNtHeader,IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT );
 
 
 			BYTE *pEntryPoint = pPeData + pNtHeader->OptionalHeader.AddressOfEntryPoint;

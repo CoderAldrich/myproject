@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "内存执行EXE", "内存执行EXE\内存执行EXE.vcproj", "{6204E400-5480-4C74-A2EB-0152CC78E772}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestPE", "TestPE\TestPE.vcproj", "{7330F9ED-54FF-4B6A-947F-A16D2B3FDBC1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -13,6 +15,10 @@ Global
 		{6204E400-5480-4C74-A2EB-0152CC78E772}.Debug|Win32.Build.0 = Debug|Win32
 		{6204E400-5480-4C74-A2EB-0152CC78E772}.Release|Win32.ActiveCfg = Release|Win32
 		{6204E400-5480-4C74-A2EB-0152CC78E772}.Release|Win32.Build.0 = Release|Win32
+		{7330F9ED-54FF-4B6A-947F-A16D2B3FDBC1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7330F9ED-54FF-4B6A-947F-A16D2B3FDBC1}.Debug|Win32.Build.0 = Debug|Win32
+		{7330F9ED-54FF-4B6A-947F-A16D2B3FDBC1}.Release|Win32.ActiveCfg = Release|Win32
+		{7330F9ED-54FF-4B6A-947F-A16D2B3FDBC1}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
