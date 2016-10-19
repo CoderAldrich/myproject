@@ -44,4 +44,8 @@ public:
 
 	HANDLE *m_phWorkThreads;
 	HANDLE m_hWatchThread;
+	CEdit m_editSavePath;
+	CEdit m_editFileExt;
+	CButton m_chkSaveToFile;
+	afx_msg void OnBnClickedCheck1();
 };

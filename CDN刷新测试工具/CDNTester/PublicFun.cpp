@@ -800,7 +800,6 @@ public:
 						//Ã»ÓÐ´«Êä±àÂë
 						m_teEncoding = TE_NO_ENCODING;
 						m_llTotalContentLen = _ttoi64(CString(strContentLen));
-						m_llCurRecvContentLen = nRecvContentLen;
 					}
 					else if( !strTransferEncoding.IsEmpty() )
 					{

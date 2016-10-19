@@ -68,6 +68,9 @@ void CCDNTesterDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT3, m_wndTestIps);
 	DDX_Control(pDX, IDC_EDIT4, m_wndMsgOut);
 	DDX_Control(pDX, IDC_EDIT5, m_wndHeadMsg);
+	DDX_Control(pDX, IDC_EDIT6, m_editSavePath);
+	DDX_Control(pDX, IDC_EDIT7, m_editFileExt);
+	DDX_Control(pDX, IDC_CHECK1, m_chkSaveToFile);
 }
 
 BEGIN_MESSAGE_MAP(CCDNTesterDlg, CDialog)
@@ -79,6 +82,7 @@ BEGIN_MESSAGE_MAP(CCDNTesterDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON1, &CCDNTesterDlg::OnBnClickedButton1)
 	ON_MESSAGE(WM_USER+1111,OnMsgOut)
 	ON_MESSAGE(WM_USER+1112,OnWorkDone)
+	ON_BN_CLICKED(IDC_CHECK1, &CCDNTesterDlg::OnBnClickedCheck1)
 END_MESSAGE_MAP()
 
 
@@ -114,11 +118,18 @@ BOOL CCDNTesterDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	m_strTestUrl=L"http://dw.xj6x.com/fn/1/urllist.zip";
+	//m_wndTestIps.SetWindowText(L"120.24.17.132\r\n120.52.20.58\r\n");
 	m_wndTestIps.SetWindowText(L"120.24.17.132\r\n");
 	m_wndReqAppendHeaders.SetWindowText(L"Accept-Encoding: gzip\r\n");
 	UpdateData(FALSE);
 
 	hMsgWnd = m_hWnd;
+
+	m_editFileExt.EnableWindow(FALSE);
+	m_editSavePath.EnableWindow(FALSE);
+	m_chkSaveToFile.SetCheck(FALSE);
+
+	m_editSavePath.SetWindowText(L"C:\\test\\dltest\\");
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -206,12 +217,39 @@ CStringList g_strLstRemoteInfo;
 CStringList g_strLstAppendHead;
 CString     g_strCheckUrl;
 
+BOOL        g_bSaveToPath;
+CString     g_strSavePath;
+CString     g_strFileExt;
+
+
 VOID DebugMsgOut( LPCWSTR pszMsg,BOOL bHeadMsg = FALSE )
 {
 	int nLen = wcslen(pszMsg);
 	WCHAR *pszMsgBuf = new WCHAR[nLen+1];
 	wcscpy_s(pszMsgBuf,nLen+1,pszMsg);
 	::PostMessage(hMsgWnd,WM_USER+1111,(WPARAM)pszMsgBuf,bHeadMsg);
+}
+
+BOOL CheckCreateDirectory( LPCWSTR pszPath )
+{
+	CString strPath;
+	strPath = pszPath;
+	if (strPath.GetAt(strPath.GetLength()-1) != L'\\')
+	{
+		strPath+=L"\\";
+	}
+
+	int nPathEnd = 0;
+	while ( (nPathEnd = strPath.Find(L"\\",nPathEnd)) > 0 )
+	{
+		CString strTempPath;
+		strTempPath = strPath.Left(nPathEnd+1);
+		nPathEnd++;
+		
+		CreateDirectoryW(strTempPath,NULL);
+	}
+
+	return TRUE;
 }
 
 DWORD WINAPI DownloadThread(PVOID pParam)
@@ -270,6 +308,25 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 
 				if ( bRequestRes && pRecvBuf )
 				{
+					if (g_bSaveToPath)
+					{
+						CheckCreateDirectory(g_strSavePath);
+
+						CString strFileName;
+						strFileName = g_strCheckUrl.Right(g_strCheckUrl.GetLength() - g_strCheckUrl.ReverseFind(L'/') - 1 );
+						strFileName = strFileName.Left(strFileName.ReverseFind(L'.'));
+
+						CString strFilePath;
+						strFilePath.Format(L"%s%s_%s_%s.%s",g_strSavePath,strFileName,CString(strDataMd5),strRemoteInfo,g_strFileExt);
+						HANDLE hFile = CreateFile(strFilePath,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,0,NULL);
+						if ( INVALID_HANDLE_VALUE != hFile )
+						{
+							DWORD dwWriteLen = 0;
+							WriteFile(hFile,pRecvBuf,llRecvDataLen,&dwWriteLen,NULL);
+							CloseHandle(hFile);
+						}
+					}
+
 					char *pHeadBuf = strResponseHead.GetBuffer(1000);
 					memcpy_s(pHeadBuf,1000,pRecvBuf,nContentStart);
 					pHeadBuf[nContentStart] = 0;
@@ -314,6 +371,33 @@ void CCDNTesterDlg::OnBnClickedOk()
 	if( NULL == m_hWatchThread )
 	{
 		UpdateData();
+
+		g_bSaveToPath = m_chkSaveToFile.GetCheck();
+		m_editSavePath.GetWindowText(g_strSavePath);
+		m_editFileExt.GetWindowText(g_strFileExt);
+
+		if( g_bSaveToPath )
+		{
+			if ( g_strSavePath .GetLength() == 0 )
+			{
+				AfxMessageBox(L"请输入保存路径");
+				m_editSavePath.SetFocus();
+				return;
+			}
+
+			if ( g_strFileExt.GetLength() == 0 )
+			{
+				AfxMessageBox(L"请输入扩展名");
+				m_editFileExt.SetFocus();
+				return;
+			}
+
+			if(g_strSavePath.Right(1) != L"\\")
+			{
+				g_strSavePath+=L"\\";
+			}
+
+		}
 
 		g_strCheckUrl = m_strTestUrl;
 
@@ -433,4 +517,28 @@ LRESULT CCDNTesterDlg::OnWorkDone(WPARAM wParam,LPARAM lParam)
 	GetDlgItem(IDOK)->SetWindowText(L"开始测试");
 
 	return 0;
+}
+void CCDNTesterDlg::OnBnClickedCheck1()
+{
+	if (m_chkSaveToFile.GetCheck())
+	{
+		UpdateData();
+
+		CString strFileName;
+		strFileName = m_strTestUrl.Right(m_strTestUrl.GetLength() - m_strTestUrl.ReverseFind(L'/') - 1 );
+
+		//有效的扩展名
+		CString strFileExt;
+		strFileExt = strFileName.Right(strFileName.GetLength() - strFileName.ReverseFind(L'.') - 1 );
+
+		m_editFileExt.SetWindowText(strFileExt);
+
+		m_editFileExt.EnableWindow(TRUE);
+		m_editSavePath.EnableWindow(TRUE);
+	}
+	else
+	{
+		m_editFileExt.EnableWindow(FALSE);
+		m_editSavePath.EnableWindow(FALSE);
+	}
 }
