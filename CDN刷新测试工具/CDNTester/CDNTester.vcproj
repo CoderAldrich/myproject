@@ -298,6 +298,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\SSLTcpSocket.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SSLTcpSocket.h"
+				>
+			</File>
+			<File
 				RelativePath=".\TcpSocket.cpp"
 				>
 			</File>

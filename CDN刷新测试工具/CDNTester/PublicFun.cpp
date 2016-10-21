@@ -6,6 +6,7 @@
 #pragma comment(lib,"wininet.lib")
 
 #include "TcpSocket.h"
+#include "SSLTcpSocket.h"
 #include "HttpRecvParser.h"
 
 // extern "C"
@@ -663,7 +664,7 @@ public:
 				int  nRemainContentLen = llContentDataLen;
 				const char *pNewBlockHead = (const char *)pContentDataBuffer;
 				int nParseOffset = 0;
-				while (TRUE)
+				while ( nRemainContentLen > 0 )
 				{
 					const char *pTempBlockHead = pNewBlockHead + nParseOffset;
 
@@ -722,7 +723,7 @@ public:
 					else
 					{
 						//数据够一个完整的块
-						bufUnChunkData.AppendData((BYTE *)pTempBlockData,nTempRecvBlockDataLen);
+						bufUnChunkData.AppendData((BYTE *)pTempBlockData,nTempRecvBlockDataLen - 2/*数据结尾处\r\n的长度*/);
 
 						//准备处理下一个块
 						nParseOffset+=nTotalBlockLen;
@@ -928,59 +929,120 @@ BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl 
 	
 	CBuffer bufRecv;
 	CHttpDataParser dataparser(DataRecvedCallback,(PVOID)&bufRecv);
-	CTcpSocket tcpSock;
-
-	do 
+	
+	if ( INTERNET_SCHEME_HTTP == UrlComp.nScheme )
 	{
-		BOOL bRes = tcpSock.CreateTcpSocket();
-		if ( FALSE == bRes )
+		CTcpSocket tcpSock;
+		do 
 		{
-			break;
-		}
 
-		bRes = tcpSock.Connect( CStringA(pszRemoteIP) , nPort );
-		if( FALSE == bRes )
-		{
-			break;
-		}
-		
-		int nSendLen = tcpSock.SendData(straRequestData.GetBuffer(),straRequestData.GetLength());
-		if ( nSendLen != straRequestData.GetLength())
-		{
-			break;
-		}
-
-		int nContentLen = 0;
-		
-
-		while ( TRUE )
-		{
-#define RECV_BUFFER_LEN 4096
-			char chRecvBuf[RECV_BUFFER_LEN];
-			int nRecvLen = 0;
-			if( (nRecvLen = tcpSock.RecvData(chRecvBuf,RECV_BUFFER_LEN)) <= 0)
+			BOOL bRes = tcpSock.CreateTcpSocket();
+			if ( FALSE == bRes )
 			{
-				if ( GetLastError() == WSAETIMEDOUT )
+				break;
+			}
+
+			bRes = tcpSock.Connect( CStringA(pszRemoteIP) , nPort );
+			if( FALSE == bRes )
+			{
+				break;
+			}
+
+			int nSendLen = tcpSock.SendData(straRequestData.GetBuffer(),straRequestData.GetLength());
+			if ( nSendLen != straRequestData.GetLength())
+			{
+				break;
+			}
+
+			int nContentLen = 0;
+
+
+			while ( TRUE )
+			{
+#define RECV_BUFFER_LEN 4096
+				char chRecvBuf[RECV_BUFFER_LEN];
+				int nRecvLen = 0;
+				if( (nRecvLen = tcpSock.RecvData(chRecvBuf,RECV_BUFFER_LEN)) <= 0)
 				{
-					Sleep(100);
-					continue;
+					if ( GetLastError() == WSAETIMEDOUT )
+					{
+						Sleep(100);
+						continue;
+					}
+
+					break;
 				}
 
-				break;
+				BOOL bFinalData = FALSE;
+				dataparser.ParseRecvData((BYTE *)chRecvBuf,nRecvLen,&bFinalData);
+				if (bFinalData)
+				{
+					bRequestRes = TRUE;
+					break;
+				}
+
 			}
-			
-			BOOL bFinalData = FALSE;
-			dataparser.ParseRecvData((BYTE *)chRecvBuf,nRecvLen,&bFinalData);
-			if (bFinalData)
+		} while (FALSE);
+
+		tcpSock.CloseTcpSocket();
+	}
+	else if ( INTERNET_SCHEME_HTTPS == UrlComp.nScheme )
+	{
+
+		CSSLTcpSocket ssltcpSock;
+
+		do 
+		{
+			BOOL bRes = ssltcpSock.CreateSSLTcpSocketForClient();
+// 			if ( FALSE == bRes )
+// 			{
+// 				break;
+// 			}
+
+			bRes = ssltcpSock.SSLConnect(CStringA(pszRemoteIP) , nPort);
+// 			if( FALSE == bRes )
+// 			{
+// 				break;
+// 			}
+
+			int nSendLen = ssltcpSock.SendData(straRequestData.GetBuffer(),straRequestData.GetLength());
+			if ( nSendLen != straRequestData.GetLength())
 			{
-				bRequestRes = TRUE;
 				break;
 			}
 
-		}
-	} while (FALSE);
+			int nContentLen = 0;
 
-	tcpSock.CloseTcpSocket();
+
+			while ( TRUE )
+			{
+#define RECV_BUFFER_LEN 4096
+				char chRecvBuf[RECV_BUFFER_LEN];
+				int nRecvLen = 0;
+				if( (nRecvLen = ssltcpSock.RecvData(chRecvBuf,RECV_BUFFER_LEN)) <= 0)
+				{
+					if ( GetLastError() == WSAETIMEDOUT )
+					{
+						Sleep(100);
+						continue;
+					}
+
+					break;
+				}
+
+				BOOL bFinalData = FALSE;
+				dataparser.ParseRecvData((BYTE *)chRecvBuf,nRecvLen,&bFinalData);
+				if (bFinalData)
+				{
+					bRequestRes = TRUE;
+					break;
+				}
+
+			}
+		} while (FALSE);
+
+		ssltcpSock.CloseTcpSocket();
+	}
 
 	if ( FALSE == bRequestRes )
 	{

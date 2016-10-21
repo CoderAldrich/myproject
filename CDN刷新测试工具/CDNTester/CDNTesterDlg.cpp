@@ -117,9 +117,9 @@ BOOL CCDNTesterDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	m_strTestUrl=L"http://dw.xj6x.com/fn/1/urllist.zip";
+	m_strTestUrl=L"https://www.baidu.com/";
 	//m_wndTestIps.SetWindowText(L"120.24.17.132\r\n120.52.20.58\r\n");
-	m_wndTestIps.SetWindowText(L"120.24.17.132\r\n");
+	m_wndTestIps.SetWindowText(L"61.135.169.121\r\n");
 	m_wndReqAppendHeaders.SetWindowText(L"Accept-Encoding: gzip\r\n");
 	UpdateData(FALSE);
 
