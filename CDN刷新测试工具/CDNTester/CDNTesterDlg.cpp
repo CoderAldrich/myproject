@@ -7,6 +7,7 @@
 #include "CDNTesterDlg.h"
 
 #include "PublicFun.h"
+#include <WinInet.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -117,10 +118,10 @@ BOOL CCDNTesterDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	m_strTestUrl=L"https://www.baidu.com/";
+	m_strTestUrl=L"http://www.qq.com/";
 	//m_wndTestIps.SetWindowText(L"120.24.17.132\r\n120.52.20.58\r\n");
-	m_wndTestIps.SetWindowText(L"61.135.169.121\r\n");
-	m_wndReqAppendHeaders.SetWindowText(L"Accept-Encoding: gzip\r\n");
+	//m_wndTestIps.SetWindowText(L"123.126.113.42\r\n");
+	m_wndReqAppendHeaders.SetWindowText(L"Accept-Encoding: gzip\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.22 Safari/537.36 SE 2.X MetaSr 1.0");
 	UpdateData(FALSE);
 
 	hMsgWnd = m_hWnd;
@@ -435,6 +436,35 @@ void CCDNTesterDlg::OnBnClickedOk()
 						g_strLstRemoteInfo.AddTail(szLineText);
 					}
 				}
+			}
+		}
+
+		if ( g_strLstRemoteInfo.GetCount() == 0 )
+		{
+			WSADATA wsaData;
+			WSAStartup(MAKEWORD(2,2),&wsaData);
+			CString   strHostName;
+		
+			URL_COMPONENTSW UrlComp;
+			ZeroMemory(&UrlComp,sizeof(UrlComp));
+			UrlComp.dwStructSize = sizeof(UrlComp);
+			UrlComp.lpszHostName = strHostName.GetBuffer( MAX_PATH );
+			UrlComp.dwHostNameLength = MAX_PATH;
+		
+			BOOL bCrackRes = InternetCrackUrlW( m_strTestUrl , m_strTestUrl.GetLength() , 0 , &UrlComp );
+			strHostName.ReleaseBuffer();
+
+			SOCKADDR_IN sockAddr;
+			memset(&sockAddr,0,sizeof(sockAddr));
+
+			sockAddr.sin_family = AF_INET;
+
+			LPHOSTENT lphost;
+			lphost = gethostbyname(CStringA(strHostName));
+			if (lphost != NULL)
+			{
+				sockAddr.sin_addr.s_addr = ((LPIN_ADDR)lphost->h_addr)->s_addr;
+				g_strLstRemoteInfo.AddTail(CString(inet_ntoa(sockAddr.sin_addr)));
 			}
 		}
 

@@ -497,6 +497,253 @@ public:
 
 };
 
+class CChunkDataParser
+{
+public:
+	typedef enum{
+		CS_WAIT_HEAD = 1,
+		CS_WAIT_DATA = 2,
+		CS_CHUNK_END = 3
+	}CHUNKED_STATUS;
+
+protected:
+#define  BLOCK_TAIL_LEN 2 /*结尾\r\n长度*/
+	CHUNKED_STATUS m_ChunkStatus;
+	int            m_nTotalBlockLen;
+	int            m_nTotalBlockDataLen;
+	int            m_nBlockHeadLen;
+	int            m_nCurRecvBlockLen;
+	int            m_nCurRecvDataLen;
+	CBuffer        m_bufHead;
+	//CBuffer        m_bufData;
+public:
+	CChunkDataParser()
+	{
+		m_ChunkStatus = CS_WAIT_HEAD;
+		m_nTotalBlockLen = 0;
+		m_nTotalBlockDataLen = 0;
+		m_nBlockHeadLen = 0;
+		m_nCurRecvDataLen = 0;
+	}
+	~CChunkDataParser()
+	{
+
+	}
+
+	BOOL ParseChunkData( BYTE *pData,LONGLONG llDataLen,BYTE **ppBlockData , LONGLONG *pllBlockDataLen, LONGLONG *pllParsedLen,BOOL *pbFinalBlockEnd  )
+	{
+		if (pData == NULL || llDataLen <= 0 || NULL== ppBlockData || NULL == pllBlockDataLen || NULL == pllParsedLen )
+		{
+			return FALSE;
+		}
+
+		if(pbFinalBlockEnd)
+		{
+			*pbFinalBlockEnd = FALSE;
+		}
+		*ppBlockData = NULL;
+		*pllBlockDataLen = 0;
+		*pllParsedLen = 0;
+
+		int nParsedLen = 0;
+		int nBlockDataOffset = 0;
+		int nBlockDataLen = llDataLen;
+
+		if ( CS_WAIT_HEAD == m_ChunkStatus )
+		{
+			BYTE *pBlockHeadData = NULL;
+			LONGLONG llHeadDataLen = 0;
+			int nPreHeadLen = 0;
+			if ( m_bufHead.GetTotalBufferLen() > 0 )
+			{
+				nPreHeadLen = m_bufHead.GetTotalBufferLen();
+				m_bufHead.AppendData( pData,llDataLen );
+				pBlockHeadData = m_bufHead.GetDataBuffer();
+				llHeadDataLen = m_bufHead.GetTotalBufferLen();
+			}
+			else
+			{
+				pBlockHeadData = pData;
+				llHeadDataLen = llDataLen;
+			}
+
+			BOOL bFoundHead = FALSE;
+			char chHeadLen[20];
+			ZeroMemory(chHeadLen,20);
+			int i=0;
+			for ( ;i<20 && i< llHeadDataLen - 1 ;i++ )
+			{
+				if (pBlockHeadData[i] == '\r' && pBlockHeadData[i+1] == '\n')
+				{
+					bFoundHead = TRUE;
+					break;
+				}
+
+				chHeadLen[i] = pBlockHeadData[i];
+			}
+
+			if (bFoundHead)
+			{
+				m_nBlockHeadLen = i+2;
+				m_nTotalBlockDataLen = strtol(chHeadLen, NULL, 16);
+				m_nTotalBlockLen = m_nBlockHeadLen+m_nTotalBlockDataLen+BLOCK_TAIL_LEN;
+				m_nCurRecvBlockLen = m_nBlockHeadLen;
+				m_nCurRecvDataLen = 0;
+
+				nBlockDataOffset = m_nBlockHeadLen - nPreHeadLen;
+				nBlockDataLen = llHeadDataLen-m_nBlockHeadLen;
+
+				m_bufHead.DestoryData();
+
+				m_ChunkStatus = CS_WAIT_DATA;
+
+				nParsedLen+=(m_nBlockHeadLen - nPreHeadLen);
+			}
+			else
+			{
+				if ( m_bufHead.GetTotalBufferLen() == 0 )
+				{
+					m_bufHead.AppendData( pData,llDataLen );
+				}
+
+				nParsedLen+=llDataLen;
+			}
+		}
+
+		if ( CS_WAIT_DATA == m_ChunkStatus )
+		{
+			BYTE *pBlockData = pData+nBlockDataOffset;
+			LONGLONG llBlockDataLen = nBlockDataLen;
+
+			if ( pBlockData && llBlockDataLen > 0 )
+			{
+				
+				int nValidBlockDataLen = min( m_nTotalBlockDataLen - m_nCurRecvDataLen , llBlockDataLen );
+
+				if (ppBlockData)
+				{
+					*ppBlockData = pBlockData;
+				}
+
+				if (pllBlockDataLen)
+				{
+					*pllBlockDataLen = nValidBlockDataLen;
+				}
+				m_nCurRecvDataLen+=nValidBlockDataLen;
+
+				if ( m_nCurRecvBlockLen+llBlockDataLen >= m_nTotalBlockLen )
+				{
+					nParsedLen += (m_nTotalBlockLen - m_nCurRecvBlockLen);
+
+					if( m_nTotalBlockDataLen == 0 )
+					{
+						int a=0;
+						if(pbFinalBlockEnd)
+						{
+							*pbFinalBlockEnd = TRUE;
+						}
+					}
+
+					//当前块接收完成
+					m_ChunkStatus = CS_WAIT_HEAD;
+					m_nTotalBlockLen = 0;
+					m_nTotalBlockDataLen = 0;
+					m_nBlockHeadLen = 0;
+					m_nCurRecvDataLen = 0;
+				}
+				else
+				{
+					m_nCurRecvBlockLen+=llBlockDataLen;
+					nParsedLen += llBlockDataLen;
+				}
+
+			}
+		}
+
+		*pllParsedLen = nParsedLen;
+	}
+};
+
+
+int GetRandValue(int nMin ,int nMax)
+{
+	static bool bInit = false;
+	if (bInit == false)
+	{
+		bInit = true;
+		srand(time(NULL));
+	}
+
+	return rand()%(nMax - nMin + 1) + nMin;
+}
+class CInitCall
+{
+public:
+	CInitCall()
+	{
+		char chChunkData[]="a\r\n1234567890\r\na\r\n0987654321\r\n0\r\n\r\n";
+		CChunkDataParser chunkparser;
+		
+		
+		while (1)
+ 		{
+			CBuffer bufUnChunkData;
+ 			BYTE *pBlockData = NULL;
+ 			LONGLONG llBlockDataLen = 0;
+ 			LONGLONG llTotalParseLen = 0;
+ 
+ 			
+ 			while ( llTotalParseLen < strlen(chChunkData) )
+ 			{
+				BOOL bFinalBlockEnd = FALSE;
+ 				LONGLONG llParsedLen = 0;
+ 				chunkparser.ParseChunkData((BYTE *)chChunkData+llTotalParseLen,GetRandValue(14 ,14),&pBlockData,&llBlockDataLen,&llParsedLen,&bFinalBlockEnd);
+ 				llTotalParseLen+=llParsedLen;
+ 				if ( pBlockData && llBlockDataLen > 0 )
+ 				{
+ 					bufUnChunkData.AppendData(pBlockData,llBlockDataLen);
+ 				}
+
+				if (bFinalBlockEnd)
+				{
+					break;
+				}
+				int a=0;
+ 			}
+
+			if (bufUnChunkData.GetTotalBufferLen() != 20)
+			{
+				int a=0;
+			}
+
+			if ( memcpy_s(bufUnChunkData.GetDataBuffer(),20,"1234567900987654321",20)!=0 )
+			{
+				int a=0;
+			}
+ 
+ 		}
+ 
+ 		return;
+
+// 		for (int i=0;i<strlen(chChunkData);i++)
+// 		{
+// 			BYTE *pBlockData = NULL;
+// 			LONGLONG llBlockDataLen = 0;
+// 
+// 			chunkparser.ParseChunkData((BYTE *)chChunkData+i,1,&pBlockData,&llBlockDataLen,NULL);
+// 
+// 			if ( pBlockData && llBlockDataLen > 0 )
+// 			{
+// 				bufUnChunkData.AppendData(pBlockData,llBlockDataLen);
+// 			}
+// 			int a=0;
+// 		}
+
+		int a=0;
+	}
+};
+//CInitCall initcall;
+
 typedef VOID (CALLBACK *TypeDataRecvedCallback)( PVOID pParam , BYTE *pData,int nDataLen );
 
 class CHttpDataParser
@@ -514,18 +761,6 @@ public:
 		CE_GZIP = 2
 	}CONTENT_ENCODING;
 
-	typedef enum{
-		CS_WAIT_HEAD = 1,
-		CS_WAIT_DATA = 2,
-		CS_CHUNK_END = 3
-	}CHUNKED_STATUS;
-
-	typedef struct _tagCHUNK_STATUS_RECORD
-	{
-		int      nTotalBlockLen;
-		int      nBlockHeadLen;
-		int      nCurRecvDataLen;
-	}CHUNK_STATUS_RECORD;
 protected:
 	CBuffer m_bufHead;
 	CBuffer m_bufContent;
@@ -538,8 +773,7 @@ protected:
 	LONGLONG m_llCurRecvContentLen;
 
 	//Chunk传输方式
-	CHUNKED_STATUS      m_csChunkStatus;
-	CHUNK_STATUS_RECORD m_ChunkRecord;
+	CChunkDataParser chunkparser;
 
 	TRANSFER_ENCODING m_teEncoding;
 	CONTENT_ENCODING  m_ceEncoding;
@@ -563,8 +797,6 @@ public:
 		m_llCurRecvContentLen = 0;
 		m_teEncoding = TE_UNKNOWN;
 		m_ceEncoding = CE_UNKNOWN;
-		m_csChunkStatus = CS_WAIT_HEAD;
-		ZeroMemory(&m_ChunkRecord,sizeof(m_ChunkRecord));
 
 		memset(&m_gzipstream, 0, sizeof(z_stream));
 		int	ret = inflateInit2(&m_gzipstream,47/*或 MAX_WBITS | 16  也行*//*,ZLIB_VERSION,sizeof(z_stream)*/);
@@ -636,102 +868,29 @@ public:
 		{
 			CBuffer bufUnChunkData;
 
-			if ( m_csChunkStatus == CS_WAIT_DATA )
+			BYTE *pBlockData = NULL;
+			LONGLONG llBlockDataLen = 0;
+			LONGLONG llTotalParseLen = 0;
+
+			while ( llTotalParseLen < nContentDataLen )
 			{
-				//当前块还没有接受完
-				if ( llContentDataLen+m_ChunkRecord.nCurRecvDataLen+m_ChunkRecord.nBlockHeadLen < m_ChunkRecord.nTotalBlockLen )
+				BOOL bFinalBlockEnd = FALSE;
+				LONGLONG llParsedLen = 0;
+				chunkparser.ParseChunkData((BYTE *)pContentData+llTotalParseLen,nContentDataLen-llTotalParseLen,&pBlockData,&llBlockDataLen,&llParsedLen,&bFinalBlockEnd);
+				llTotalParseLen+=llParsedLen;
+				if ( pBlockData && llBlockDataLen > 0 )
 				{
-					bufUnChunkData.AppendData(pContentDataBuffer,llContentDataLen);
-					m_ChunkRecord.nCurRecvDataLen+=llContentDataLen;
+					bufUnChunkData.AppendData(pBlockData,llBlockDataLen);
 				}
-				else
+
+				if (bFinalBlockEnd)
 				{
-					//当前块已经接受完
-					int nBlockRemainDataLen = m_ChunkRecord.nTotalBlockLen-m_ChunkRecord.nCurRecvDataLen-m_ChunkRecord.nBlockHeadLen;
-					bufUnChunkData.AppendData(pContentDataBuffer,nBlockRemainDataLen-2);
-
-					pContentDataBuffer += nBlockRemainDataLen;
-					llContentDataLen -= nBlockRemainDataLen;
-
-					ZeroMemory(&m_ChunkRecord,sizeof(m_ChunkRecord));
-					m_csChunkStatus = CS_WAIT_HEAD;
-				}
-			}
-
-			if( m_csChunkStatus == CS_WAIT_HEAD )
-			{
-				BOOL bSuccessed = TRUE;
-				int  nRemainContentLen = llContentDataLen;
-				const char *pNewBlockHead = (const char *)pContentDataBuffer;
-				int nParseOffset = 0;
-				while ( nRemainContentLen > 0 )
-				{
-					const char *pTempBlockHead = pNewBlockHead + nParseOffset;
-
-					char chBlockHead[20]={0};
-
-					int i=0;
-					while ( pTempBlockHead[i] !='\r' && i< 20 && i< nRemainContentLen )
+					if (pbFinalData)
 					{
-						chBlockHead[i] = pTempBlockHead[i];
-						i++;
-					}
-
-					bSuccessed = strlen( chBlockHead ) >= 1 && strlen( chBlockHead ) <= 10;
-					ATLASSERT( bSuccessed  );
-
-					if ( FALSE == bSuccessed )
-					{
-						break;
-					}
-
-					int nTempBlockHeadLen = strlen(chBlockHead)+2;
-					int nBlockDataLen = strtol(chBlockHead, NULL, 16);
-					int nTotalBlockLen = nTempBlockHeadLen+nBlockDataLen+2;
-
-					const char *pTempBlockData = pTempBlockHead + nTempBlockHeadLen;
-					int   nTempRecvBlockDataLen = min(llContentDataLen,nTotalBlockLen) - nTempBlockHeadLen;
-
-					//最后一个块
-					if ( 0 == nBlockDataLen )
-					{
-						m_csChunkStatus = CS_CHUNK_END;
-
-						if (pbFinalData)
-						{
-							*pbFinalData = TRUE;
-						}
-
-						break;
-					}
-
-
-					//数据不够一个完整的块
-					if ( nTotalBlockLen > nRemainContentLen )
-					{
-						m_ChunkRecord.nTotalBlockLen = nTotalBlockLen;
-						m_ChunkRecord.nBlockHeadLen = nTempBlockHeadLen;
-						m_ChunkRecord.nCurRecvDataLen += nTempRecvBlockDataLen;
-
-						bufUnChunkData.AppendData((BYTE *)pTempBlockData,nTempRecvBlockDataLen);
-
-						m_csChunkStatus = CS_WAIT_DATA;
-
-						//此处处理数据
-						break;
-					}
-					else
-					{
-						//数据够一个完整的块
-						bufUnChunkData.AppendData((BYTE *)pTempBlockData,nTempRecvBlockDataLen - 2/*数据结尾处\r\n的长度*/);
-
-						//准备处理下一个块
-						nParseOffset+=nTotalBlockLen;
-						nRemainContentLen-=nTotalBlockLen;
+						*pbFinalData = TRUE;
 					}
 				}
 			}
-
 
 			BYTE *pUnChunkData = bufUnChunkData.GetDataBuffer();
 			int   nUnChunkDataLen = bufUnChunkData.GetTotalBufferLen();
