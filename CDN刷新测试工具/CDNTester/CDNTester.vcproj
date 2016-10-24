@@ -186,6 +186,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\Buffer.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CDNTester.cpp"
 				>
 			</File>
@@ -194,7 +198,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ChunkDataParser.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\EditEx.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\HttpDataParser.cpp"
 				>
 			</File>
 			<File
@@ -232,6 +244,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\Buffer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CDNTester.h"
 				>
 			</File>
@@ -240,7 +256,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ChunkDataParser.h"
+				>
+			</File>
+			<File
 				RelativePath=".\EditEx.h"
+				>
+			</File>
+			<File
+				RelativePath=".\HttpDataParser.h"
 				>
 			</File>
 			<File
