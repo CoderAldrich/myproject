@@ -165,13 +165,13 @@ DWORD WINAPI RequestHandleThread(PVOID pParam)
 	return 0;
 }
 // µ¼³öº¯Êý
-VOID WINAPI ProxyRun()
+VOID WINAPI HttpProxyServer()
 {
 	CTcpSocket sockListen;
 	BOOL bRes = sockListen.CreateTcpSocket();
 	if (bRes)
 	{
-		bRes = sockListen.InitAccept(80);
+		bRes = sockListen.InitAccept(8888);
 		if (bRes)
 		{
 			while (TRUE)
@@ -466,61 +466,8 @@ VOID HttpsProxyServer()
 #pragma comment(lib,"urlmon")
 int _tmain(int argc, _TCHAR* argv[])
 {
-
-// 	CTcpSocket tcp1;
-// 	CTcpSocket tcp2;
-// 	tcp1.CreateTcpSocket();
-// 	tcp2.CreateTcpSocket();
-// 
-// 	tcp1.Connect("sjz.58.com",80);
-// 	tcp2.Connect("sjz.58.com",80);
-// 
-// 	LPCSTR pchSendData="GET / HTTP/1.1\r\nHost: sjz.58.com\r\n\r\n";
-// 	tcp1.SendData((PVOID)pchSendData,strlen(pchSendData));
-// 	tcp2.SendData((PVOID)pchSendData,strlen(pchSendData));
-// 
-// 	FD_SET fdRead;
-// 	FD_ZERO( &fdRead );
-// 
-// 	FD_SET(tcp1.GetHandle(),&fdRead);
-// 	FD_SET(tcp2.GetHandle(),&fdRead);
-// 	
-// 
-// 	while ( TRUE )
-// 	{
-// 		char chReadBuffer[500];
-// 		int nRet = select(0,&fdRead,NULL,NULL,NULL);
-// 		
-// 		if(FD_ISSET(tcp1.GetHandle(),&fdRead)!=0)
-// 		{
-// 			tcp1.RecvData(chReadBuffer,500);
-// 			int a=0;
-// 		}
-// 
-// 		if(FD_ISSET(tcp2.GetHandle(),&fdRead)!=0)
-// 		{
-// 			tcp2.RecvData(chReadBuffer,500);
-// 			int a=0;
-// 		}
-// 	}
-
-
-	//ProxyRun();
-
-
-// 	CSSLTcpSocket sslsock;
-// 	sslsock.CreateSSLTcpSocketForClient();
-// 	sslsock.SSLConnect("www.baidu.com",443);
-// 
-// 	LPCSTR pchSendData = "GET / HTTP/1.1\r\nHost: www.baidu.com\r\n\r\n";
-// 	int nRet = sslsock.SendData((PVOID)pchSendData,strlen(pchSendData));
-// 
-// 	char chReadBuffer[4096];
-// 	sslsock.RecvData(chReadBuffer,4096);
-// 	
-// 	int a=0;
-
-	HttpsProxyServer();
+	//HttpsProxyServer();
+	HttpProxyServer();
 
 	Sleep(500);
 
