@@ -57,357 +57,16 @@ NTAPI StreamInjectCompletionFn(
    FwpsFreeNetBufferList(netBufferList);
 }
 
-NTSTATUS
-StreamEditFlushData(
-   IN STREAM_EDITOR* streamEditor,
-   IN UINT64 flowId,
-   IN UINT32 calloutId,
-   IN UINT16 layerId,
-   IN UINT32 streamFlags
-   )
-/* ++
-
-   This function re-injects buffered data back to the data stream upon
-   receiving a FIN. The data was buffered because it was not big enough
-   (size wise) to make an editing decision.
-
--- */
+USHORT htons(USHORT hostshort)
 {
-   NTSTATUS status;
-
-   PMDL mdl = NULL;
-   NET_BUFFER_LIST* netBufferList = NULL;
-
-   ASSERT(streamEditor->dataOffset == 0);
-
-   mdl = IoAllocateMdl(
-            streamEditor->scratchBuffer,
-            (ULONG)(streamEditor->dataLength),
-            FALSE,
-            FALSE,
-            NULL
-            );
-
-   if (mdl == NULL)
-   {
-      status = STATUS_NO_MEMORY;
-      goto Exit;
-   }
-
-   MmBuildMdlForNonPagedPool(mdl);
-
-   status = FwpsAllocateNetBufferAndNetBufferList(
-                  gNetBufferListPool,
-                  0,
-                  0,
-                  mdl,
-                  0,
-                  streamEditor->dataLength,
-                  &netBufferList
-                  );
-   if (!NT_SUCCESS(status))
-   {
-      goto Exit;
-   }
-
-   streamFlags &= ~(FWPS_STREAM_FLAG_SEND_DISCONNECT | FWPS_STREAM_FLAG_RECEIVE_DISCONNECT);
-
-   status = FwpsStreamInjectAsync(
-               gInjectionHandle,
-               NULL,
-               0,
-               flowId,
-               calloutId,
-               layerId,
-               streamFlags, 
-               netBufferList,
-               streamEditor->dataLength,
-               StreamInjectCompletionFn,
-               mdl
-               );
-   if (!NT_SUCCESS(status))
-   {
-      goto Exit;
-   }
-
-   mdl = NULL;
-   netBufferList = NULL;
-
-Exit:
-
-   if (mdl != NULL)
-   {
-      IoFreeMdl(mdl);
-   }
-   if (netBufferList != NULL)
-   {
-      FwpsFreeNetBufferList(netBufferList);
-   }
-
-   return status;
+	return ((hostshort << 8) | (hostshort >> 8));
 }
 
-void
-StreamInlineEdit(
-   IN STREAM_EDITOR* streamEditor,
-   IN const FWPS_INCOMING_VALUES* inFixedValues,
-   IN const FWPS_INCOMING_METADATA_VALUES* inMetaValues,
-   IN const FWPS_FILTER* filter,
-   IN const FWPS_STREAM_DATA* streamData,
-   IN OUT FWPS_STREAM_CALLOUT_IO_PACKET* ioPacket,
-   OUT FWPS_CLASSIFY_OUT* classifyOut
-   )
-/* ++
-
-   This function implements the state machine that scans the content 
-   and computes the number of bytes to permit, bytes to block, and 
-   performs stream injection to replace the blocked data.
-
--- */
+USHORT ntohs(USHORT netshort)
 {
-   UINT findLength = strlen(configStringToFind);
-   UINT replaceLength = strlen(configStringToReplace);
-
-   if ((streamData->flags & FWPS_STREAM_FLAG_SEND_DISCONNECT) || 
-       (streamData->flags & FWPS_STREAM_FLAG_RECEIVE_DISCONNECT))
-   {
-      if (streamEditor->dataLength > 0)
-      {
-         StreamEditFlushData(
-            streamEditor,
-            inMetaValues->flowHandle,
-            filter->action.calloutId,
-            inFixedValues->layerId,
-            streamData->flags
-            );
-
-         streamEditor->dataLength = 0;
-         streamEditor->dataOffset = 0;
-      }
-
-      ASSERT(streamEditor->inlineEditState == INLINE_EDIT_WAITING_FOR_DATA);
-
-      ioPacket->streamAction = FWPS_STREAM_ACTION_NONE;
-      classifyOut->actionType = FWP_ACTION_PERMIT;
-      goto Exit;
-   }
-
-   if (streamData->dataLength == 0)
-   {
-      ioPacket->streamAction = FWPS_STREAM_ACTION_NONE;
-      classifyOut->actionType = FWP_ACTION_PERMIT;
-      goto Exit;
-   }
-
-   if (streamEditor->inlineEditState != INLINE_EDIT_SKIPPING)
-   {
-      if ((streamData->dataLength < findLength) && 
-          !(classifyOut->flags & FWPS_CLASSIFY_OUT_FLAG_NO_MORE_DATA))
-      {
-         ioPacket->streamAction = FWPS_STREAM_ACTION_NEED_MORE_DATA;
-         ioPacket->countBytesRequired = findLength;
-
-         classifyOut->actionType = FWP_ACTION_NONE;
-         goto Exit;
-      }
-   }
-
-   switch (streamEditor->inlineEditState)
-   {
-      case INLINE_EDIT_WAITING_FOR_DATA:
-      {
-         if (StreamCopyDataForInspection(
-               streamEditor,
-               streamData
-               ) == FALSE)
-         {
-            ioPacket->streamAction = FWPS_STREAM_ACTION_DROP_CONNECTION;
-            classifyOut->actionType = FWP_ACTION_NONE;
-            goto Exit;
-         }
-
-         //
-         // Pass-thru to scanning
-         //
-      }
-      case INLINE_EDIT_SCANNING:
-      {
-         UINT i;
-         BYTE* dataStart =  (BYTE*)streamEditor->scratchBuffer + streamEditor->dataOffset;
-         BOOLEAN found = FALSE;
-
-         for (i = 0; i < streamEditor->dataLength; ++i)
-         {
-            if (i + findLength <= streamEditor->dataLength)
-            {
-               if (RtlCompareMemory(
-                     dataStart + i,
-                     configStringToFind,
-                     findLength
-                     ) == findLength)
-               {
-                  found = TRUE;
-
-                  streamEditor->inlineEditState = INLINE_EDIT_MODIFYING;
-
-                  if (i != 0)
-                  {
-                     ioPacket->streamAction = FWPS_STREAM_ACTION_NONE;
-                     ioPacket->countBytesEnforced = i;
-
-                     classifyOut->actionType = FWP_ACTION_PERMIT;
-
-                     streamEditor->dataOffset += i;
-                     streamEditor->dataLength -= i;
-
-                     break;
-                  }
-                  else
-                  {
-                     goto modify_data;
-                  }
-               }
-            }
-            else
-            {
-               if (classifyOut->flags & FWPS_CLASSIFY_OUT_FLAG_NO_MORE_DATA)
-               {
-                  break;
-               }
-
-               if (RtlCompareMemory(
-                     dataStart + i,
-                     configStringToFind,
-                     streamEditor->dataLength - i
-                     ) == streamEditor->dataLength - i)
-               {
-                  found = TRUE;  // this is a partial find
-   
-                  ioPacket->streamAction = FWPS_STREAM_ACTION_NONE;
-                  ioPacket->countBytesEnforced = i;
-
-                  classifyOut->actionType = FWP_ACTION_PERMIT;
-
-                  RtlMoveMemory(
-                     streamEditor->scratchBuffer,
-                     dataStart + i,
-                     streamEditor->dataLength - i
-                     );
-
-                  streamEditor->dataOffset = 0;
-                  streamEditor->dataLength = streamEditor->dataLength - i;
-
-                  streamEditor->inlineEditState = INLINE_EDIT_SKIPPING;
-   
-                  break;
-               }
-            }
-         }
-
-         if (!found)
-         {
-            ioPacket->streamAction = FWPS_STREAM_ACTION_NONE;
-            ioPacket->countBytesEnforced = 0;
-
-            classifyOut->actionType = FWP_ACTION_PERMIT;
-
-            streamEditor->dataOffset = 0;
-            streamEditor->dataLength = 0;
-
-            streamEditor->inlineEditState = INLINE_EDIT_WAITING_FOR_DATA;
-         }
-
-         break;
-      }
-      case INLINE_EDIT_SKIPPING:
-      {
-         ioPacket->streamAction = FWPS_STREAM_ACTION_NONE;
-         ioPacket->countBytesEnforced = 0;
-
-         classifyOut->actionType = FWP_ACTION_BLOCK;
-
-         streamEditor->inlineEditState = INLINE_EDIT_WAITING_FOR_DATA;
-
-         break;
-      }
-      case INLINE_EDIT_MODIFYING:
-
-modify_data:
-      
-      {
-         NTSTATUS status;
-         NET_BUFFER_LIST* netBufferList;
-
-         status = FwpsAllocateNetBufferAndNetBufferList(
-                     gNetBufferListPool,
-                     0,
-                     0,
-                     gStringToReplaceMdl,
-                     0,
-                     replaceLength,
-                     &netBufferList
-                     );
-
-         if (!NT_SUCCESS(status))
-         {
-            ioPacket->streamAction = FWPS_STREAM_ACTION_DROP_CONNECTION;
-            classifyOut->actionType = FWP_ACTION_NONE;
-            goto Exit;
-         }
-
-         status = FwpsStreamInjectAsync(
-                     gInjectionHandle,
-                     NULL,
-                     0,
-                     inMetaValues->flowHandle,
-                     filter->action.calloutId,
-                     inFixedValues->layerId,
-                     streamData->flags,
-                     netBufferList,
-                     replaceLength,
-                     StreamInjectCompletionFn,
-                     NULL
-                     );
-
-         if (!NT_SUCCESS(status))
-         {
-            FwpsFreeNetBufferList(netBufferList);
-
-            ioPacket->streamAction = FWPS_STREAM_ACTION_DROP_CONNECTION;
-            classifyOut->actionType = FWP_ACTION_NONE;
-            goto Exit;
-         }
-
-         ioPacket->streamAction = FWPS_STREAM_ACTION_NONE;
-         ioPacket->countBytesEnforced = findLength;
-
-         classifyOut->actionType = FWP_ACTION_BLOCK;
-
-         streamEditor->dataOffset += findLength;
-         streamEditor->dataLength -= findLength;
-
-         if (streamEditor->dataLength > 0)
-         {
-            streamEditor->inlineEditState = INLINE_EDIT_SCANNING;
-         }
-         else
-         {
-            streamEditor->dataOffset = 0;
-
-            streamEditor->inlineEditState = INLINE_EDIT_WAITING_FOR_DATA;
-         }
-
-         break;
-      }
-      default:
-         ASSERT(FALSE);
-         break;
-   };
-
-Exit:
-
-   return;
+	return ((netshort << 8) | (netshort >> 8));
 }
+
 
 #if (NTDDI_VERSION >= NTDDI_WIN7)
 void 
@@ -445,14 +104,59 @@ StreamInlineEditClassify(
 {
 	if (classifyOut->rights & FWPS_RIGHT_ACTION_WRITE)
 	{	
-		DbgPrint(" In StreamInlineEditClassify\n");
+		//DbgPrint(" In StreamInlineEditClassify\n");
 
 		if ( inFixedValues->layerId == FWPS_LAYER_ALE_CONNECT_REDIRECT_V4)
 		{
-			DbgPrint(" FWPS_LAYER_ALE_CONNECT_REDIRECT_V4 \n");
+			NTSTATUS status = STATUS_SUCCESS;
+			HANDLE classifyHandle = NULL;
+			PVOID pWritableLayerData = NULL;
+
+			classifyOut->actionType = FWP_ACTION_PERMIT;
+
+			//DbgPrint(" FWPS_LAYER_ALE_CONNECT_REDIRECT_V4 \n");
+
+			status = FwpsAcquireClassifyHandle((void*)classifyContext,0,&classifyHandle);
+
+			if(status == STATUS_SUCCESS)
+			{
+ 				//DbgPrint("2222\n");
+
+  				status = FwpsAcquireWritableLayerDataPointer(classifyHandle,
+  					filter->filterId,
+  					0,
+  					&pWritableLayerData,
+  					classifyOut);
+  				if ( status == STATUS_SUCCESS && pWritableLayerData )
+  				{
+  					FWPS_CONNECT_REQUEST *pRequest = (FWPS_CONNECT_REQUEST *)pWritableLayerData;
+
+					SOCKADDR_IN *pSockAddr = (SOCKADDR_IN *)&(pRequest->remoteAddressAndPort);
+
+					DbgPrint(" %d.%d.%d.%d :%d",
+						pSockAddr->sin_addr.S_un.S_un_b.s_b1,
+						pSockAddr->sin_addr.S_un.S_un_b.s_b2,
+						pSockAddr->sin_addr.S_un.S_un_b.s_b3,
+						pSockAddr->sin_addr.S_un.S_un_b.s_b4,
+						htons(pSockAddr->sin_port));
+
+					pSockAddr->sin_addr.S_un.S_un_b.s_b1 = 192;
+					pSockAddr->sin_addr.S_un.S_un_b.s_b2 = 168;
+					pSockAddr->sin_addr.S_un.S_un_b.s_b3 = 0;
+					pSockAddr->sin_addr.S_un.S_un_b.s_b4 = 21;
+					
+					FwpsApplyModifiedLayerData(classifyHandle,pWritableLayerData,FWPS_CLASSIFY_FLAG_REAUTHORIZE_IF_MODIFIED_BY_OTHERS);
+ 					//DbgPrint("1111\n"); 
+  				}
+
+				FwpsReleaseClassifyHandle(classifyHandle);
+			}
+
+
+
 		}
 
-		classifyOut->actionType = FWP_ACTION_PERMIT;
+		
 	}
 
 
