@@ -14,47 +14,15 @@ Abstract:
 #ifndef _STREAM_CALLOUT_H
 #define _STREAM_CALLOUT_H
 
-extern PMDL gStringToReplaceMdl;
-extern HANDLE gInjectionHandle;
-extern NDIS_HANDLE gNetBufferListPool;
-extern STREAM_EDITOR gStreamEditor;
-
 // 
 // Configurable parameters
 //
 
 extern USHORT  configInspectionPort;
 
-
-extern CHAR configStringToFind[];
-extern CHAR configStringToReplace[];
-
 #pragma warning(push)
 #pragma warning(disable:4201)       // unnamed struct/union
-
-typedef struct STREAM_EDITOR_
-{
-   BOOLEAN editInline;
-
-   union
-   {
-      INLINE_EDIT_STATE inlineEditState;
-   };
-
-   PVOID scratchBuffer;
-   SIZE_T bufferSize;
-   SIZE_T dataOffset;
-   SIZE_T dataLength;
-
-}STREAM_EDITOR;
-
 #pragma warning(pop)
-
-BOOLEAN
-StreamCopyDataForInspection(
-   IN STREAM_EDITOR* streamEditor,
-   IN const FWPS_STREAM_DATA* streamData
-   );
 
 extern
 NTSYSAPI

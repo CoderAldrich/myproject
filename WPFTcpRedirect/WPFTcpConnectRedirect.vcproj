@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="WPFDataStreamEdit"
-	ProjectGUID="{B802958A-0661-4315-9F5C-D5839E3AC8E2}"
+	Name="WPFTcpConnectRedirect"
+	ProjectGUID="{6BC3F6C9-9DA1-4714-9FEB-43801BA55508}"
 	RootNamespace="WPFDataStreamEdit"
 	TargetFrameworkVersion="196613"
 	>
@@ -374,7 +374,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\stream_callout.c"
+				RelativePath=".\tcp_connect_callout.c"
 				>
 			</File>
 		</Filter>
@@ -392,11 +392,9 @@
 				>
 			</File>
 			<File
-				RelativePath=".\stream_callout.h"
+				RelativePath=".\tcp_connect_callout.h"
 				>
 			</File>
 		</Filter>
 	</Files>
-	<Globals>
-	</Globals>
 </VisualStudioProject>

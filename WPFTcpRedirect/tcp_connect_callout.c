@@ -52,7 +52,7 @@ Environment:
 #include "fwpmk.h"
 
 #include "inline_edit.h"
-#include "stream_callout.h"
+#include "tcp_connect_callout.h"
 
 #define INITGUID
 #include <guiddef.h>
@@ -63,11 +63,6 @@ Environment:
 
 USHORT  configInspectionPort = 80;
 
-
-CHAR configStringToFind[128] = "<title>";
-CHAR configStringToReplace[128] = "<title>FuckYou";
-
-   
 // 
 // Callout driver keys
 //
@@ -86,20 +81,11 @@ DEFINE_GUID(
 // Callout driver global variables
 //
 
-PMDL gStringToReplaceMdl;
-
-STREAM_EDITOR gStreamEditor;
-
 HANDLE gEngineHandle;
 UINT32 gCalloutIdV4;
 
 
 PDEVICE_OBJECT gDeviceObject;
-
-HANDLE gInjectionHandle;
-
-PNDIS_GENERIC_OBJECT gNdisGenericObj;
-NDIS_HANDLE gNetBufferListPool;
 
 #define STREAM_EDITOR_NDIS_OBJ_TAG 'oneS'
 #define STREAM_EDITOR_NBL_POOL_TAG 'pneS'
@@ -121,7 +107,7 @@ DriverUnload(
 
 
 NTSTATUS
-StreamEditNotify(
+TcpConnectNotify(
    IN FWPS_CALLOUT_NOTIFY_TYPE notifyType,
    IN const GUID* filterKey,
    IN const FWPS_FILTER* filter
@@ -160,8 +146,8 @@ RegisterCalloutForLayer(
    BOOLEAN calloutRegistered = FALSE;
 
    sCallout.calloutKey = *calloutKey;
-   sCallout.classifyFn = StreamInlineEditClassify;
-   sCallout.notifyFn = StreamEditNotify;
+   sCallout.classifyFn = TcpConnectClassify;
+   sCallout.notifyFn = TcpConnectNotify;
 
    status = FwpsCalloutRegister(
                deviceObject,
@@ -231,11 +217,7 @@ Exit:
    return status;
 }
 
-NTSTATUS
-StreamEditRegisterCallout(
-   IN const STREAM_EDITOR* streamEditor,
-   IN void* deviceObject
-   )
+NTSTATUS TcpConnectRegisterCallout( IN void* deviceObject )
 /* ++
 
    This function registers dynamic callouts and filters that intercept
@@ -252,8 +234,6 @@ StreamEditRegisterCallout(
    BOOLEAN inTransaction = FALSE;
 
    FWPM_SESSION session = {0};
-
-   UNREFERENCED_PARAMETER(streamEditor);
 
    session.flags = FWPM_SESSION_FLAG_DYNAMIC;
 
@@ -314,7 +294,7 @@ Exit:
 }
 
 void
-StreamEditUnregisterCallout()
+TcpConnectUnregisterCallout()
 {
    FwpmEngineClose(gEngineHandle);
    gEngineHandle = NULL;
@@ -329,25 +309,7 @@ DriverUnload(
 {
 
    UNREFERENCED_PARAMETER(driverObject);
-
-
-   if (gStreamEditor.scratchBuffer != NULL)
-   {
-      ExFreePoolWithTag(
-         gStreamEditor.scratchBuffer,
-         STREAM_EDITOR_FLAT_BUFFER_TAG
-         );
-
-   }
-
-   StreamEditUnregisterCallout();
-
-   FwpsInjectionHandleDestroy(gInjectionHandle);
-
-   NdisFreeNetBufferListPool(gNetBufferListPool);
-   NdisFreeGenericObject(gNdisGenericObj);
-
-   IoFreeMdl(gStringToReplaceMdl);
+   TcpConnectUnregisterCallout();
 
    IoDeleteDevice(gDeviceObject);
 }
@@ -361,11 +323,10 @@ DriverEntry(
    NTSTATUS status = STATUS_SUCCESS;
 
    UNICODE_STRING deviceName;
-   NET_BUFFER_LIST_POOL_PARAMETERS nblPoolParams = {0};
 
    RtlInitUnicodeString(
       &deviceName,
-      L"\\Device\\StreamEitor"
+      L"\\Device\\TcpRedirect"
       );
 
    status = IoCreateDevice(
@@ -382,76 +343,12 @@ DriverEntry(
       goto Exit;
    }
 
-   gStringToReplaceMdl = IoAllocateMdl(
-                           configStringToReplace,
-                           strlen(configStringToReplace),
-                           FALSE,
-                           FALSE,
-                           NULL
-                           );
-   if (gStringToReplaceMdl == NULL)
-   {
-      status = STATUS_NO_MEMORY;
-      goto Exit;
-   }
-
-   MmBuildMdlForNonPagedPool(gStringToReplaceMdl);
-
-   gNdisGenericObj = NdisAllocateGenericObject(
-                        driverObject, 
-                        STREAM_EDITOR_NDIS_OBJ_TAG, 
-                        0
-                        );
-
-   if (gNdisGenericObj == NULL)
-   {
-      status = STATUS_NO_MEMORY;
-      goto Exit;
-   }
-
-   nblPoolParams.Header.Type = NDIS_OBJECT_TYPE_DEFAULT;
-   nblPoolParams.Header.Revision = NET_BUFFER_LIST_POOL_PARAMETERS_REVISION_1;
-   nblPoolParams.Header.Size = sizeof(nblPoolParams);
-
-   nblPoolParams.fAllocateNetBuffer = TRUE;
-   nblPoolParams.DataSize = 0;
-
-   nblPoolParams.PoolTag = STREAM_EDITOR_NBL_POOL_TAG;
-
-   gNetBufferListPool = NdisAllocateNetBufferListPool(
-                           gNdisGenericObj,
-                           &nblPoolParams
-                           );
-
-   if (gNetBufferListPool == NULL)
-   {
-      status = STATUS_NO_MEMORY;
-      goto Exit;
-   }
-
-   status = FwpsInjectionHandleCreate(
-               AF_UNSPEC,
-               FWPS_INJECTION_TYPE_STREAM,
-               &gInjectionHandle
-               );
+   status = TcpConnectRegisterCallout( gDeviceObject );
 
    if (!NT_SUCCESS(status))
    {
       goto Exit;
    }
-
-   status = StreamEditRegisterCallout(
-               &gStreamEditor,
-               gDeviceObject
-               );
-
-   if (!NT_SUCCESS(status))
-   {
-      goto Exit;
-   }
-
-   InlineEditInit(&gStreamEditor);
-
 
    driverObject->DriverUnload = DriverUnload;
 
@@ -461,25 +358,9 @@ Exit:
    {
       if (gEngineHandle != NULL)
       {
-         StreamEditUnregisterCallout();
+         TcpConnectUnregisterCallout();
       }
 
-      if (gInjectionHandle != NULL)
-      {
-         FwpsInjectionHandleDestroy(gInjectionHandle);
-      }
-      if (gNetBufferListPool != NULL)
-      {
-         NdisFreeNetBufferListPool(gNetBufferListPool);
-      }
-      if (gNdisGenericObj != NULL)
-      {
-         NdisFreeGenericObject(gNdisGenericObj);
-      }
-      if (gStringToReplaceMdl != NULL)
-      {
-         IoFreeMdl(gStringToReplaceMdl);
-      }
       if (gDeviceObject)
       {
          IoDeleteDevice(gDeviceObject);
@@ -487,83 +368,6 @@ Exit:
    }
 
    return status;
-}
-
-BOOLEAN
-StreamCopyDataForInspection(
-   IN STREAM_EDITOR* streamEditor,
-   IN const FWPS_STREAM_DATA* streamData
-   )
-/* ++
-
-   This function copies stream data described by the FWPS_STREAM_DATA
-   structure into a flat buffer.
-
--- */
-
-{
-   SIZE_T bytesCopied;
-
-   SIZE_T existingDataLength = streamEditor->dataLength;
-   ASSERT(streamEditor->dataOffset == 0);
-   if (streamEditor->bufferSize - existingDataLength < streamData->dataLength)
-   {
-      SIZE_T newBufferSize = (streamData->dataLength + existingDataLength) * 2;
-      PVOID newBuffer = ExAllocatePoolWithTag(
-                           NonPagedPool,
-                           newBufferSize,
-                           STREAM_EDITOR_FLAT_BUFFER_TAG
-                           );
-
-      if (newBuffer != NULL)
-      {
-         if (existingDataLength > 0)
-         {
-            ASSERT(streamEditor->scratchBuffer != NULL);
-            RtlCopyMemory(
-               newBuffer, 
-               streamEditor->scratchBuffer, 
-               existingDataLength
-               );
-         }
-      }
-
-      if (streamEditor->scratchBuffer != NULL)
-      {
-         ExFreePoolWithTag(
-            streamEditor->scratchBuffer, 
-            STREAM_EDITOR_FLAT_BUFFER_TAG
-            );
-
-         streamEditor->scratchBuffer = NULL;
-         streamEditor->bufferSize = 0;
-         streamEditor->dataLength = 0;
-      }
-
-      if (newBuffer != NULL)
-      {
-         streamEditor->scratchBuffer = newBuffer;
-         streamEditor->bufferSize = newBufferSize;
-         streamEditor->dataLength = existingDataLength;
-      }
-      else
-      {
-         return FALSE;
-      }
-   }
-
-   FwpsCopyStreamDataToBuffer(
-      streamData,
-      (BYTE*)streamEditor->scratchBuffer + streamEditor->dataLength,
-      streamData->dataLength,
-      &bytesCopied
-      );
-
-   ASSERT(bytesCopied == streamData->dataLength);
-
-   streamEditor->dataLength += bytesCopied;
-
-   return TRUE;
 }
 
 

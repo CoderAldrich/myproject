@@ -18,25 +18,10 @@ Environment:
 #ifndef _INLINE_EDIT_H
 #define _INLINE_EDIT_H
 
-typedef enum INLINE_EDIT_STATE_
-{
-   INLINE_EDIT_WAITING_FOR_DATA,
-   INLINE_EDIT_SKIPPING,
-   INLINE_EDIT_MODIFYING,
-   INLINE_EDIT_SCANNING
-} INLINE_EDIT_STATE;
-
-typedef struct STREAM_EDITOR_ STREAM_EDITOR;
-
-void
-InlineEditInit(
-   OUT STREAM_EDITOR*
-   );
-
 #if(NTDDI_VERSION >= NTDDI_WIN7)
 void 
 NTAPI
-StreamInlineEditClassify(
+TcpConnectClassify(
    IN const FWPS_INCOMING_VALUES* inFixedValues,
    IN const FWPS_INCOMING_METADATA_VALUES* inMetaValues,
    IN OUT void* layerData,
@@ -48,7 +33,7 @@ StreamInlineEditClassify(
 #else if(NTDDI_VERSION < NTDDI_WIN7)
 void 
 NTAPI
-StreamInlineEditClassify(
+TcpConnectClassify(
    IN const FWPS_INCOMING_VALUES* inFixedValues,
    IN const FWPS_INCOMING_METADATA_VALUES* inMetaValues,
    IN OUT void* layerData,

@@ -27,35 +27,7 @@ Environment:
 #include "fwpmk.h"
 
 #include "inline_edit.h"
-#include "stream_callout.h"
-
-void
-InlineEditInit(
-   OUT STREAM_EDITOR* streamEditor
-   )
-{
-   streamEditor->editInline = TRUE;
-   streamEditor->inlineEditState = INLINE_EDIT_WAITING_FOR_DATA;
-}
-
-void 
-NTAPI StreamInjectCompletionFn(
-   IN void* context,
-   IN OUT NET_BUFFER_LIST* netBufferList,
-   IN BOOLEAN dispatchLevel
-   )
-{
-   PMDL mdl = (PMDL)context;
-
-   UNREFERENCED_PARAMETER(dispatchLevel);
-
-   if (mdl != NULL)
-   {
-      IoFreeMdl(mdl);
-   }
-
-   FwpsFreeNetBufferList(netBufferList);
-}
+#include "tcp_connect_callout.h"
 
 USHORT htons(USHORT hostshort)
 {
@@ -71,7 +43,7 @@ USHORT ntohs(USHORT netshort)
 #if (NTDDI_VERSION >= NTDDI_WIN7)
 void 
 NTAPI
-StreamInlineEditClassify(
+TcpConnectClassify(
    IN const FWPS_INCOMING_VALUES* inFixedValues,
    IN const FWPS_INCOMING_METADATA_VALUES* inMetaValues,
    IN OUT void* layerData,
@@ -83,7 +55,7 @@ StreamInlineEditClassify(
 #else if (NTDDI_VERSION < NTDDI_WIN7)
 void 
 NTAPI
-StreamInlineEditClassify(
+TcpConnectClassify(
    IN const FWPS_INCOMING_VALUES* inFixedValues,
    IN const FWPS_INCOMING_METADATA_VALUES* inMetaValues,
    IN OUT void* layerData,
@@ -127,7 +99,8 @@ StreamInlineEditClassify(
   					0,
   					&pWritableLayerData,
   					classifyOut);
-  				if ( status == STATUS_SUCCESS && pWritableLayerData )
+  				if ( status == STATUS_SUCCESS && pWritableLayerData )
+
   				{
   					FWPS_CONNECT_REQUEST *pRequest = (FWPS_CONNECT_REQUEST *)pWritableLayerData;
 
