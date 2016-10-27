@@ -2,21 +2,34 @@
 //
 
 #include "stdafx.h"
+#include <atlstr.h>
 #include "TcpSocket.h"
 #include "HttpSendParser.h"
 #include "UrlParser.h"
 #include "HelpFun.h"
-#include <atlstr.h>
+#include ".\httpÊý¾Ý½âÎö\HttpDataParser.h"
 
+VOID CALLBACK DataRecvedCallback( PVOID pParam , BYTE *pData,int nDataLen,BOOL bHeadData )
+{
+	if ( NULL == pData || nDataLen == 0 )
+	{
+		return ;
+	}
+
+	int a=0;
+
+}
 VOID HandleConnect( SOCKET sockClient,SOCKET sockRemote )
 {
 	CTcpSocket clientSock;
 	CTcpSocket remoteSock;
+
+	CHttpDataParser dataParser(DataRecvedCallback,NULL);
 	do
 	{
 		clientSock.Attach(sockClient);
 		remoteSock.Attach(sockRemote);
-
+		
 		char chRecvBuffer[4096];
 		while (TRUE)
 		{
@@ -38,6 +51,12 @@ VOID HandleConnect( SOCKET sockClient,SOCKET sockRemote )
 						break;
 					}
 
+					BOOL bFinalData = FALSE;
+					dataParser.ParseRecvData((BYTE *)chRecvBuffer,nRecvLen,&bFinalData);
+					if ( bFinalData )
+					{
+						dataParser.ResetParser();
+					}
 					//	DebugStringA("remoteSock RecvData %d",nRecvLen);
 
 					int nSendLen = clientSock.SendData(chRecvBuffer,nRecvLen);
@@ -171,7 +190,7 @@ VOID WINAPI HttpProxyServer()
 	BOOL bRes = sockListen.CreateTcpSocket();
 	if (bRes)
 	{
-		bRes = sockListen.InitAccept(8888);
+		bRes = sockListen.InitAccept(80);
 		if (bRes)
 		{
 			while (TRUE)
@@ -472,8 +491,8 @@ VOID HttpsProxyServer()
 #pragma comment(lib,"urlmon")
 int _tmain(int argc, _TCHAR* argv[])
 {
-	HttpsProxyServer();
-	//HttpProxyServer();
+	//HttpsProxyServer();
+	HttpProxyServer();
 
 	Sleep(500);
 

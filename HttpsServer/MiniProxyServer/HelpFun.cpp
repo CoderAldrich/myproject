@@ -49,7 +49,7 @@ int DivisionString(CStringA strSeparate, CStringA strSourceString, CStringA * pS
 #if defined(DEBUG) || defined(_DEBUG)
 #include <stdio.h>
 
-#define DEBUG_STRING_BUFFER_LEN MAX_PATH*4
+#define DEBUG_STRING_BUFFER_LEN MAX_PATH*10
 
 VOID DebugStringW(const WCHAR* fmt, ...)
 {

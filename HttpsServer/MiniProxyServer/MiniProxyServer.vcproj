@@ -271,6 +271,54 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 		</Filter>
+		<Filter
+			Name="Http数据解析"
+			>
+			<File
+				RelativePath=".\Http数据解析\Buffer.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Http数据解析\Buffer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Http数据解析\ChunkDataParser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Http数据解析\ChunkDataParser.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Http数据解析\HttpDataParser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Http数据解析\HttpDataParser.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Http数据解析\HttpRecvParser.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Http数据解析\HttpRecvParser.h"
+				>
+			</File>
+			<Filter
+				Name="Gzip"
+				>
+				<File
+					RelativePath=".\Http数据解析\Gzip\zconf.h"
+					>
+				</File>
+				<File
+					RelativePath=".\Http数据解析\Gzip\zlib.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>
