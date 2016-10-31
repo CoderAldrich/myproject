@@ -146,10 +146,6 @@ CString GetTempFilePath()
 
 CStringA AnalysisVerCodePic( LPCWSTR pszVerCodePic )
 {
-	STARTUPINFO thissi;
-	thissi.cb = sizeof(thissi);
-	GetStartupInfoW(&thissi);
-
 	CStringA strCode;
 
 	STARTUPINFO si;
@@ -157,10 +153,8 @@ CStringA AnalysisVerCodePic( LPCWSTR pszVerCodePic )
 	ZeroMemory(&si,sizeof(si));
 	ZeroMemory(&pi,sizeof(pi));
 	si.cb = sizeof(si);
-	si.dwFlags = STARTF_USESHOWWINDOW|STARTF_USESTDHANDLES;
+	si.dwFlags = STARTF_USESHOWWINDOW;
 	si.wShowWindow = SW_HIDE;
-	si.hStdError = thissi.hStdError;
-	si.hStdOutput = thissi.hStdOutput;
 
 	CString strResultCacheFile;
 	strResultCacheFile = GetTempFilePath();
