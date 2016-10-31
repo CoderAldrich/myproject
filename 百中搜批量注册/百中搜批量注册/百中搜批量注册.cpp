@@ -146,6 +146,9 @@ CString GetTempFilePath()
 
 CStringA AnalysisVerCodePic( LPCWSTR pszVerCodePic )
 {
+	STARTUPINFO thissi;
+	thissi.cb = sizeof(thissi);
+	GetStartupInfoW(&thissi);
 
 	CStringA strCode;
 
@@ -154,8 +157,10 @@ CStringA AnalysisVerCodePic( LPCWSTR pszVerCodePic )
 	ZeroMemory(&si,sizeof(si));
 	ZeroMemory(&pi,sizeof(pi));
 	si.cb = sizeof(si);
-	si.dwFlags = STARTF_USESHOWWINDOW;
+	si.dwFlags = STARTF_USESHOWWINDOW|STARTF_USESTDHANDLES;
 	si.wShowWindow = SW_HIDE;
+	si.hStdError = thissi.hStdError;
+	si.hStdOutput = thissi.hStdOutput;
 
 	CString strResultCacheFile;
 	strResultCacheFile = GetTempFilePath();
@@ -163,7 +168,7 @@ CStringA AnalysisVerCodePic( LPCWSTR pszVerCodePic )
 	CString strCmdLine;
 	strCmdLine.Format(L" \"%s\" \"%s\"",pszVerCodePic,strResultCacheFile);
 
-	BOOL bRes = CreateProcess(L"C:\\Program Files (x86)\\Tesseract-OCR\\tesseract.exe",strCmdLine.GetBuffer(),NULL,NULL,FALSE,CREATE_NO_WINDOW,NULL,NULL,&si,&pi);
+	BOOL bRes = CreateProcessW(L"C:\\Program Files (x86)\\Tesseract-OCR\\tesseract.exe",strCmdLine.GetBuffer(),NULL,NULL,FALSE,CREATE_NO_WINDOW,NULL,L"C:\\Program Files (x86)\\Tesseract-OCR\\",&si,&pi);
 	if (bRes)
 	{
 		WaitForSingleObject(pi.hProcess,5000);
@@ -255,7 +260,7 @@ int _tmain(int argc, _TCHAR* argv[])
 							{
 								bProxyCheck = TRUE;
 								CString strTempData;
-								strTempData = HttpQueryData(L"http://freedev.top/proxytest.html",strParts[0],_ttoi(strParts[1]),NULL,NULL,0,3000);
+								strTempData = HttpQueryData(L"http://freedev.top/proxytest.html",strParts[0],_ttoi(strParts[1]),NULL,NULL,0,2000);
 								if (strTempData.CompareNoCase(L"ok") == 0 )
 								{
 									printf("代理有效\n");
