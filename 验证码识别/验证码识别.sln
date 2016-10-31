@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "验证码识别", "验证码识别\验证码识别.vcproj", "{4A82E5BB-9D5A-4567-AD95-02934118C905}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "验证码识别1", "验证码识别1\验证码识别1.vcproj", "{FB365304-B818-46CD-8B22-18D5A76730A5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4A82E5BB-9D5A-4567-AD95-02934118C905}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4A82E5BB-9D5A-4567-AD95-02934118C905}.Debug|Win32.Build.0 = Debug|Win32
+		{4A82E5BB-9D5A-4567-AD95-02934118C905}.Release|Win32.ActiveCfg = Release|Win32
+		{4A82E5BB-9D5A-4567-AD95-02934118C905}.Release|Win32.Build.0 = Release|Win32
+		{FB365304-B818-46CD-8B22-18D5A76730A5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FB365304-B818-46CD-8B22-18D5A76730A5}.Debug|Win32.Build.0 = Debug|Win32
+		{FB365304-B818-46CD-8B22-18D5A76730A5}.Release|Win32.ActiveCfg = Release|Win32
+		{FB365304-B818-46CD-8B22-18D5A76730A5}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
