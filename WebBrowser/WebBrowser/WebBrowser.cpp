@@ -67,8 +67,8 @@ HINTERNET WINAPI MyInternetOpenW(
 	HINTERNET TReturn = pInternetOpenW(
 		lpszAgent,
 		INTERNET_OPEN_TYPE_PROXY,
-		L"http=http://127.0.0.1:8080",
-		NULL/*L"*"*/,
+		L"http=http://127.0.0.1:8888",
+		L"<local>",
 		dwFlags
 		);
 
@@ -94,11 +94,13 @@ BOOL StartHookCookie();
 BOOL CWebBrowserApp::InitInstance()
 {
 
-// 	DetourTransactionBegin();
-// 	DetourUpdateThread(GetCurrentThread());
-// 	//DetourAttach((PVOID *)&pInternetErrorDlg,(PVOID)MyInternetErrorDlg);
-// 	//DetourAttach((PVOID *)&pGetModuleFileNameW,(PVOID)MyGetModuleFileNameW);
-// 	DetourTransactionCommit();
+ 	DetourTransactionBegin();
+ 	DetourUpdateThread(GetCurrentThread());
+ 	//DetourAttach((PVOID *)&pInternetErrorDlg,(PVOID)MyInternetErrorDlg);
+ 	//DetourAttach((PVOID *)&pGetModuleFileNameW,(PVOID)MyGetModuleFileNameW);
+	DetourAttach((PVOID *)&pInternetOpenW,(PVOID)MyInternetOpenW);
+	
+ 	DetourTransactionCommit();
 
 	//StartHookCookie();
 	::LoadLibrary(L"DebugPrivate.dll");
