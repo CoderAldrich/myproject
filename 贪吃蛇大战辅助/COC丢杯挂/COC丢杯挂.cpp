@@ -113,6 +113,32 @@ BOOL CheckBg( COLORREF clrRef )
 	return FALSE;
 }
 
+
+int GetRandValue(int nMin ,int nMax)
+{
+	LARGE_INTEGER struLargeInteger;
+	if(QueryPerformanceCounter(&struLargeInteger))
+	{
+		srand(struLargeInteger.QuadPart + rand());
+	}
+	else
+	{
+		srand(GetTickCount() + rand());
+	}
+
+	if( (nMax - nMin + 1) == 0 )
+	{
+		return 0;
+	}
+
+	int nRandVal = 0;
+	for (int i=0;i<10;i++)
+	{
+		nRandVal = rand()%(nMax - nMin + 1) + nMin;
+	}
+	return nRandVal;
+}
+
 DWORD WINAPI WorkThread(PVOID pParam)
 {
 	HWND hTopWnd = FindWindow(L"Qt5QWindowIcon",L"夜神安卓模拟器");
@@ -129,8 +155,10 @@ DWORD WINAPI WorkThread(PVOID pParam)
 
 
 
-	 int nScanR = 100;
-	 int nScanSpace = 10;
+	 int nScanR = 150;
+	int nScanSpace = 5;
+	int nCurAngle = 0;
+	int nStartOffset = 10;
 	 int nPrintWidth = nScanR*2+10;
 
 	 HDC hScreenDc = GetDC(NULL);
@@ -156,98 +184,80 @@ DWORD WINAPI WorkThread(PVOID pParam)
 		BitBlt(hMemDC,0,0,nPrintWidth,nPrintWidth,hScreenDc,rcWin.left + ptCenter.x - nPrintWidth/2,rcWin.top + ptCenter.y -nPrintWidth/2,SRCCOPY);
 		ReleaseDC(NULL,hScreenDc);
 
+
 		int nX = 0;
 		int nY = 0;
-		
-		BOOL bTests[360] = {0};
 
-		for( int i=0;i< 360;i+=nScanSpace )
+		BOOL bAllClearLeft = TRUE;
+		for (int i=nStartOffset;i<nScanR;i+=nScanSpace )
 		{
-			AngleToXY(i,nScanR,nX,nY);
-			nX = nPrintWidth/2 +nX;
-			nY = nPrintWidth/2 +nY;
-			
-			DrawPoint(hSubWin,ptCenter.x+nX-nPrintWidth/2,ptCenter.y+nY-nPrintWidth/2);
+			AngleToXY(nCurAngle-4,i,nX,nY);
 
-			//CLR_INVALID
-			COLORREF clrPoint = GetPixel(hMemDC,nX,nY);
-
-
-			if ( CheckBg(clrPoint) )
+			COLORREF clrRef = GetPixel(hMemDC,nPrintWidth/2+nX,nPrintWidth/2+nY);
+			if ( !CheckBg(clrRef))
 			{
-				//背景
-				bTests[i] = 0;
-			}
-			else
-			{
-				int nOffset = 3;
-				COLORREF clrPointTop = GetPixel(hMemDC,nX,nY-nOffset);
-				COLORREF clrPointRight = GetPixel(hMemDC,nX+nOffset,nY);
-				COLORREF clrPointBottom = GetPixel(hMemDC,nX,nY+nOffset);
-				COLORREF clrPointLeft = GetPixel(hMemDC,nX-nOffset,nY);
-				if ( 
-					!CheckBg(clrPointTop) 
-					&& !CheckBg(clrPointRight) 
-					&& !CheckBg(clrPointBottom) 
-					&& !CheckBg(clrPointLeft) 
-					)
-				{
-					//物体
-					bTests[i] = 1;
-				}
-				else
-				{
-					bTests[i] = 0;
-				}
-				
-			}
-
-			//Sleep(100);
-		}
-
-		int nBegin = 0;
-		int nCount = 0;
-		int nMaxBegin = 0;
-		int nMaxCount = 0;
-
-		int nStart = 0;
-		int nEnd = 0;
-		for (int i=0;i<360;i+=nScanSpace)
-		{
-			if (bTests[i] == 1)
-			{
-				nStart = i+nScanSpace;
-				nEnd = 360+i;
+				bAllClearLeft = FALSE;
 				break;
 			}
 		}
 
-		nBegin = nStart;
-		for ( int i=nStart;i<=nEnd;i+=nScanSpace )
+		BOOL bAllClearRight = TRUE;
+		for (int i=nStartOffset;i<nScanR;i+=nScanSpace )
 		{
-			if ( bTests[i%360] == 0 )
+			AngleToXY(nCurAngle+4,i,nX,nY);
+
+			COLORREF clrRef = GetPixel(hMemDC,nPrintWidth/2+nX,nPrintWidth/2+nY);
+			if ( !CheckBg(clrRef))
 			{
-				nCount++;
+				bAllClearRight = FALSE;
+				break;
 			}
-			else
+		}
+
+
+		if ( !bAllClearLeft || !bAllClearRight )
+		{
+			while (TRUE)
 			{
-				if (nCount > nMaxCount)
+				int nX = 0;
+				int nY = 0;
+				int nAngle = GetRandValue( 0 ,359 );
+
+				BOOL bAllClearLeft = TRUE;
+				for (int i=nStartOffset;i<nScanR;i+=nScanSpace )
 				{
-					nMaxCount = nCount;
-					nMaxBegin = nBegin;
+					AngleToXY(nAngle-4,i,nX,nY);
+
+					COLORREF clrRef = GetPixel(hMemDC,nPrintWidth/2+nX,nPrintWidth/2+nY);
+					if ( !CheckBg(clrRef))
+					{
+						bAllClearLeft = FALSE;
+						break;
+					}
 				}
 
-				nBegin=i;
-				nCount=0;
+				BOOL bAllClearRight = TRUE;
+				for (int i=nStartOffset;i<nScanR;i+=nScanSpace )
+				{
+					AngleToXY(nAngle+4,i,nX,nY);
+
+					COLORREF clrRef = GetPixel(hMemDC,nPrintWidth/2+nX,nPrintWidth/2+nY);
+					if ( !CheckBg(clrRef))
+					{
+						bAllClearRight = FALSE;
+						break;
+					}
+				}
+
+
+				if (bAllClearLeft && bAllClearRight)
+				{
+					nCurAngle = nAngle;
+					ChangeMoveAngle(hWndWork,nAngle);
+					break;
+				}
 			}
 		}
-
-		if (nMaxBegin != 0)
-		{
-			ChangeMoveAngle(hWndWork,nMaxBegin+nMaxCount*nScanSpace/2);
-		}
-		
-
 
 		Sleep(50);
 	}
