@@ -79,8 +79,8 @@ BOOL CTcpSocket::Connect(LPCSTR pszTargetIP,USHORT nTargetPort,DWORD dwTimeOut)
 	FD_SET(m_TcpSock, &fs); 
 
 	timeval tv;
-	tv.tv_sec = dwTimeOut;
-	tv.tv_usec = 0;
+	tv.tv_sec = 0;
+	tv.tv_usec = 200000;
 
 	int nRet = select(0,NULL,&fs,NULL,&tv);
 

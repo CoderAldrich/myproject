@@ -343,6 +343,59 @@ public:
 
 };
 
+#include <WinInet.h>
+#pragma comment(lib,"wininet")
+
+#include <UrlMon.h>
+#pragma comment(lib,"urlmon.lib")
+#include <atlstr.h>
+
+CString GetHttpString( LPCWSTR pszUrl,LPCWSTR pszProxyIp,int nProxyPort )
+{
+	HINTERNET hInternet1 = NULL;
+	HINTERNET hInternet2 = NULL;
+	CString strPageContent;
+
+	do 
+	{
+		CString strProxy;
+		strProxy.Format(L"http=http://%s:%d",pszProxyIp,nProxyPort);
+		hInternet1 = InternetOpenW(NULL,/*INTERNET_OPEN_TYPE_PRECONFIG*/INTERNET_OPEN_TYPE_PROXY,strProxy,L"<local>",NULL);
+		if (NULL == hInternet1)
+		{
+			DWORD dwErrorCode = GetLastError();
+			break;
+		}
+		BOOL bOption = TRUE;
+		BOOL bSetRes = InternetSetOption(hInternet1,INTERNET_OPTION_HTTP_DECODING,&bOption,sizeof(BOOL));
+
+		WCHAR szHeaderAdd[] = L"Accept-Encoding: gzip, deflate";
+		HINTERNET hInternet2 = InternetOpenUrlW(hInternet1,pszUrl,szHeaderAdd,wcslen(szHeaderAdd),INTERNET_FLAG_NO_CACHE_WRITE,NULL);
+		if (NULL == hInternet2)
+		{
+			break;
+		}
+
+
+		DWORD dwReadDataLength = NULL;
+		BOOL bRet = TRUE;
+		do 
+		{
+			CHAR chReadBuffer[50];
+			bRet = InternetReadFile(hInternet2,chReadBuffer,49,&dwReadDataLength);
+			chReadBuffer[dwReadDataLength] = 0;
+			strPageContent+=chReadBuffer;
+
+			break;
+		} while (bRet && NULL != dwReadDataLength);
+
+	} while (FALSE);
+
+	InternetCloseHandle(hInternet2);
+	InternetCloseHandle(hInternet1);
+
+	return strPageContent;
+}
 
 CCSLock csLock;
 #include <list>
@@ -372,41 +425,30 @@ DWORD WINAPI CheckPortThread(PVOID pParam)
 
 		if ( strHostIp.GetLength() > 0 )
 		{
-			CTcpSocket tcpSock;
-			BOOL bRes = tcpSock.CreateTcpSocket();
-
-// 			bRes = tcpSock.Connect(strHostIp,80,1);
-// 			if (bRes)
-// 			{
-// 				OutputDebugStringA(strHostIp+":80\r\n");
-// 			}
-
-
-			bRes = tcpSock.Connect(strHostIp,8888,1);
-			if (bRes)
+			int nPorts[]={8080,8888,3128};
+			for (int i=0;i<_countof(nPorts);i++)
 			{
-				OutputDebugStringA(strHostIp+":8888\r\n");
+				CTcpSocket tcpSock;
+				BOOL bRes = tcpSock.CreateTcpSocket();
+
+				bRes = tcpSock.Connect(strHostIp,nPorts[i],1);
+				if (bRes)
+				{
+					CString strText = GetHttpString(L"http://freedev.top/proxytest.php",CString(strHostIp),nPorts[i]);
+
+					CStringA strMsgOut;
+					strMsgOut.Format(" %s:%d %s\r\n",strHostIp,nPorts[i],CStringA(strText));
+					OutputDebugStringA(strMsgOut);
+
+					if (strText.Left(2).CompareNoCase(L"ok") == 0 )
+					{
+						OutputDebugStringA("CheckPass\r\n");
+					}
+				}
+
+				tcpSock.CloseTcpSocket();
 			}
 
-
-			bRes = tcpSock.Connect(strHostIp,8080,1);
-			if (bRes)
-			{
-				OutputDebugStringA(strHostIp+":8080\r\n");
-			}
-
-			bRes = tcpSock.Connect(strHostIp,3218,1);
-			if (bRes)
-			{
-				OutputDebugStringA(strHostIp+":3218\r\n");
-			}
-
-
-// 			else
-// 			{
-// 				OutputDebugStringA(strHostIp+" 80 no\r\n");
-// 			}
-			tcpSock.CloseTcpSocket();
 			int a=0;
 
 		}
@@ -500,10 +542,10 @@ DWORD WINAPI WatchEchoPackge(LPVOID pParam)
 			{
 				(*pMap)[nPkgID].bRespon = true;
 
-//   				static int nIndex = 1;
-//   				CString msgout;
-//   				msgout.Format(TEXT(" %05d %s %dms\r\n"),nIndex++,(*pMap)[nPkgID].strIP,GetTickCount()-it->second.dwSendTime);
-//   				OutputDebugStringW(msgout);
+//    				static int nIndex = 1;
+//    				CString msgout;
+//    				msgout.Format(TEXT(" %05d %s %dms\r\n"),nIndex++,(*pMap)[nPkgID].strIP,GetTickCount()-it->second.dwSendTime);
+//    				OutputDebugStringW(msgout);
 
   				csLock.Lock();
   				lstHosts.push_back(CStringA((*pMap)[nPkgID].strIP));
@@ -554,14 +596,17 @@ int main(char *argv,int argc)
 {
 	PingMap pMap;
 	
+	for (int i=0;i<30;i++)
+	{
+		CreateThread(NULL,0,CheckPortThread,((PVOID)&pMap),0,NULL);
+	}
 	
-	CreateThread(NULL,0,CheckPortThread,((PVOID)&pMap),0,NULL);
 	CreateThread(NULL,0,WatchEchoPackge,((PVOID)&pMap),0,NULL);
 	//PingRange("192.168.0.1","192.168.0.255",&pMap,10,1);
 	//PingRange("211.64.0.0","211.71.255.255",&pMap,10,5);
 	//PingRange("112.121.100.0","112.121.164.255",&pMap,10,10);
 	//PingRange("172.16.0.0","172.31.255.255",&pMap,10,1);
-	PingRange("220.181.10.0","220.181.255.188",&pMap,1,5);
+	PingRange("120.0.0.0","120.15.255.255",&pMap,1,2);
 	
 	getchar();
 
