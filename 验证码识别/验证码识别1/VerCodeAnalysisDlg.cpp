@@ -247,6 +247,10 @@ void CVerCodeAnalysisDlg::OnBnClickedOk()
 	URLDownloadToFileW( NULL,L"http://www.baizhongsou.com/yanzhengma.aspx",L"C:\\tmp.png",0,NULL );
 	//URLDownloadToFileW( NULL,L"http://seo.jiding51.cn/yanzhengma.aspx",L"C:\\tmp.png",0,NULL );
 	
+	int nTopPadding = 5;
+	int nBottomPadding = 9;
+	int nLeftPadding = 10;
+	int nRightPadding = 10;
 
 	int nZoom = 4;
 	CImage img;
@@ -255,6 +259,26 @@ void CVerCodeAnalysisDlg::OnBnClickedOk()
 	
 	//if ( hr == S_OK )
 	{
+
+		int xxx[] = {10,30,50,70,90};
+		for (int i = 0;i<4;i++)
+		{
+			for (int x=xxx[i];x< xxx[i+1];x++)
+			{
+				for (int y=nTopPadding+1;y<img.GetHeight()-nBottomPadding-1;y++ )
+				{
+					COLORREF clrRef = img.GetPixel(x,y);
+					if ( 0x00ffffff != clrRef )
+					{
+						
+					}
+					//img.SetPixel(x,y,0x00000000);
+				}
+			}
+
+		}
+
+
 		int nFixCount = 0;
 		do
 		{
@@ -264,44 +288,53 @@ void CVerCodeAnalysisDlg::OnBnClickedOk()
 			{
 				for (int y = 0;y<img.GetHeight();y++)
 				{
-					int nOffsetHeight = 5;
-					int nOffsetWidth = 10;
-					if ( x <= nOffsetWidth || x >= img.GetWidth()-nOffsetWidth-1 || y <= nOffsetHeight || y >= img.GetHeight()-nOffsetHeight-1)
-					{
-						img.SetPixel(x,y,0x00ffffff);
-						continue;
-					}
-					COLORREF clrRef = img.GetPixel(x,y);
-					if ( 0x00ffffff != clrRef )
-					{
-						int nclrCount = 0;
-						for (int m = -1;m<2;m++)
+
+
+
+ 					if ( x <= nLeftPadding || x >= img.GetWidth()-nRightPadding-1 || y <= nTopPadding || y >= img.GetHeight()-nBottomPadding-1)
+ 					{
+ 						if (x == nLeftPadding || x == img.GetWidth()-nRightPadding-1 || y == nTopPadding || y == img.GetHeight()-nBottomPadding-1)
+ 						{
+ 							img.SetPixel(x,y,0x00000000);
+ 						}
+ 						else
 						{
-							for (int n = -1;n<2;n++)
-							{
-								if ( m==0 && n == 0 )
-								{
-
-								}
-								else
-								{
-									COLORREF clrTmpRef = img.GetPixel(x+m,y+n);
-									if (clrTmpRef != 0x00ffffff)
-										//if (clrTmpRef == clrRef)
-									{
-										nclrCount++;
-									}
-								}
-
-							}
-						}
-
-						if (nclrCount <= 2)
-						{
-							nFixCount++;
 							img.SetPixel(x,y,0x00ffffff);
 						}
-					}
+  						
+ 						continue;
+ 					}
+ 					COLORREF clrRef = img.GetPixel(x,y);
+ 					if ( 0x00ffffff != clrRef )
+ 					{
+ 						int nclrCount = 0;
+ 						for (int m = -1;m<2;m++)
+ 						{
+ 							for (int n = -1;n<2;n++)
+ 							{
+ 								if ( m==0 && n == 0 )
+ 								{
+ 
+ 								}
+ 								else
+ 								{
+ 									COLORREF clrTmpRef = img.GetPixel(x+m,y+n);
+ 									if (clrTmpRef != 0x00ffffff)
+ 										//if (clrTmpRef == clrRef)
+ 									{
+ 										nclrCount++;
+ 									}
+ 								}
+ 
+ 							}
+ 						}
+ 
+ 						if (nclrCount <= 2)
+ 						{
+ 							nFixCount++;
+ 							img.SetPixel(x,y,0x00ffffff);
+ 						}
+ 					}
 
 				}
 			}
@@ -314,6 +347,8 @@ void CVerCodeAnalysisDlg::OnBnClickedOk()
 	}
 
 	
+
+
 	img.Draw(GetDC()->m_hDC,0,img.GetHeight()*nZoom,img.GetWidth()*nZoom,img.GetHeight()*nZoom);
 
 	img.Save(L"C:\\tmp11.bmp");
