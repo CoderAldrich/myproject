@@ -180,7 +180,12 @@ BOOL CAutoBrowser::GetVisibleElemRect( IHTMLElement *pElem,RECT &elemRect)
 BOOL CAutoBrowser::GetVisibleElemRectToTop( IHTMLElement *pElem,RECT &elemRect)
 {
 	IHTMLDocument2 *pDoc2 = NULL;
-	pElem->get_document((IDispatch **)&pDoc2);
+	CComQIPtr<IDispatch> pTempDisp;
+	pElem->get_document((IDispatch **)&pTempDisp);
+	if (pTempDisp)
+	{
+		pTempDisp->QueryInterface(IID_IHTMLDocument2,(void **)&pDoc2);
+	}
 	if (pDoc2)
 	{
 		IHTMLWindow2 *pWin2 = NULL;
@@ -338,7 +343,13 @@ BOOL CAutoBrowser::GetAllMatchElemRect(CElemRectList *pElemRectList,CElementInfo
 	}
 
 	CComQIPtr<IHTMLDocument2> pqHtmlDoc2;
-	m_pWebBrowser->get_Document((IDispatch **)&pqHtmlDoc2);
+	IDispatch *pDisp = NULL;
+	m_pWebBrowser->get_Document((IDispatch **)&pDisp);
+	if (pDisp)
+	{
+		pDisp->QueryInterface(IID_IHTMLDocument2,(void **)&pqHtmlDoc2);
+		pDisp->Release();
+	}
 	if (pqHtmlDoc2 == NULL)
 	{
 		return FALSE;
@@ -411,7 +422,13 @@ BOOL CAutoBrowser::ScrollWebWindowTo(LONG X,LONG Y)
 	{
 		//IHTMLWindow2
 		CComQIPtr<IHTMLDocument2> pDoc2;
-		pWb->get_Document((IDispatch **)&pDoc2);
+		IDispatch *pDisp = NULL;
+		pWb->get_Document((IDispatch **)&pDisp);
+		if (pDisp)
+		{
+			pDisp->QueryInterface(IID_IHTMLDocument2,(void **)&pDoc2);
+			pDisp->Release();
+		}
 		if (pDoc2)
 		{
 			CComQIPtr<IHTMLWindow2> pWin2;

@@ -1,7 +1,12 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ShuaClient", "BaiDuSEO\BaiDuSEO.vcproj", "{A550FA9E-FD99-45D9-B594-9E1E81FA9785}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BaiDuSEO", "BaiDuSEO\BaiDuSEO.vcproj", "{A550FA9E-FD99-45D9-B594-9E1E81FA9785}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SEOLauncher", "SEOLauncher\SEOLauncher.vcproj", "{0EBD84A0-9273-422D-A733-91A3695CD838}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A550FA9E-FD99-45D9-B594-9E1E81FA9785} = {A550FA9E-FD99-45D9-B594-9E1E81FA9785}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,6 +18,10 @@ Global
 		{A550FA9E-FD99-45D9-B594-9E1E81FA9785}.Debug|Win32.Build.0 = Debug|Win32
 		{A550FA9E-FD99-45D9-B594-9E1E81FA9785}.Release|Win32.ActiveCfg = Release|Win32
 		{A550FA9E-FD99-45D9-B594-9E1E81FA9785}.Release|Win32.Build.0 = Release|Win32
+		{0EBD84A0-9273-422D-A733-91A3695CD838}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0EBD84A0-9273-422D-A733-91A3695CD838}.Debug|Win32.Build.0 = Debug|Win32
+		{0EBD84A0-9273-422D-A733-91A3695CD838}.Release|Win32.ActiveCfg = Release|Win32
+		{0EBD84A0-9273-422D-A733-91A3695CD838}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

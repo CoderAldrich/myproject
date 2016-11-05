@@ -29,7 +29,7 @@ LONG WINAPI ExpFilter(struct _EXCEPTION_POINTERS *pExp)
 		einfo.ThreadId = ::GetCurrentThreadId();
 		einfo.ExceptionPointers = pExp;
 		einfo.ClientPointers = FALSE;
-		::MiniDumpWriteDump(::GetCurrentProcess(), ::GetCurrentProcessId(), hFile, MiniDumpNormal, &einfo, NULL, NULL);
+		::MiniDumpWriteDump(::GetCurrentProcess(), ::GetCurrentProcessId(), hFile, MiniDumpWithFullMemory, &einfo, NULL, NULL);
 		::CloseHandle(hFile);
 
 		//UploadLogFile(L"gaozan198912.free3v.net",L"gaozan198912",L"zan123456",strDumpFileName);

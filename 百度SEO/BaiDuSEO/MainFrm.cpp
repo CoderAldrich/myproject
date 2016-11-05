@@ -6,6 +6,7 @@
 #include "BaiDuSEO.h"
 #include "MainFrm.h"
 
+#include "BaiDuSEOView.h"
 #include "VirtualMouse.h"
 #include "PublicFun.h"
 
@@ -60,13 +61,13 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	if (CFrameWnd::OnCreate(lpCreateStruct) == -1)
 		return -1;
 	
-	m_pView = new CIECoreView();
+	m_pView = new CBaiDuSEOView();
 
 	CRect rcClient;
 	GetClientRect(&rcClient);
 	m_pView->Create(NULL,NULL,WS_VISIBLE|WS_CHILD,rcClient,this,0);
 
-	m_pView->GetGlobalWebBrowser2()->put_Silent(VARIANT_TRUE);
+	//m_pView->GetGlobalWebBrowser2()->put_Silent(VARIANT_TRUE);
 
 	return 0;
 }
@@ -77,8 +78,8 @@ IDispatch * CMainFrame::CreateInstance()
 
 	CPoint ptCenter = rcWorkArea.CenterPoint();
 	
-	const int nWidth = 1366;
-	const int nHeight = 768;
+	const int nWidth = 800;
+	const int nHeight = 600;
 
 	rcWorkArea.top = ptCenter.y - nHeight/2;
 	rcWorkArea.bottom = ptCenter.y + nHeight/2;
