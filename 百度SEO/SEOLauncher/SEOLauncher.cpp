@@ -197,7 +197,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		BOOL bRes = CreateProcessW(strSeoApp,strCmdLine.GetBuffer(),NULL,NULL,FALSE,0,NULL,NULL,&si,&pi);
 		if (bRes)
 		{
-			WaitForSingleObject(pi.hProcess,5*60*1000);
+			WaitForSingleObject(pi.hProcess,10*60*1000);
 			TerminateProcess(pi.hProcess,0);
 			CloseHandle(pi.hProcess);
 			CloseHandle(pi.hThread);

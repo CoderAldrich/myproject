@@ -50,7 +50,9 @@ VOID MyParseCommandLine(
 					  LPCWSTR pszRunCmd,
 					  CString &strProxy,
 					  CString &strKeyWord,
-					  CString &strTargetUrl
+					  CString &strTargetUrl,
+					  CString &strUserAgent,
+					  CString &strPlatform
 					  )
 {
 	CString strRunCmd;
@@ -95,6 +97,17 @@ VOID MyParseCommandLine(
 				{
 					strTargetUrl = strTempParamValue;
 				}
+
+				if ( strTempParamName.CompareNoCase(L"-useragent") == 0 )
+				{
+					strUserAgent = strTempParamValue;
+				}
+
+				if ( strTempParamName.CompareNoCase(L"-platform") == 0 )
+				{
+					strPlatform = strTempParamValue;
+				}
+
 
 				strTempParamName = L"";
 				strTempParamValue = L"";
@@ -188,8 +201,13 @@ DWORD WINAPI WorkThread( PVOID pParam )
 	if(pBaiduView->WaitDocumentComplete(20000))
 	{
 		Sleep(5000);
-
 		CAutoBrowser AutoBrowser(pBaiduView->GetGlobalWebBrowser2(),pBaiduView->GetIEServerWnd());
+
+		CElementInformation InputElem;
+		InputElem.SetTagName(L"input");
+		InputElem.AddElementAttribute(L"name",L"wd",TRUE);
+		AutoBrowser.ClickFirstMatchWebPageElement(&InputElem);
+		Sleep(1000);
 
 		AutoBrowser.InputText(g_strSearchKeyWord);
 		Sleep(1000);
@@ -204,6 +222,9 @@ DWORD WINAPI WorkThread( PVOID pParam )
 
 
 		Sleep(5000);
+
+		BOOL bNextFound = FALSE;
+		int  nRefreshCount = 0;
 
 		for( int i=0;i<100;i++ )
 		{
@@ -255,19 +276,39 @@ DWORD WINAPI WorkThread( PVOID pParam )
 			}
 	
 
+			BOOL bNextClick = FALSE;
 
+			for( int n=0;n<10;n++ )
 			{
 				CElementInformation ElemInfo;
 				ElemInfo.SetTagName(L"a");
 				ElemInfo.SetTextName(L"ÏÂÒ»Ò³",FALSE);
 				ElemInfo.AddElementAttribute(L"href",L"/s",FALSE);
 
-				if( FALSE == AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo))
+				if( AutoBrowser.ClickFirstMatchWebPageElement(&ElemInfo) )
+				{
+					bNextClick = TRUE;
+					bNextFound = TRUE;
+					nRefreshCount = 0;
+					break;
+				}
+
+				Sleep(1000);
+			}
+
+			if ( FALSE == bNextClick )
+			{
+				if ( bNextFound && nRefreshCount < 3 )
+				{
+					nRefreshCount++;
+					pBaiduView->Refresh();
+				}
+				else
 				{
 					break;
 				}
+				
 			}
-
 
 		}
 
@@ -301,8 +342,10 @@ BOOL CBaiDuSEOApp::InitInstance()
 	CString strProxy;
 	CString strKeyWord;
 	CString strTargetUrl;
+	CString strUseAgent;
+	CString strPlatform;
 
-	MyParseCommandLine(GetCommandLineW(),strProxy,strKeyWord,strTargetUrl);
+	MyParseCommandLine(GetCommandLineW(),strProxy,strKeyWord,strTargetUrl,strUseAgent,strPlatform);
 	
 	if ( strProxy.GetLength() > 0 )
 	{
@@ -312,6 +355,16 @@ BOOL CBaiDuSEOApp::InitInstance()
 	if ( strKeyWord.GetLength() == 0 || strTargetUrl.GetLength() == 0 )
 	{
 		return FALSE;
+	}
+
+	if ( strUseAgent.GetLength() > 0 )
+	{
+		CIECoreView::m_strUserAgent = strUseAgent;
+	}
+
+	if ( strPlatform.GetLength() > 0 )
+	{
+		CIECoreView::m_strPlatform = strPlatform;
 	}
 
 	g_strSearchKeyWord = strKeyWord;
