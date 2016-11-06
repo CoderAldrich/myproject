@@ -9,19 +9,26 @@
 
 typedef VOID (CALLBACK *PROXY_FOUND_CALLBACK)( LPCWSTR pszProxyIp,int nProxyPort,int nRequestTime/*∫¡√Î*/);
 
+BOOL GetProxy( CString &strProxyIp,int &nProxyPort ,BOOL bDelete );
+
 DWORD WINAPI ProxyServerFindThread(PVOID pParam)
 {
 	PROXY_FOUND_CALLBACK pCallBack = (PROXY_FOUND_CALLBACK)pParam;
 
 	while (TRUE)
 	{
+
+		CString strProxyIp;
+		int     nProxyPort = 0;
+		GetProxy( strProxyIp,nProxyPort ,FALSE );
+
 		for (int i=1;i<=3;i++)
 		{
 			CString strXiCiUrl;
 			strXiCiUrl.Format(L"http://www.xicidaili.com/nn/%d",i);
 
 			CString strData;
-			strData = HttpQueryData(strXiCiUrl);
+			strData = HttpQueryData(strXiCiUrl,strProxyIp,nProxyPort);
 
 			BOOL  bBreak = FALSE;
 			int nIndex = 0;
@@ -88,7 +95,7 @@ DWORD WINAPI ProxyServerFindThread(PVOID pParam)
 			}
 		}
 
-		Sleep(30000);
+		Sleep(60000);
 	}
 
 
@@ -108,7 +115,7 @@ VOID CALLBACK ProxyFoundCallback( LPCWSTR pszProxyIp,int nProxyPort,int nRequest
 
 }
 
-BOOL GetProxy( CString &strProxyIp,int &nProxyPort )
+BOOL GetProxy( CString &strProxyIp,int &nProxyPort ,BOOL bDelete )
 {
 	BOOL bRes = FALSE;
 	WCHAR szKeyNames[4000];
@@ -122,7 +129,13 @@ BOOL GetProxy( CString &strProxyIp,int &nProxyPort )
 
 		if ( nProxyPort > 0 )
 		{
-			WritePrivateProfileStringW(L"Proxys",strProxyIp,NULL,strProxyCachePath);
+			if(bDelete)
+			{
+				CString strProxyPort;
+				strProxyPort.Format(L"%d",nProxyPort);
+				WritePrivateProfileStringW(L"ProxysUsed",strProxyIp,strProxyPort,strProxyCachePath);
+				WritePrivateProfileStringW(L"Proxys",strProxyIp,NULL,strProxyCachePath);
+			}
 
 			bRes = TRUE;
 			break;
@@ -176,7 +189,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	{
 		CString strProxyIp;
 		int     nProxyPort = 0;
- 		while(FALSE == GetProxy( strProxyIp,nProxyPort ))
+ 		while(FALSE == GetProxy( strProxyIp,nProxyPort ,TRUE ))
  		{
  			Sleep(1000);
  		}
