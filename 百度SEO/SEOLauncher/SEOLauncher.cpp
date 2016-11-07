@@ -19,6 +19,13 @@ DWORD WINAPI ProxyServerFindThread(PVOID pParam)
 	while (TRUE)
 	{
 
+		//如果代理数获取过多，则等待
+		UINT nProxyCount = 0;
+		while ( (nProxyCount = GetProxyCount()) > 20 )
+		{
+			Sleep(10000);
+		}
+
 		CString strProxyIp;
 		int     nProxyPort = 0;
 		GetProxy( strProxyIp,nProxyPort ,FALSE );
@@ -94,12 +101,6 @@ DWORD WINAPI ProxyServerFindThread(PVOID pParam)
 					printf("超时\n");
 				}
 			}
-		}
-
-		UINT nProxyCount = 0;
-		while ( (nProxyCount = GetProxyCount()) > 20 )
-		{
-			Sleep(10000);
 		}
 	}
 
@@ -243,6 +244,8 @@ int _tmain(int argc, _TCHAR* argv[])
 
 
 		printf("使用代理服务器：%s:%d\n",CStringA(strProxyIp),nProxyPort);
+		
+		int nFailedCount = 0;
 
 		WCHAR szKeyNames[4000];
 		GetPrivateProfileStringW(L"SEOConfig",NULL,L"",szKeyNames,4000,strCfgFile);
@@ -271,14 +274,31 @@ int _tmain(int argc, _TCHAR* argv[])
 			BOOL bRes = CreateProcessW(strSeoApp,strCmdLine.GetBuffer(),NULL,NULL,FALSE,0,NULL,NULL,&si,&pi);
 			if (bRes)
 			{
-				WaitForSingleObject(pi.hProcess,10*60*1000);
-				TerminateProcess(pi.hProcess,0);
+				DWORD dwExitCode = -1;
+				DWORD dwWaitRes = WaitForSingleObject(pi.hProcess,10*60*1000);
+				if ( dwWaitRes == WAIT_OBJECT_0 )
+				{
+					//如果是正常退出，则获取其退出代码。判断是否刷成功
+					GetExitCodeProcess(pi.hProcess,&dwExitCode);
+				}
+
+				TerminateProcess(pi.hProcess,-1);
+
 				CloseHandle(pi.hProcess);
 				CloseHandle(pi.hThread);
+
+				if ( dwExitCode != 0 )
+				{
+					nFailedCount++;
+					printf("刷量失败 总次数 %d\n",nFailedCount);
+				}
+				else
+				{
+					printf("刷量成功\n");
+				}
 			}
 
 			Sleep(1000);
-
 
 			nOffset+=wcslen(szKeyNames+nOffset)+1;
 		}
