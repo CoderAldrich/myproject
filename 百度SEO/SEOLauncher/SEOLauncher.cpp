@@ -12,26 +12,112 @@ typedef VOID (CALLBACK *PROXY_FOUND_CALLBACK)( LPCWSTR pszProxyIp,int nProxyPort
 BOOL GetProxy( CString &strProxyIp,int &nProxyPort ,BOOL bDelete );
 UINT GetProxyCount();
 
+VOID WaitMaxProxyCount()
+{
+	//如果代理数获取过多，则等待
+	UINT nProxyCount = 0;
+	while ( (nProxyCount = GetProxyCount()) > 10 )
+	{
+		Sleep(10000);
+	}
+}
+
+
 DWORD WINAPI ProxyServerFindThread(PVOID pParam)
 {
 	PROXY_FOUND_CALLBACK pCallBack = (PROXY_FOUND_CALLBACK)pParam;
 
 	while (TRUE)
 	{
-
-		//如果代理数获取过多，则等待
-		UINT nProxyCount = 0;
-		while ( (nProxyCount = GetProxyCount()) > 20 )
-		{
-			Sleep(10000);
-		}
+		WaitMaxProxyCount();
 
 		CString strProxyIp;
 		int     nProxyPort = 0;
 		GetProxy( strProxyIp,nProxyPort ,FALSE );
 
+
+		for (int i=1;i<10;i++)
+		{
+			WaitMaxProxyCount();
+
+			CString strXiCiUrl;
+			strXiCiUrl.Format(L"http://www.kuaidaili.com/free/inha/%d/",i);
+
+			CString strData;
+			strData = HttpQueryData(strXiCiUrl,strProxyIp,nProxyPort);
+
+			strData.Replace(L" data-title=\"IP\"",L"");
+			strData.Replace(L" data-title=\"PORT\"",L"");
+
+			BOOL  bBreak = FALSE;
+			int nIndex = 0;
+			CString strProxyIp;
+			CString strProxyPort;
+
+			while ( FALSE == bBreak )
+			{
+				for (int i=0;i<2;i++)
+				{
+					int nStart = strData.Find(L"<td>",nIndex);
+					if ( nStart >= 0 )
+					{
+						nStart+=4;
+						int nEnd = strData.Find(L"</td>",nStart);
+						if ( nEnd >= 0 )
+						{
+							CString strTempData;
+							strTempData = strData.Mid(nStart,nEnd-nStart);
+
+							if ( 0 == i )
+							{
+								strProxyIp = strTempData;
+							}
+
+							if ( 1 == i )
+							{
+								strProxyPort = strTempData;
+							}
+
+							nIndex = nEnd;
+						}
+						else
+						{
+							bBreak = TRUE;
+							break;
+						}
+					}
+					else
+					{
+						bBreak = TRUE;
+						break;
+					}
+				}
+
+				printf("测试代理：%s:%s\n" ,CStringA(strProxyIp), CStringA(strProxyPort) );
+
+				DWORD dwTickStart = GetTickCount();
+				CString strProxyTestData;
+				strProxyTestData = HttpQueryData(L"http://freedev.top/proxytest.html",strProxyIp,_ttoi(strProxyPort),NULL,NULL,0,1000);
+
+				if ( strProxyTestData.CompareNoCase(L"ok") == 0 )
+				{
+					printf("成功 耗时 %dms\n",GetTickCount() - dwTickStart);
+					if (pCallBack)
+					{
+						pCallBack(strProxyIp,_ttoi(strProxyPort),GetTickCount() - dwTickStart);
+					}
+				}
+				else
+				{
+					printf("超时\n");
+				}
+			}
+		}
+
 		for (int i=1;i<=3;i++)
 		{
+			WaitMaxProxyCount();
+
 			CString strXiCiUrl;
 			strXiCiUrl.Format(L"http://www.xicidaili.com/nn/%d",i);
 
@@ -86,7 +172,7 @@ DWORD WINAPI ProxyServerFindThread(PVOID pParam)
 
 				DWORD dwTickStart = GetTickCount();
 				CString strProxyTestData;
-				strProxyTestData = HttpQueryData(L"http://freedev.top/proxytest.html",strProxyIp,_ttoi(strProxyPort),NULL,NULL,0,3000);
+				strProxyTestData = HttpQueryData(L"http://freedev.top/proxytest.html",strProxyIp,_ttoi(strProxyPort),NULL,NULL,0,1000);
 				
 				if ( strProxyTestData.CompareNoCase(L"ok") == 0 )
 				{
@@ -102,6 +188,10 @@ DWORD WINAPI ProxyServerFindThread(PVOID pParam)
 				}
 			}
 		}
+
+
+
+
 	}
 
 
