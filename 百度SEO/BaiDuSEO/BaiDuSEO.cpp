@@ -198,7 +198,8 @@ DWORD WINAPI WorkThread( PVOID pParam )
 
 	//pMainFrame->m_pView->Navigate(L"http://freedev.top/",0,0,0);
 
-	if(pBaiduView->WaitDocumentComplete(20000))
+	pBaiduView->WaitDocumentComplete(20000);
+
 	{
 		Sleep(5000);
 		CAutoBrowser AutoBrowser(pBaiduView->GetGlobalWebBrowser2(),pBaiduView->GetIEServerWnd());

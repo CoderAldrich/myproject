@@ -10,6 +10,7 @@
 typedef VOID (CALLBACK *PROXY_FOUND_CALLBACK)( LPCWSTR pszProxyIp,int nProxyPort,int nRequestTime/*毫秒*/);
 
 BOOL GetProxy( CString &strProxyIp,int &nProxyPort ,BOOL bDelete );
+UINT GetProxyCount();
 
 DWORD WINAPI ProxyServerFindThread(PVOID pParam)
 {
@@ -95,7 +96,11 @@ DWORD WINAPI ProxyServerFindThread(PVOID pParam)
 			}
 		}
 
-		Sleep(60000);
+		UINT nProxyCount = 0;
+		while ( (nProxyCount = GetProxyCount()) > 20 )
+		{
+			Sleep(10000);
+		}
 	}
 
 
@@ -113,6 +118,23 @@ VOID CALLBACK ProxyFoundCallback( LPCWSTR pszProxyIp,int nProxyPort,int nRequest
 		WritePrivateProfileStringW(L"Proxys",pszProxyIp,strPort,strProxyCachePath);
 	}
 
+}
+
+UINT GetProxyCount()
+{
+	UINT nProxyCount = 0;
+	WCHAR szKeyNames[4000];
+	GetPrivateProfileStringW(L"Proxys",NULL,L"",szKeyNames,4000,strProxyCachePath);
+
+	int nOffset = 0;
+	while ( wcslen(szKeyNames+nOffset) > 0 )
+	{
+		nProxyCount++;
+
+		nOffset+=wcslen(szKeyNames+nOffset)+1;
+	}
+
+	return nProxyCount;
 }
 
 BOOL GetProxy( CString &strProxyIp,int &nProxyPort ,BOOL bDelete )
@@ -146,6 +168,27 @@ BOOL GetProxy( CString &strProxyIp,int &nProxyPort ,BOOL bDelete )
 
 	return bRes;
 }
+
+CString GetIniString(
+					 LPCWSTR lpAppName,
+					 LPCWSTR lpKeyName,
+					 LPCWSTR lpDefault,
+					 LPCWSTR lpFileName
+					 )
+{
+	CString strTemp;
+	DWORD dwBufferLen = 1024;
+	DWORD dwReturnLen = 0;
+
+	do
+	{
+		dwBufferLen*=2;
+		dwReturnLen = GetPrivateProfileStringW(lpAppName,lpKeyName,lpDefault,strTemp.GetBuffer(dwBufferLen),dwBufferLen,lpFileName);
+		strTemp.ReleaseBuffer();
+	}while(dwReturnLen > 0 && dwReturnLen == dwBufferLen - 1 /*说明缓冲区不够大，*/);
+	return strTemp;
+}
+
 
 //获取当前模块句柄
 HMODULE ModuleHandleByAddr(const void* ptrAddr)  
@@ -183,6 +226,10 @@ int _tmain(int argc, _TCHAR* argv[])
 	strSeoApp = szLocalPath;
 	strSeoApp +=L"BaiDuSEO.exe";
 
+	CString strCfgFile;
+	strCfgFile = szLocalPath;
+	strCfgFile +=L"Config.ini";
+
 	CreateThread(NULL,0,ProxyServerFindThread,(PVOID)ProxyFoundCallback,0,NULL);
 
 	while (TRUE)
@@ -197,26 +244,45 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		printf("使用代理服务器：%s:%d\n",CStringA(strProxyIp),nProxyPort);
 
-		ClearCache();
+		WCHAR szKeyNames[4000];
+		GetPrivateProfileStringW(L"SEOConfig",NULL,L"",szKeyNames,4000,strCfgFile);
 
-		STARTUPINFO si;
-		PROCESS_INFORMATION pi;
-		ZeroMemory(&si,sizeof(si));
-		ZeroMemory(&pi,sizeof(pi));
-		si.cb = sizeof(si);
-
-		CString strCmdLine;
-		strCmdLine.Format(L" -proxy %s:%d -keyword 南戴河住宿 -targeturl ndhjinshawan.com",strProxyIp,nProxyPort);
-		BOOL bRes = CreateProcessW(strSeoApp,strCmdLine.GetBuffer(),NULL,NULL,FALSE,0,NULL,NULL,&si,&pi);
-		if (bRes)
+		int nOffset = 0;
+		while ( wcslen(szKeyNames+nOffset) > 0 )
 		{
-			WaitForSingleObject(pi.hProcess,10*60*1000);
-			TerminateProcess(pi.hProcess,0);
-			CloseHandle(pi.hProcess);
-			CloseHandle(pi.hThread);
+			ClearCache();
+
+			CString strKeyWord;
+			CString strTargetUrl;
+
+			strKeyWord = szKeyNames+nOffset;
+			strTargetUrl = GetIniString(L"SEOConfig",strKeyWord,L"",strCfgFile);
+
+			printf("关键词：%s 目标链接：%s\n",CStringA(strKeyWord),CStringA(strTargetUrl));
+
+			STARTUPINFO si;
+			PROCESS_INFORMATION pi;
+			ZeroMemory(&si,sizeof(si));
+			ZeroMemory(&pi,sizeof(pi));
+			si.cb = sizeof(si);
+
+			CString strCmdLine;
+			strCmdLine.Format(L" -proxy %s:%d -keyword %s -targeturl %s",strProxyIp,nProxyPort,strKeyWord,strTargetUrl);
+			BOOL bRes = CreateProcessW(strSeoApp,strCmdLine.GetBuffer(),NULL,NULL,FALSE,0,NULL,NULL,&si,&pi);
+			if (bRes)
+			{
+				WaitForSingleObject(pi.hProcess,10*60*1000);
+				TerminateProcess(pi.hProcess,0);
+				CloseHandle(pi.hProcess);
+				CloseHandle(pi.hThread);
+			}
+
+			Sleep(1000);
+
+
+			nOffset+=wcslen(szKeyNames+nOffset)+1;
 		}
 
-		Sleep(1000);
 
 	}
 
