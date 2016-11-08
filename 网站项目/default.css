@@ -11,6 +11,7 @@
 
 .taildiv{
 	display: inline-block;
+	width: 100%;
 }
 
 .contactus{
@@ -54,4 +55,12 @@
 .delicacy div
 {
 	float: left;
+}
+
+.copyright{
+	width: 100%;
+}
+.copyright span{
+	text-align: center;
+    display: block;
 }
