@@ -384,8 +384,14 @@ int _tmain(int argc, _TCHAR* argv[])
 				}
 				else
 				{
+					nFailedCount = 0;
 					printf("Ë¢Á¿³É¹¦\n");
 				}
+			}
+
+			if ( nFailedCount >=3 )
+			{
+				break;
 			}
 
 			Sleep(1000);
