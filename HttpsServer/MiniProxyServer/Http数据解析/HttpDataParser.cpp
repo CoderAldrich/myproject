@@ -111,7 +111,7 @@ CHttpDataParser::~CHttpDataParser()
 	
 }
 
-BOOL CHttpDataParser::HandleTransferData( PBYTE pData,int nDataLen ) 
+BOOL CHttpDataParser::HandleTransferData( PBYTE pData,int nDataLen,BOOL bFinalData) 
 {
 
 	if ( m_ceEncoding == CE_GZIP )
@@ -123,7 +123,7 @@ BOOL CHttpDataParser::HandleTransferData( PBYTE pData,int nDataLen )
 
 		if ( bUnCompRes && m_pCallback )
 		{
-			m_pCallback(m_pCallbackParam,pUnCompBuffer,ulUnCompBufferLen,FALSE);
+			m_pCallback(m_pCallbackParam,pUnCompBuffer,ulUnCompBufferLen,FALSE,bFinalData);
 		}
 
 		free(pUnCompBuffer);
@@ -133,7 +133,7 @@ BOOL CHttpDataParser::HandleTransferData( PBYTE pData,int nDataLen )
 
 	if (m_pCallback)
 	{
-		m_pCallback(m_pCallbackParam,pData,nDataLen,FALSE);
+		m_pCallback(m_pCallbackParam,pData,nDataLen,FALSE,bFinalData);
 	}
 
 	return TRUE;;
@@ -153,7 +153,6 @@ BOOL CHttpDataParser::HandleContentData( PBYTE pContentData,int nContentDataLen,
 	{
 		m_llCurRecvContentLen += llContentDataLen;
 
-		HandleTransferData(pContentDataBuffer,llContentDataLen);
 
 		if ( m_llCurRecvContentLen >= m_llTotalContentLen )
 		{
@@ -163,6 +162,7 @@ BOOL CHttpDataParser::HandleContentData( PBYTE pContentData,int nContentDataLen,
 			}
 		}
 
+		HandleTransferData(pContentDataBuffer,llContentDataLen,*pbFinalData);
 	}
 	else if( m_teEncoding == TE_CHUNKED )
 	{
@@ -197,7 +197,7 @@ BOOL CHttpDataParser::HandleContentData( PBYTE pContentData,int nContentDataLen,
 
 		if (pUnChunkData && nUnChunkDataLen )
 		{
-			HandleTransferData(pUnChunkData,nUnChunkDataLen);
+			HandleTransferData(pUnChunkData,nUnChunkDataLen,*pbFinalData);
 		}
 
 	}
@@ -246,7 +246,7 @@ BOOL CHttpDataParser::ParseRecvData( PBYTE pRecvData,int nRecvDataLen,BOOL *pbFi
 					m_bufContent.AppendData(pHeadDataBuffer+m_nContentStart,nRecvContentLen);
 				}
 
-				m_pCallback(m_pCallbackParam,pHeadDataBuffer,m_nContentStart,TRUE);
+				m_pCallback(m_pCallbackParam,pHeadDataBuffer,m_nContentStart,TRUE,FALSE);
 
 				CStringA strContentLen;
 				CStringA strContentEncoding;

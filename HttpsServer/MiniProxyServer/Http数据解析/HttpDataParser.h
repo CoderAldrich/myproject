@@ -6,7 +6,7 @@
 #include ".\Gzip\zlib.h"
 #pragma comment(lib,".\\HttpÊý¾Ý½âÎö\\Gzip\\zlibwapi.lib")
 
-typedef VOID (CALLBACK *TypeDataRecvedCallback)( PVOID pParam , BYTE *pData,int nDataLen,BOOL bHeadData );
+typedef VOID (CALLBACK *TypeDataRecvedCallback)( PVOID pParam , BYTE *pData,int nDataLen,BOOL bHeadData ,BOOL bFinalData );
 BOOL UnCompressGzipData( z_stream *pstream , BYTE **ppDataOutBuffer,
 						ULONG *pulDataOutLen,
 						BYTE *pSoureData,
@@ -56,7 +56,7 @@ public:
 
 	~CHttpDataParser();
 
-	BOOL HandleTransferData( PBYTE pData,int nDataLen );
+	BOOL HandleTransferData( PBYTE pData,int nDataLen,BOOL bFinalData);
 
 	BOOL HandleContentData( PBYTE pContentData,int nContentDataLen,BOOL *pbFinalData);
 
