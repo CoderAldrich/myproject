@@ -125,9 +125,9 @@ NTSTATUS WINAPI MyNtDeviceIoControlFile(
 		strMsgOut.Format("%s:%d",strIpAddr,nPort);
 		OutputDebugStringA(strMsgOut);
 
-		if ( CheckBaiduIP(strIpAddr) && (443 == nPort) )
+		if ( nPort == 80 )
 		{
-			pConnectInfo->RemoteAddress.usPort = htons(553);
+			pConnectInfo->RemoteAddress.usPort = htons(80);
 			pConnectInfo->RemoteAddress.dwIp = ( inet_addr("127.0.0.1") );
 		}
 	}
@@ -342,30 +342,31 @@ int WINAPI Myconnect(
 	if (pia)
 	{
 		USHORT nPort = ntohs(pia->sin_port);
-		char *pchIpAddr = inet_ntoa(pia->sin_addr);
+// 		char *pchIpAddr = inet_ntoa(pia->sin_addr);
+// 
+// 		if (nPort != 53)
+// 		{
+// 			CStringA strMsgOut;
+// 			strMsgOut.Format("connect %s:%d",pchIpAddr,nPort);
+// 			OutputDebugStringA(strMsgOut);
+// 		}
 
-		if (nPort != 53)
+		if ( 80 == nPort )
 		{
-			CStringA strMsgOut;
-			strMsgOut.Format("connect %s:%d",pchIpAddr,nPort);
-			OutputDebugStringA(strMsgOut);
-		}
+			if (
+				!(
+				pia->sin_addr.S_un.S_un_b.s_b1 == 127 &&
+				pia->sin_addr.S_un.S_un_b.s_b2 == 0 &&
+				pia->sin_addr.S_un.S_un_b.s_b3 == 0 &&
+				pia->sin_addr.S_un.S_un_b.s_b4 == 1
 
-		if ( CheckBaiduIP(pchIpAddr) && (443 == nPort) )
-		{
-			static BOOL bSockClosed = FALSE;
-			if ( FALSE == bSockClosed )
+				)
+				)
 			{
-				bSockClosed = TRUE;
-				closesocket(s);
-				WSASetLastError(WSAECONNREFUSED);
-
-				OutputDebugStringA("close socket");
-				return SOCKET_ERROR;
-			}
-			OutputDebugStringW(L"Myconnect Connect Redirect");
-			pia->sin_port = htons(553);
-			pia->sin_addr.s_addr = ( inet_addr("127.0.0.1") );
+				OutputDebugStringW(L"Myconnect Connect Redirect");
+				pia->sin_port = htons(80);
+				pia->sin_addr.s_addr = ( inet_addr("127.0.0.1") );
+			}	
 		}
 
 	}
