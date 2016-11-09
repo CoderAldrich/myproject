@@ -202,7 +202,18 @@ DWORD WINAPI RequestHandleThread(PVOID pParam)
  	{
 		int nRes = select(0,&fdRead,NULL,NULL,NULL);
 		
+		if ( SOCKET_ERROR == nRes)
+		{
+			break;
+		}
+
 		nRes = clientSock.RecvData(chRecvBuf,4096);
+
+		if ( nRes == 0 )
+		{
+			break;
+		}
+
  		chRecvBuf[nRes] = 0;
  		strRequestHead+=chRecvBuf;
  
