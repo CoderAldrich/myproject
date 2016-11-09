@@ -222,6 +222,11 @@ DWORD WINAPI RequestHandleThread(PVOID pParam)
  	
 	do 
 	{
+		if ( strHost.CompareNoCase("localhost") == 0 || strHost.IsEmpty())
+		{
+			break;
+		}
+
 		if(!remoteSock.CreateTcpSocket())
 		{
 			DebugStringA("remoteSock CreateTcpSocket Failed %d",WSAGetLastError());
