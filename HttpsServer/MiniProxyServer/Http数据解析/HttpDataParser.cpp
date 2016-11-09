@@ -219,6 +219,8 @@ BOOL CHttpDataParser::ParseRecvData( PBYTE pRecvData,int nRecvDataLen,BOOL *pbFi
 			break;
 		}
 
+		*pbFinalData = FALSE;
+
 		//如果还没有接受到头部，则缓存数据，等待头部
 		if ( FALSE == m_bHeaderOk )
 		{
@@ -245,8 +247,6 @@ BOOL CHttpDataParser::ParseRecvData( PBYTE pRecvData,int nRecvDataLen,BOOL *pbFi
 				{
 					m_bufContent.AppendData(pHeadDataBuffer+m_nContentStart,nRecvContentLen);
 				}
-
-				m_pCallback(m_pCallbackParam,pHeadDataBuffer,m_nContentStart,TRUE,FALSE);
 
 				CStringA strContentLen;
 				CStringA strContentEncoding;
@@ -296,6 +296,14 @@ BOOL CHttpDataParser::ParseRecvData( PBYTE pRecvData,int nRecvDataLen,BOOL *pbFi
 				{
 					m_ceEncoding = CE_NO_ENCODING;
 				}
+
+				if ( TE_NO_ENCODING == m_teEncoding )
+				{
+					*pbFinalData = m_llTotalContentLen == 0;
+				}
+
+				m_pCallback(m_pCallbackParam,pHeadDataBuffer,m_nContentStart,TRUE,*pbFinalData);
+
 			}
 		}
 
