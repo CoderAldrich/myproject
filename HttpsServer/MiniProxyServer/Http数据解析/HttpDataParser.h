@@ -57,6 +57,8 @@ public:
 
 	~CHttpDataParser();
 
+	BOOL InitZLibStreamIfNeed();
+
 	BOOL HandleTransferData( PBYTE pData,int nDataLen,BOOL bFinalData);
 
 	BOOL HandleContentData( PBYTE pContentData,int nContentDataLen,BOOL *pbFinalData);

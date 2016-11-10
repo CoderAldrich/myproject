@@ -106,19 +106,38 @@ CHttpDataParser::~CHttpDataParser()
 	
 }
 
-BOOL CHttpDataParser::HandleTransferData( PBYTE pData,int nDataLen,BOOL bFinalData) 
-{
 
-	if ( m_ceEncoding == CE_GZIP )
+BOOL CHttpDataParser::InitZLibStreamIfNeed()
+{
+	if ( FALSE == m_bGzipInit )
 	{
-		if ( FALSE == m_bGzipInit )
+		if ( m_ceEncoding == CE_GZIP )
 		{
 			int	ret = inflateInit2(&m_gzipstream,47);
-			if (Z_OK != ret)
+			if (Z_OK == ret)
 			{
 				m_bGzipInit = TRUE;
 			}
 		}
+		else if( m_ceEncoding == CE_DEFLATE )
+		{
+			int	ret = inflateInit2(&m_gzipstream,-MAX_WBITS);
+			if (Z_OK == ret)
+			{
+				m_bGzipInit = TRUE;
+			}
+		}
+	}
+	
+	return m_bGzipInit;
+}
+
+BOOL CHttpDataParser::HandleTransferData( PBYTE pData,int nDataLen,BOOL bFinalData) 
+{
+
+	if ( m_ceEncoding == CE_GZIP || m_ceEncoding == CE_DEFLATE )
+	{
+		InitZLibStreamIfNeed();
 
 		BYTE *pUnCompBuffer = NULL;
 		ULONG  ulUnCompBufferLen = 0;
@@ -133,19 +152,6 @@ BOOL CHttpDataParser::HandleTransferData( PBYTE pData,int nDataLen,BOOL bFinalDa
 		free(pUnCompBuffer);
 
 		return bUnCompRes;
-	}
-	else if( m_ceEncoding == CE_DEFLATE )
-	{
-		if ( FALSE == m_bGzipInit )
-		{
-			Z_DEFLATED
-			int	ret = inflateInit2(&m_gzipstream,47);
-			if (Z_OK != ret)
-			{
-				m_bGzipInit = TRUE;
-			}
-		}
-
 	}
 
 	if (m_pCallback)
@@ -366,11 +372,5 @@ VOID CHttpDataParser::ResetParser()
 		inflateEnd(&m_gzipstream);
 		m_bGzipInit = FALSE;
 	}
-
 	memset(&m_gzipstream, 0, sizeof(z_stream));
-	int	ret = inflateInit2(&m_gzipstream,47/*»ò MAX_WBITS | 16  Ò²ÐÐ*//*,ZLIB_VERSION,sizeof(z_stream)*/);
-	if (Z_OK != ret)
-	{
-		m_bGzipInit = TRUE;
-	}
 }
