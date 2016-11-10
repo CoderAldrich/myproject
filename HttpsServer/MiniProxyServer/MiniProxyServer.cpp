@@ -273,7 +273,7 @@ VOID WINAPI HttpProxyServer()
 	BOOL bRes = sockListen.CreateTcpSocket();
 	if (bRes)
 	{
-		bRes = sockListen.InitAccept(80);
+		bRes = sockListen.InitAccept(8080);
 		if (bRes)
 		{
 			while (TRUE)
