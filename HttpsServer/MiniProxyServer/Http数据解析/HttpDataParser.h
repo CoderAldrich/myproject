@@ -24,7 +24,8 @@ public:
 	typedef enum{
 		CE_UNKNOWN = 0,
 		CE_NO_ENCODING=1,
-		CE_GZIP = 2
+		CE_GZIP = 2,
+		CE_DEFLATE = 3
 	}CONTENT_ENCODING;
 
 protected:
