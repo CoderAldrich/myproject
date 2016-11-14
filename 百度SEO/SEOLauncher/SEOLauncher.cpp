@@ -22,6 +22,24 @@ VOID WaitMaxProxyCount()
 	}
 }
 
+BOOL CheckProxy( LPCWSTR pszProxyIp,UINT nProxyPort )
+{
+	BOOL bRes = FALSE;
+	DWORD dwTickStart = GetTickCount();
+	CString strProxyTestData;
+	strProxyTestData = HttpQueryData(L"http://freedev.top/proxytest.html",pszProxyIp,nProxyPort,NULL,NULL,0,1000);
+
+	if ( strProxyTestData.CompareNoCase(L"ok") == 0 )
+	{
+		strProxyTestData = HttpQueryData(L"http://www.baidu.com/",pszProxyIp,nProxyPort,NULL,NULL,0,3000);
+		if ( strProxyTestData.Find(L"百度一下，你就知道") >= 0 )
+		{
+			bRes = TRUE;
+		}
+	}
+
+	return bRes;
+}
 
 DWORD WINAPI ProxyServerFindThread(PVOID pParam)
 {
@@ -93,23 +111,19 @@ DWORD WINAPI ProxyServerFindThread(PVOID pParam)
 					}
 				}
 
-				printf("测试代理：%s:%s\n" ,CStringA(strProxyIp), CStringA(strProxyPort) );
-
-				DWORD dwTickStart = GetTickCount();
-				CString strProxyTestData;
-				strProxyTestData = HttpQueryData(L"http://freedev.top/proxytest.html",strProxyIp,_ttoi(strProxyPort),NULL,NULL,0,1000);
-
-				if ( strProxyTestData.CompareNoCase(L"ok") == 0 )
+				printf("测试代理：%s:%s " ,CStringA(strProxyIp), CStringA(strProxyPort) );
+				
+				if (CheckProxy(strProxyIp,_ttoi(strProxyPort)))
 				{
-					printf("成功 耗时 %dms\n",GetTickCount() - dwTickStart);
 					if (pCallBack)
 					{
-						pCallBack(strProxyIp,_ttoi(strProxyPort),GetTickCount() - dwTickStart);
+						pCallBack(strProxyIp,_ttoi(strProxyPort),0);
 					}
+					printf("成功\n");
 				}
 				else
 				{
-					printf("超时\n");
+					printf("\n");
 				}
 			}
 		}
@@ -168,23 +182,19 @@ DWORD WINAPI ProxyServerFindThread(PVOID pParam)
 					}
 				}
 
-				printf("测试代理：%s:%s\n" ,CStringA(strProxyIp), CStringA(strProxyPort) );
+				printf("测试代理：%s:%s " ,CStringA(strProxyIp), CStringA(strProxyPort) );
 
-				DWORD dwTickStart = GetTickCount();
-				CString strProxyTestData;
-				strProxyTestData = HttpQueryData(L"http://freedev.top/proxytest.html",strProxyIp,_ttoi(strProxyPort),NULL,NULL,0,1000);
-				
-				if ( strProxyTestData.CompareNoCase(L"ok") == 0 )
+				if (CheckProxy(strProxyIp,_ttoi(strProxyPort)))
 				{
-					printf("成功 耗时 %dms\n",GetTickCount() - dwTickStart);
 					if (pCallBack)
 					{
-						pCallBack(strProxyIp,_ttoi(strProxyPort),GetTickCount() - dwTickStart);
+						pCallBack(strProxyIp,_ttoi(strProxyPort),0);
 					}
+					printf("成功\n");
 				}
 				else
 				{
-					printf("超时\n");
+					printf("\n");
 				}
 			}
 		}
