@@ -34,10 +34,10 @@ BOOL CHttpSendParser::ParseData(const char * pBuffer,int nLen)
 		return FALSE;
 	}
 
-	if ( !(pBuffer[nLen - 1] == L'\n' && pBuffer[nLen - 2] == L'\r' && pBuffer[nLen - 3] == L'\n' && pBuffer[nLen - 4] == L'\r'))
-	{
-		return FALSE;
-	}
+// 	if ( !(pBuffer[nLen - 1] == L'\n' && pBuffer[nLen - 2] == L'\r' && pBuffer[nLen - 3] == L'\n' && pBuffer[nLen - 4] == L'\r'))
+// 	{
+// 		return FALSE;
+// 	}
 
 	
 

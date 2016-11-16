@@ -22,7 +22,7 @@ VOID CALLBACK DataRecvedCallback( PVOID pParam , BYTE *pData,int nDataLen,BOOL b
 	{
 		return ;
 	}
-	
+
 	if (bHeadData)
 	{
 		pCallbackParam->bReplaceData = FALSE;
@@ -223,7 +223,7 @@ DWORD WINAPI RequestHandleThread(PVOID pParam)
  			if(sendparser.ParseData(strRequestHead.GetBuffer(),strRequestHead.GetLength()))
  			{
  				strHost = sendparser.GetHost();
- 				DebugStringA("Host:%s",strHost);
+				DebugStringA("Host:%s",strHost);
  			}
  			break;
  		}
