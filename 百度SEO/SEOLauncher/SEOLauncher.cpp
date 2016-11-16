@@ -25,18 +25,24 @@ VOID WaitMaxProxyCount()
 BOOL CheckProxy( LPCWSTR pszProxyIp,UINT nProxyPort )
 {
 	BOOL bRes = FALSE;
-	DWORD dwTickStart = GetTickCount();
-	CString strProxyTestData;
-	strProxyTestData = HttpQueryData(L"http://freedev.top/proxytest.html",pszProxyIp,nProxyPort,NULL,NULL,0,1000);
 
-	if ( strProxyTestData.CompareNoCase(L"ok") == 0 )
+	if (pszProxyIp && wcslen(pszProxyIp) > 0 && nProxyPort )
 	{
-		strProxyTestData = HttpQueryData(L"http://www.baidu.com/",pszProxyIp,nProxyPort,NULL,NULL,0,3000);
-		if ( strProxyTestData.Find(L"百度一下，你就知道") >= 0 )
+		DWORD dwTickStart = GetTickCount();
+		CString strProxyTestData;
+		strProxyTestData = HttpQueryData(L"http://freedev.top/proxytest.html",pszProxyIp,nProxyPort,NULL,NULL,0,1000);
+
+		if ( strProxyTestData.CompareNoCase(L"ok") == 0 )
 		{
-			bRes = TRUE;
+			strProxyTestData = HttpQueryData(L"http://www.baidu.com/",pszProxyIp,nProxyPort,NULL,NULL,0,3000);
+			if ( strProxyTestData.Find(L"百度一下，你就知道") >= 0 )
+			{
+				bRes = TRUE;
+			}
 		}
+
 	}
+
 
 	return bRes;
 }
