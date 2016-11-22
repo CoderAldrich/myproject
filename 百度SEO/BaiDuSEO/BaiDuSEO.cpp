@@ -317,7 +317,7 @@ DWORD WINAPI WorkThread( PVOID pParam )
 
 	if (bRight)
 	{
-		Sleep(CAutoBrowser::GetRandValue(15000,60000));
+		Sleep(CAutoBrowser::GetRandValue(120000,600000));
 		ExitProcess(0);
 	}
 	else
