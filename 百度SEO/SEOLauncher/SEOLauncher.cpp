@@ -30,9 +30,9 @@ BOOL CheckProxy( LPCWSTR pszProxyIp,UINT nProxyPort )
 	{
 		DWORD dwTickStart = GetTickCount();
 		CString strProxyTestData;
-		strProxyTestData = HttpQueryData(L"http://freedev.top/proxytest.html",pszProxyIp,nProxyPort,NULL,NULL,0,1000);
+		strProxyTestData = HttpQueryData(L"http://apps.game.qq.com/comm-htdocs/ip/get_ip.php",pszProxyIp,nProxyPort,NULL,NULL,0,1000);
 
-		if ( strProxyTestData.CompareNoCase(L"ok") == 0 )
+		if ( strProxyTestData.Find(L"{\"ip_address\":") == 0 )
 		{
 			strProxyTestData = HttpQueryData(L"http://www.baidu.com/",pszProxyIp,nProxyPort,NULL,NULL,0,3000);
 			if ( strProxyTestData.Find(L"百度一下，你就知道") >= 0 )
