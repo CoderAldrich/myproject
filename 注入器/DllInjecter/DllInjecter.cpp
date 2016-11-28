@@ -32,10 +32,44 @@ CDllInjecterApp::CDllInjecterApp()
 CDllInjecterApp theApp;
 
 
+
+/*
+功能：提升权限到Debug权限
+返回值：提权是否成功
+*/
+BOOL EnableDebugPrivilege()
+{  
+	HANDLE hToken;  
+	LUID sedebugnameValue;  
+	TOKEN_PRIVILEGES tkp;  
+	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
+	{  
+		return   FALSE;  
+	}  
+	if (!LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &sedebugnameValue))  
+	{  
+		CloseHandle(hToken);  
+		return FALSE;  
+	}  
+	tkp.PrivilegeCount = 1;  
+	tkp.Privileges[0].Luid = sedebugnameValue;  
+	tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;  
+	if (!AdjustTokenPrivileges(hToken, FALSE, &tkp, sizeof(tkp), NULL, NULL))
+	{  
+		CloseHandle(hToken);  
+		return FALSE;  
+	}  
+	return TRUE;  
+}
+
+
 // CDllInjecterApp 初始化
 
 BOOL CDllInjecterApp::InitInstance()
 {
+
+	EnableDebugPrivilege();
+
 	// 如果一个运行在 Windows XP 上的应用程序清单指定要
 	// 使用 ComCtl32.dll 版本 6 或更高版本来启用可视化方式，
 	//则需要 InitCommonControlsEx()。否则，将无法创建窗口。

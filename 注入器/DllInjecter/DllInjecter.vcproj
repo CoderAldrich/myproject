@@ -357,6 +357,18 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Inject32Process.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Inject64Process.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\LibCreateRemoteThread.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -407,6 +419,18 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Inject32Process.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Inject64Process.h"
+				>
+			</File>
+			<File
+				RelativePath=".\LibCreateRemoteThread.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Resource.h"
 				>
 			</File>
@@ -437,14 +461,6 @@
 				>
 			</File>
 		</Filter>
-		<File
-			RelativePath=".\res\Injecter.exe"
-			>
-		</File>
-		<File
-			RelativePath=".\res\Injecter64.exe"
-			>
-		</File>
 		<File
 			RelativePath=".\ReadMe.txt"
 			>

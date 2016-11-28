@@ -11,12 +11,8 @@
 #define new DEBUG_NEW
 #endif
 
-
-// CDllInjecterDlg 对话框
-
-
-
-
+#include "Inject32Process.h"
+#include "Inject64Process.h"
 
 
 CDllInjecterDlg::CDllInjecterDlg(CWnd* pParent /*=NULL*/)
@@ -175,72 +171,12 @@ SYSTEM_VERSION GetSystemVersion()
 	return version;
 }
 
-//////////////////////////////////////////////////////////////////////////
-//功能		:释放文件
-//参数		:hMod - 资源所在模块句柄,souceId-资源ID.,souceType-资源类型,extraPath-释放路径
-//别名		:ReleaseFile
-BOOL WINAPI ReleaseFile(HMODULE hMod,UINT souceId,LPCTSTR souceType,LPCTSTR extraPath)
-{
-	HRSRC hr;
-	HANDLE hFile;
-	hr=FindResource(hMod,MAKEINTRESOURCE(souceId),souceType);
-	if(hr==NULL)
-	{
-		return FALSE;
-	}  
-	DWORD dwWritten,dwSize=SizeofResource(hMod,hr);
-	HGLOBAL hg=LoadResource(hMod,hr);
-	if(hg==NULL)
-	{
-		return FALSE;
-	}
-	LPCVOID lp=(LPCVOID)LockResource(hg);
-	if(lp==NULL)
-	{
-		return FALSE;
-	}
-
-	hFile=CreateFile(extraPath,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,0,NULL);
-	if(hFile==INVALID_HANDLE_VALUE || hFile==NULL)
-	{
-		return FALSE;
-	}
-	WriteFile(hFile,(LPCVOID)lp,dwSize,&dwWritten,NULL);
-
-	CloseHandle(hFile);
-	return PathFileExists(extraPath);//
-}
-
 BOOL InjectDLL(DWORD dwProcessID,LPCWSTR pszDllPath)
 {
-	//注入目标是运行在64位系统中的32位进程，需要特殊处理一下，启动32位注入器进程注入
 
+	BOOL b64Process = FALSE;
 
-	WCHAR szLocalPath[MAX_PATH]={0};
-	GetModuleFileNameW(NULL,szLocalPath,MAX_PATH);
-	WCHAR *pPathEnd = (WCHAR *)szLocalPath+wcslen(szLocalPath);
-	while (pPathEnd != szLocalPath && *pPathEnd != L'\\') pPathEnd--;
-	*(pPathEnd+1) = 0;
-
-	STARTUPINFO si;
-	PROCESS_INFORMATION pi;
-
-	ZeroMemory(&si,sizeof(si));
-	ZeroMemory(&pi,sizeof(pi));
-	si.cb = sizeof(si);
-
-
-	CString strDllPath;
-	strDllPath = pszDllPath;
-
-	CString strCmdLine;
-	strCmdLine.Format(L" -pid %d -dll %s",dwProcessID,strDllPath);
-	
-	CString strInjectorPath;
-	BOOL b64BitProc = FALSE;
-
-	strInjectorPath = szLocalPath;
-	if(GetSystemVersion() == VERSION_WIN7_X64 )
+	if(IsWow64())
 	{
 		HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS,FALSE,dwProcessID);
 		if (hProcess)
@@ -249,42 +185,32 @@ BOOL InjectDLL(DWORD dwProcessID,LPCWSTR pszDllPath)
 			IsWow64Process(hProcess,&bWow64Process);
 			if ( bWow64Process )
 			{
-				strInjectorPath += L"Injector.exe";
+				//32位
+				b64Process = FALSE;
 			}
 			else
 			{
-				b64BitProc = TRUE;
-				strInjectorPath += L"Injector64.exe";
+				//64位
+				b64Process = TRUE;
 			}
+
+			CloseHandle(hProcess);
 		}
+	}
+
+	if (b64Process)
+	{
+		HANDLE hProcessHandle=OpenProcess(2035711,0,dwProcessID);
+		InjectLibrary64(hProcessHandle,(WCHAR *)pszDllPath,wcslen(pszDllPath)*sizeof(WCHAR));
+		CloseHandle(hProcessHandle);
 	}
 	else
 	{
-		strInjectorPath += L"Injector.exe";
+		InjectDll_RemoteThread(dwProcessID,pszDllPath,3000);
 	}
 
-	if ( FALSE == PathFileExistsW(strInjectorPath))
-	{
-		if (b64BitProc)
-		{
-			ReleaseFile(NULL,IDR_BIN2,L"BIN",strInjectorPath);
-		}
-		else
-		{
-			ReleaseFile(NULL,IDR_BIN1,L"BIN",strInjectorPath);
-		}
-	}
 
-	BOOL bRes = CreateProcess( strInjectorPath ,strCmdLine.GetBuffer(),NULL,NULL,FALSE,0,NULL,NULL,&si,&pi);
-	if (bRes && pi.hProcess)
-	{
-		WaitForSingleObject(pi.hProcess,5000);
-		DWORD dwExitCode = 0 ;
-		GetExitCodeProcess(pi.hProcess,&dwExitCode);
-		bRes = dwExitCode == 0;
-	}
-
-	return bRes;
+	return TRUE;
 }
 
 
