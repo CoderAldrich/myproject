@@ -78,7 +78,7 @@ IDR_MAINFRAME           ICON                    "res\\DllInjecter.ico"
 IDD_DLLINJECTER_DIALOG DIALOGEX 0, 0, 215, 116
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_APPWINDOW
-CAPTION "DLL注入器 V1.1"
+CAPTION "DLL注入器 V2.0"
 FONT 9, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "开始注入",IDOK,33,58,50,14
@@ -149,8 +149,6 @@ BEGIN
     END
 END
 #endif    // APSTUDIO_INVOKED
-
-
 
 #endif    // 中文(中华人民共和国) resources
 /////////////////////////////////////////////////////////////////////////////
