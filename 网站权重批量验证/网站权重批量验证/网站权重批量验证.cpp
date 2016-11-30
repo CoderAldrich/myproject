@@ -137,7 +137,7 @@ int  GetDomainQuanZhong( LPCWSTR pszDomain,LPCWSTR pszProxy,int nProxyPort )
 	CString strWebContent;
 	strWebContent = HttpQueryData(strTestUrl,pszProxy,nProxyPort);
 
-	for (int i=0;i<10;i++)
+	for (int i=11;i>=0;i--)
 	{
 		CString strTextFound;
 		strTextFound.Format(L"%d</a>",i);
@@ -158,7 +158,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	CreateThread(NULL,0,ProxyServerFindThread,(PVOID)ProxyFoundCallback,0,NULL);
 
-	HANDLE hFile = CreateFile(L"D:\\临时文件\\棋牌列表LM - 副本.dat",GENERIC_READ,FILE_SHARE_READ,NULL,OPEN_EXISTING,0,NULL);
+	HANDLE hFile = CreateFile(L"D:\\临时文件\\网页游戏列表 - 副本.txt",GENERIC_READ,FILE_SHARE_READ,NULL,OPEN_EXISTING,0,NULL);
 	if (INVALID_HANDLE_VALUE != hFile)
 	{
 
