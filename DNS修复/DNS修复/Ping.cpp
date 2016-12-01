@@ -3,331 +3,143 @@
 
 #include "stdafx.h"
 
-// MyPing.cpp : Defines the entry point for the console application.
-//
+#include <windows.h>  
+#include <winsock.h>  
+#include <stdio.h>  
+#include <string.h>  
 
-#include "stdafx.h"
-#include <winsock2.h>
-#include <WS2tcpip.h>
-#pragma comment(lib,"Ws2_32.lib")
 
-#define ICMP_ECHO 8
-#define ICMP_ECHOREPLY 0
-#define ICMP_MIN 8 //Minimum 8-byte ICMP packet (header)
+typedef struct tagIPINFO  
+{  
+	u_char Ttl;             // Time To Live  
+	u_char Tos;             // Type Of Service  
+	u_char IPFlags;         // IP flags  
+	u_char OptSize;         // Size of options data  
+	u_char FAR *Options;    // Options data buffer  
+}IPINFO, *PIPINFO;  
 
-#define DEF_PACKET_SIZE 32
-#define MAX_PACKET 1024
-#define MAX_IP_HDR_SIZE 60
 
-//IP header structure
-typedef struct _iphdr
-{
-	unsigned int h_len:4;//Length of the header
-	unsigned int version:4;//Version of IP
-	unsigned char tos;//Type of service
-	unsigned short total_len;//Total length of the packet
-	unsigned short ident;//Unique identifier
-	unsigned short frag_and_flags;//Flags
-	unsigned char ttl;//Time to live
-	unsigned char proto;//Protocol (TCP,UDP,etc.)
-	unsigned short checksum;//IP checksum
+typedef struct tagICMPECHO  
+{  
+	u_long Source;          // Source address  
+	u_long Status;          // IP status  
+	u_long RTTime;          // Round trip time in milliseconds  
+	u_short DataSize;       // Reply data size  
+	u_short Reserved;       // Unknown  
+	void FAR *pData;        // Reply data buffer  
+	IPINFO  ipInfo;         // Reply options  
+}ICMPECHO, *PICMPECHO;  
 
-	unsigned int sourceIP;
-	unsigned int destIP;
-} IpHeader;
 
-//ICMP header structure
-typedef struct _icmphdr
-{
-	BYTE i_type;
-	BYTE i_code;//Type sub code
-	USHORT i_cksum;
-	USHORT i_id;
-	USHORT i_seq;
 
-	//This is not the standard header, but we reserve space for time
-	ULONG timestamp;
-} IcmpHeader;
 
-//IP option header--use with socket option IP_OPTIONS
-typedef struct _ipoptionhdr
-{
-	unsigned char code;//Option type
-	unsigned char len;//Length of option hdr
-	unsigned char ptr;//Offset into optons
-	unsigned long addr[9];//List of IP addrs
-} IpOptionHeader;
+// ICMP.DLL Export Function Pointers  
+HANDLE (WINAPI *pIcmpCreateFile)(VOID);  
+BOOL (WINAPI *pIcmpCloseHandle)(HANDLE);  
+DWORD (WINAPI *pIcmpSendEcho)(HANDLE,DWORD,LPVOID,WORD,PIPINFO,LPVOID,DWORD,DWORD);
 
-int datasize;
 
-//Helper function to fill in various fields for our ICMP request
-void FillICMPData(char* icmp_data, int datasize)
-{
-	IcmpHeader* icmp_hdr = (IcmpHeader*)icmp_data;
-	icmp_hdr->i_type = ICMP_ECHO;//Request an ICMP echo
-	icmp_hdr->i_code = 0;
-	icmp_hdr->i_id = (USHORT)GetCurrentProcessId();
-	icmp_hdr->i_cksum = 0;
-	icmp_hdr->i_seq = 0;
+//  
+//  
+BOOL Ping(const char *lpdest,int nPintTimes,int nTimeOut,DWORD *pdwAverageTime )
+{  
+	WSADATA wsaData;            // WSADATA  
+	ICMPECHO icmpEcho;          // ICMP Echo reply buffer  
+	HMODULE hndlIcmp;            // LoadLibrary() handle to ICMP.DLL  
+	HANDLE hndlFile;            // Handle for IcmpCreateFile()  
+	//LPHOSTENT pHost;            // Pointer to host entry structure  
+	struct in_addr iaDest;      // Internet address structure  
+	DWORD *dwAddress;           // IP Address  
+	IPINFO ipInfo;              // IP Options structure  
+	int nRet;                   // General use return code  
+	DWORD dwRet;                // DWORD return code  
+	int x;  
 
-	char* datapart = icmp_data + sizeof(IcmpHeader);
+	*pdwAverageTime = 0;
 
-	//Place some junk in the buffer
-	memset(datapart, 'E', datasize - sizeof(IcmpHeader));
-}
+	// Dynamically load the ICMP.DLL  
+	hndlIcmp = LoadLibrary(L"ICMP.DLL");  
+	if (hndlIcmp == NULL)  
+	{  
+		fprintf(stderr,"\nCould not load ICMP.DLL\n");  
+		return FALSE;  
+	}  
+	// Retrieve ICMP function pointers  
+	pIcmpCreateFile = (HANDLE (WINAPI *)())GetProcAddress(hndlIcmp,"IcmpCreateFile");  
+	pIcmpCloseHandle = (BOOL (WINAPI *)(HANDLE))GetProcAddress(hndlIcmp,"IcmpCloseHandle");  
+	pIcmpSendEcho = (DWORD (WINAPI *)(HANDLE,DWORD,LPVOID,WORD,PIPINFO,LPVOID,DWORD,DWORD))GetProcAddress(hndlIcmp,"IcmpSendEcho");  
+	// Check all the function pointers  
+	if (pIcmpCreateFile == NULL     ||   
+		pIcmpCloseHandle == NULL    ||  
+		pIcmpSendEcho == NULL)  
+	{  
+		fprintf(stderr,"\nError getting ICMP proc address\n");  
+		FreeLibrary(hndlIcmp);  
+		return FALSE;  
+	}  
 
-//This function calculates the 16-bit one's complement sum
-//of the supplied buffer (ICMP) header
-USHORT checksum(USHORT* buffer, int size)
-{
-	unsigned long cksum = 0;
 
-	while (size > 1)
-	{
-		cksum += *buffer++;
-		size -= sizeof(USHORT);
-	}
+	// Init WinSock  
+	nRet = WSAStartup(0x0101, &wsaData );  
+	if (nRet)  
+	{  
+		fprintf(stderr,"\nWSAStartup() error: %d\n", nRet);   
+		WSACleanup();  
+		FreeLibrary(hndlIcmp);  
+		return FALSE;  
+	}  
+	// Check WinSock version  
+	if (0x0101 != wsaData.wVersion)  
+	{  
+		fprintf(stderr,"\nWinSock version 1.1 not supported\n");  
+		WSACleanup();  
+		FreeLibrary(hndlIcmp);  
+		return FALSE;  
+	}  
 
-	if (size)
-	{
-		cksum += *(UCHAR*)buffer;
-	}
+	iaDest.s_addr = inet_addr(lpdest);  
 
-	cksum = (cksum>>16) + (cksum & 0xffff);
-	cksum += (cksum>>16);
 
-	return (USHORT)(~cksum);
-}
+	// Copy the IP address  
+	dwAddress = (DWORD *)(&iaDest);  
 
-//If the IP option header is present, find the IP options
-//within the IP header and print the record route option values
-void DecodeIPOptions(char* buf, int bytes)
-{
-	IpOptionHeader* ipopt = (IpOptionHeader*)(buf + 20);
-
-	//printf("RR:    ");
-	for (int i = 0; i < (ipopt->ptr / 4) - 1; i++)
-	{
-		IN_ADDR inaddr;
-		inaddr.S_un.S_addr = ipopt->addr[i];
-
-		if (i != 0)
-		{
-			//printf("        ");
-		}
-
-		HOSTENT* host = gethostbyaddr((char*)&inaddr.S_un.S_addr,
-			sizeof(inaddr.S_un.S_addr), AF_INET);
-		if (host)
-		{
-			//printf("(%-15s) %s\n", inet_ntoa(inaddr), host->h_name);
-		}
-		else
-		{
-			//printf("(%-15s)\n", inet_ntoa(inaddr));
-		}
-	}
-
-	return;
-}
-
-int nICMPCount = 0;
-//The response is an IP packet. We must decode the IP header to
-//locate the ICMP data.
-bool DecodeICMPHeader(char* buf, int bytes, struct sockaddr_in* from)
-{
-	
-	IpHeader* iphdr = (IpHeader*)buf;
-
-	//Number of 32-bit words * 4 = bytes
-	unsigned short iphdrlen = iphdr->h_len * 4;
-	DWORD tick = GetTickCount();
-
-	if ((iphdrlen == MAX_IP_HDR_SIZE) && (!nICMPCount))
-	{
-		DecodeIPOptions(buf, bytes);
-	}
-
-	if (bytes < iphdrlen + ICMP_MIN)
-	{
-#ifdef DEBUG
-		OutputDebugStringW(L"Too Few Data\n");
-#endif
-	}
-
-	IcmpHeader* icmphdr = (IcmpHeader*)(buf + iphdrlen);
-	if (icmphdr->i_type != ICMP_ECHOREPLY)
-	{
-#ifdef DEBUG
-		OutputDebugStringW(L"NonEcho Data Recv\n");
-#endif
-		return false;
-	}
-
-	//Make sure this is an ICMP reply to something we sent!
-	if (icmphdr->i_id != (USHORT)GetCurrentProcessId())
-	{
-#ifdef DEBUG
-		OutputDebugStringW(L"Not This Process Packet\n");
-#endif
-		return false;
-	}
-
-#ifdef DEBUG
-	OutputDebugStringW(L"Recv Response Data\n");
-#endif
-
-	nICMPCount++;
-	return true;
-}
-
-BOOL Ping(const char *lpdest,bool bIsIp,int nPintTimes,int nTimeOut,DWORD *pdwAverageTime )
-{
-	nICMPCount = 0;
-	WSADATA wsaData;
-	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
-	{
-#ifdef DEBUG
-		OutputDebugStringW(L"WSAStartup Call Error\n");
-#endif
-		return FALSE;
-	}
-
-	SOCKET sockRaw = WSASocket(AF_INET, SOCK_RAW, IPPROTO_ICMP,
-		NULL, 0, WSA_FLAG_OVERLAPPED);
-	if (sockRaw == INVALID_SOCKET)
-	{
-		return FALSE;
-	}
-
-	//Set the send/recv timeout values
-	struct sockaddr_in from;
-	int fromlen = sizeof(from);
-	int timeout = nTimeOut;
-
-	int nRecvRes = setsockopt(sockRaw, SOL_SOCKET, SO_RCVTIMEO,
-		(char*)&timeout, sizeof(timeout));
-	if (nRecvRes == SOCKET_ERROR)
-	{
-		return FALSE;
-	}
-
-	timeout = nTimeOut;
-	nRecvRes = setsockopt(sockRaw, SOL_SOCKET, SO_SNDTIMEO,
-		(char*)&timeout, sizeof(timeout));
-	if (nRecvRes == SOCKET_ERROR)
-	{
-		return FALSE;
-	}
-
-	struct sockaddr_in dest;
-	memset(&dest, 0, sizeof(dest));
-
-	//Resolve the endpoint's name if necessary
-	dest.sin_family = AF_INET;
-
-	if (bIsIp)
-	{
-		dest.sin_addr.s_addr = inet_addr(lpdest);
-	}
-	else
-	{
-		struct hostent* hp = gethostbyname(lpdest);
-		if (hp != NULL)
-		{
-			memcpy(&(dest.sin_addr), hp->h_addr, hp->h_length);
-			dest.sin_family = hp->h_addrtype;
-		}
-		else
-		{
-			return FALSE;
-		}
-	}
-
-	//Create the ICMP packet
-	datasize += sizeof(IcmpHeader);
-
-	char* icmp_data = (char*)HeapAlloc(GetProcessHeap(),
-		HEAP_ZERO_MEMORY, MAX_PACKET);
-	if (!icmp_data)
-	{
-		return FALSE;
-	}
-	memset(icmp_data, 0, MAX_PACKET);
-	FillICMPData(icmp_data, datasize);
-
-	char* recvbuf = (char*)HeapAlloc(GetProcessHeap(),
-		HEAP_ZERO_MEMORY, MAX_PACKET);
-
-	BOOL bPingRes = FALSE;
-
-	USHORT seq_no = 0;
-	int nCount = 0;
 	DWORD dwTotalTime = 0;
-	for( int nCount = 0;nCount<nPintTimes;nCount++ )
-	{
-		int nSendRes = SOCKET_ERROR;
-
-		((IcmpHeader*)icmp_data)->i_cksum = 0;
-		((IcmpHeader*)icmp_data)->timestamp = GetTickCount();
-		((IcmpHeader*)icmp_data)->i_seq = seq_no++;
-		((IcmpHeader*)icmp_data)->i_cksum =
-			checksum((USHORT*)icmp_data, datasize);
-
-		DWORD dwTickStart = GetTickCount();
-
-		nSendRes = sendto(sockRaw, icmp_data, datasize, 0,(struct sockaddr*)&dest, sizeof(dest));
-
-		if (nSendRes == SOCKET_ERROR)
+	// Get an ICMP echo request handle          
+	hndlFile = pIcmpCreateFile();  
+	for (x = 0; x < nPintTimes; x++)  
+	{  
+		// Set some reasonable default values  
+		ipInfo.Ttl = 255;  
+		ipInfo.Tos = 0;  
+		ipInfo.IPFlags = 0;  
+		ipInfo.OptSize = 0;  
+		ipInfo.Options = NULL;  
+		//icmpEcho.ipInfo.Ttl = 256;  
+		// Reqest an ICMP echo  
+		dwRet = pIcmpSendEcho(  
+			hndlFile,       // Handle from IcmpCreateFile()  
+			*dwAddress,     // Destination IP address  
+			NULL,           // Pointer to buffer to send  
+			0,              // Size of buffer in bytes  
+			&ipInfo,        // Request options  
+			&icmpEcho,      // Reply buffer  
+			sizeof(struct tagICMPECHO),  
+			5000);          // Time to wait in milliseconds  
+		// Print the results  
+		iaDest.s_addr = icmpEcho.Source;  
+		if (icmpEcho.Status)
 		{
-			if (WSAGetLastError() == WSAETIMEDOUT)
-			{
-				continue;
-			}
 			return FALSE;
 		}
-
-		nRecvRes = recvfrom(sockRaw, recvbuf, MAX_PACKET, 0,(struct sockaddr*)&from, &fromlen);
-
-		if (nRecvRes == SOCKET_ERROR)
-		{
-			if (WSAGetLastError() == WSAETIMEDOUT)
-			{
-				continue;
-			}
-
-			return FALSE;
-		}
-
-		DWORD dwTickUseTime = GetTickCount() - dwTickStart;
 		
-		BOOL bTmpRes = DecodeICMPHeader(recvbuf, nRecvRes, &from);
-		if ( bTmpRes && FALSE == bPingRes )
-		{
-			bPingRes = TRUE;
-		}
+		dwTotalTime += icmpEcho.RTTime;
+	}  
 
-		if ( bTmpRes )
-		{
-			dwTotalTime += dwTickUseTime;
-		}
-	}
+	*pdwAverageTime = dwTotalTime/nPintTimes;
 
-	if (pdwAverageTime)
-	{
-		*pdwAverageTime = dwTotalTime/nPintTimes;
-	}
-
-	//Cleanup
-	if (sockRaw != INVALID_SOCKET)
-	{
-		closesocket(sockRaw);
-	}
-
-	HeapFree(GetProcessHeap(), 0, recvbuf);
-	HeapFree(GetProcessHeap(), 0, icmp_data);
-
+	pIcmpCloseHandle(hndlFile);  
+	FreeLibrary(hndlIcmp);  
 	WSACleanup();
 
-	return bPingRes;
-}
+	return TRUE;
+} 

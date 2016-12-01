@@ -285,62 +285,6 @@ BOOL DelHostItem(CStringA strDomain)
 
 }
 
-VOID Test()
-{
-	HANDLE hFile = CreateFile(L"C:\\Demo.dat",GENERIC_READ,FILE_SHARE_READ,NULL,OPEN_EXISTING,0,NULL);
-	if (INVALID_HANDLE_VALUE != hFile)
-	{
-		CStringA strDataLine;
-		char chReadBuffer[4096];
-		DWORD dwReadLen = 0;
-		while (ReadFile(hFile,chReadBuffer,4095,&dwReadLen,NULL))
-		{
-			BOOL bFinalData = FALSE;
-			if ( 0 == dwReadLen )
-			{
-				bFinalData = TRUE;
-			}
-			else
-			{
-				chReadBuffer[dwReadLen] = 0;
-				strDataLine += chReadBuffer;
-			}
-
-			int nLineEnd = 0;
-
-			while ( (nLineEnd = strDataLine.Find("\n")) > 0 || bFinalData )
-			{
-				CStringA strLine;
-				if ( nLineEnd < 0 )
-				{
-					strLine = strDataLine;
-				}
-				else
-				{
-					strLine = strDataLine.Left(nLineEnd-1);
-				}
-
-				//此处处理数据
-				
-				if (nLineEnd < 0)
-				{
-					break;
-				}
-
-				strDataLine = strDataLine.Right( strDataLine.GetLength() - nLineEnd - 1);
-			}
-
-			if (bFinalData)
-			{
-				break;
-			}
-		}
-
-		CloseHandle(hFile);
-	}
-}
-
-
 BOOL DnsOptimise(LPCSTR pszDomain)
 {
 
@@ -356,7 +300,7 @@ BOOL DnsOptimise(LPCSTR pszDomain)
 	WSADATA wsaData;
 	WSAStartup(MAKEWORD(2,2),&wsaData);
 
-	for( int i=0;i<20;i++ )
+	for( int i=0;i<5;i++ )
 	{
 		SOCKADDR_IN sockAddr;
 		memset(&sockAddr,0,sizeof(sockAddr));
@@ -371,6 +315,7 @@ BOOL DnsOptimise(LPCSTR pszDomain)
 
 #ifdef DEBUG
 			char *pchIp = inet_ntoa(sockAddr.sin_addr);
+			OutputDebugStringA(pszDomain);
 			OutputDebugStringA(pchIp);
 			OutputDebugStringA("\r\n");
 #endif
@@ -402,7 +347,8 @@ BOOL DnsOptimise(LPCSTR pszDomain)
 		BOOL bRes = CreateProcess(L"C:\\windows\\system32\\ipconfig.exe",L" /flushdns",NULL,NULL,FALSE,CREATE_NO_WINDOW,NULL,NULL,&si,&pi);
 		if( bRes )
 		{
-			WaitForSingleObject(pi.hProcess,INFINITE);
+			WaitForSingleObject(pi.hProcess,1000);
+			TerminateProcess(pi.hProcess,0);
 		}
 		Sleep(10);
 	}
@@ -414,9 +360,14 @@ BOOL DnsOptimise(LPCSTR pszDomain)
 	BOOL bFound = FALSE;
 	for (LIST_DOMAIN_IPS_PTR it = lstDomainIps.begin();it!=lstDomainIps.end();it++)
 	{
+		
 		char *pchIp = inet_ntoa(it->sin_addr);
+#ifdef DEBUG
+		OutputDebugStringA("Ping: ");
+		OutputDebugStringA(pchIp);
+#endif
 		DWORD dwAverageTime = 0;
-		BOOL bRes = Ping(pchIp,TRUE,4,1000,&dwAverageTime);
+		BOOL bRes = Ping(pchIp,4,1000,&dwAverageTime);
 		if ( bRes )
 		{
 			if ( dwAverageTime <dwMinUseTime )
@@ -444,20 +395,15 @@ BOOL DnsOptimise(LPCSTR pszDomain)
 	return FALSE;
 }
 
-int APIENTRY _tWinMain(HINSTANCE hInstance,
-                     HINSTANCE hPrevInstance,
-                     LPTSTR    lpCmdLine,
-                     int       nCmdShow)
+ int APIENTRY _tWinMain(HINSTANCE hInstance,
+                      HINSTANCE hPrevInstance,
+                      LPTSTR    lpCmdLine,
+                      int       nCmdShow)
 {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
 
-	 DnsOptimise("mk.vee9.com");
-	 DnsOptimise("www.baidu.com");
-	 DnsOptimise("123.sogou.com");
-	 DnsOptimise("www.2345.com");
-	 DnsOptimise("www.hao123.com");
-
+	DnsOptimise("www.2345.com");
+	DnsOptimise("mk.vee9.com");
+	DnsOptimise("www.baidu.com");
 
 	return (int) 0;
 }
