@@ -359,6 +359,8 @@ VOID CALLBACK DataRecvedCallback( PVOID pParam , BYTE *pData,int nDataLen,BOOL b
 
 }
 
+VOID DebugMsgOut( LPCWSTR pszMsg,BOOL bHeadMsg = FALSE );
+
 BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl ,CStringList *plstAppendHead , BYTE **ppDataBuffer,LONGLONG *pllDataLen,int *pnContentStart )
 {
 	CString   strHostName;
@@ -486,14 +488,16 @@ BOOL RequestData( LPCWSTR pszRemoteIP,USHORT usRemotePort,LPCWSTR pszRequestUrl 
 // 			}
 
 			bRes = ssltcpSock.SSLConnect(CStringA(pszRemoteIP) , nPort);
-// 			if( FALSE == bRes )
-// 			{
-// 				break;
-// 			}
+ 			if( FALSE == bRes )
+ 			{
+				DebugMsgOut( L"ssltcpSock.SSLConnect Failed" , 1 );
+ 				break;
+ 			}
 
 			int nSendLen = ssltcpSock.SendData(straRequestData.GetBuffer(),straRequestData.GetLength());
 			if ( nSendLen != straRequestData.GetLength())
 			{
+				DebugMsgOut( L"ssltcpSock.SendData Failed" , 1 );
 				break;
 			}
 

@@ -96,7 +96,7 @@ BOOL CSSLTcpSocket::SSLConnect(LPCSTR pszTargetIP,USHORT nTargetPort)
 {
 	BOOL bRes = Connect(pszTargetIP,nTargetPort);
 	int nRet = SSL_connect (m_ssl);
-	return FALSE;
+	return bRes;
 }
 
 CSSLTcpSocket * CSSLTcpSocket::SSLAccept(sockaddr_in *psiconnect)
