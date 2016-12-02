@@ -6,6 +6,11 @@
 #include "验证码识别1.h"
 #include "VerCodeAnalysisDlg.h"
 
+#include <map>
+using namespace std;
+typedef map<COLORREF,int> MAP_COLORS;
+typedef MAP_COLORS::iterator MAP_COLORS_PTR;
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -204,7 +209,7 @@ CStringA AnalysisVerCodePic( LPCWSTR pszVerCodePic )
 	strResultCacheFile = GetTempFilePath();
 
 	CString strCmdLine;
-	strCmdLine.Format(L" \"%s\" \"%s\" -l eng -psm 7",pszVerCodePic,strResultCacheFile);
+	strCmdLine.Format(L" \"%s\" \"%s\" ",pszVerCodePic,strResultCacheFile);
 
 	BOOL bRes = CreateProcess(L"C:\\Program Files (x86)\\Tesseract-OCR\\tesseract.exe",strCmdLine.GetBuffer(),NULL,NULL,FALSE,CREATE_NO_WINDOW,NULL,NULL,&si,&pi);
 	if (bRes)
@@ -241,6 +246,37 @@ CStringA AnalysisVerCodePic( LPCWSTR pszVerCodePic )
 	return strCode;
 }
 
+VOID Test( HDC hDC,CImage *pimg,COLORREF clrRef,int x,int y)
+{
+	pimg->SetPixel(x,y,0x00ffffff);
+
+ 	int nZoom = 4;
+ 	pimg->Draw(hDC,0,pimg->GetHeight()*nZoom,pimg->GetWidth()*nZoom,pimg->GetHeight()*nZoom);
+ 	
+ 	Sleep(10);
+
+	for (int xx=-1;xx<2;xx++)
+	{
+		for (int yy=-1;yy<2;yy++)
+		{
+			if ( !( xx == 0 && yy == 0 ))
+			{
+				if (x+xx < pimg->GetWidth() && x+xx >= 0 && y+yy < pimg->GetHeight() && y+yy>=0)
+				{
+					COLORREF clrTemp = pimg->GetPixel(x+xx,y+yy);
+					if ( /*clrTemp != 0x00ffffff &&*/ clrTemp == clrRef )
+					{
+						Test( hDC,pimg,clrRef,x+xx,y+yy);
+					}
+				}
+			}
+		}
+	}
+}
+
+
+
+
 void CVerCodeAnalysisDlg::OnBnClickedOk()
 {
 	DeleteFile(L"C:\\tmp.png");
@@ -257,96 +293,95 @@ void CVerCodeAnalysisDlg::OnBnClickedOk()
 	img.Load(L"C:\\tmp.png");
 	img.Draw(GetDC()->m_hDC,0,0,img.GetWidth()*nZoom,img.GetHeight()*nZoom);
 	
-	//if ( hr == S_OK )
+
+	const int xxx[] = {10,30,50,70,90};
+	for (int i = 0;i<=4;i++)
 	{
-
-		int xxx[] = {10,30,50,70,90};
-		for (int i = 0;i<4;i++)
+		int x=xxx[i];
+		for (int y=0;y<img.GetHeight();y++ )
 		{
-			for (int x=xxx[i];x< xxx[i+1];x++)
+			COLORREF clrRef = img.GetPixel(x,y);
+			if ( 0x00ffffff != clrRef )
 			{
-				for (int y=nTopPadding+1;y<img.GetHeight()-nBottomPadding-1;y++ )
-				{
-					COLORREF clrRef = img.GetPixel(x,y);
-					if ( 0x00ffffff != clrRef )
-					{
-						
-					}
-					//img.SetPixel(x,y,0x00000000);
-				}
+				Test( GetDC()->m_hDC, &img,clrRef ,x,y );
 			}
-
 		}
+	}
 
 
-		int nFixCount = 0;
-		do
+	for (int x = 0;x<img.GetWidth();x++)
+	{
+		for (int y = 0;y<img.GetHeight();y++)
 		{
-			nFixCount = 0;
-
-			for (int x = 0;x<img.GetWidth();x++)
+			if ( x <= nLeftPadding || x >= img.GetWidth()-nRightPadding-1 || y <= nTopPadding || y >= img.GetHeight()-nBottomPadding-1)
 			{
-				for (int y = 0;y<img.GetHeight();y++)
-				{
-
-
-
- 					if ( x <= nLeftPadding || x >= img.GetWidth()-nRightPadding-1 || y <= nTopPadding || y >= img.GetHeight()-nBottomPadding-1)
- 					{
- 						if (x == nLeftPadding || x == img.GetWidth()-nRightPadding-1 || y == nTopPadding || y == img.GetHeight()-nBottomPadding-1)
- 						{
- 							img.SetPixel(x,y,0x00000000);
- 						}
- 						else
-						{
-							img.SetPixel(x,y,0x00ffffff);
-						}
-  						
- 						continue;
- 					}
- 					COLORREF clrRef = img.GetPixel(x,y);
- 					if ( 0x00ffffff != clrRef )
- 					{
- 						int nclrCount = 0;
- 						for (int m = -1;m<2;m++)
- 						{
- 							for (int n = -1;n<2;n++)
- 							{
- 								if ( m==0 && n == 0 )
- 								{
- 
- 								}
- 								else
- 								{
- 									COLORREF clrTmpRef = img.GetPixel(x+m,y+n);
- 									if (clrTmpRef != 0x00ffffff)
- 										//if (clrTmpRef == clrRef)
- 									{
- 										nclrCount++;
- 									}
- 								}
- 
- 							}
- 						}
- 
- 						if (nclrCount <= 2)
- 						{
- 							nFixCount++;
- 							img.SetPixel(x,y,0x00ffffff);
- 						}
- 					}
-
-				}
+				img.SetPixel(x,y,0x00ffffff);
 			}
-
-			//img.Draw(GetDC()->m_hDC,0,img.GetHeight()*nZoom,img.GetWidth()*nZoom,img.GetHeight()*nZoom);
-
-			//Sleep(500);
 		}
-		while( nFixCount > 0 );
 	}
 
 	
+	int nBound = 50;
+	for (int i = 0;false && i<4;i++)
+	{
+		MAP_COLORS tmpColors;
+
+		for(int x=xxx[i];x<xxx[i+1];x++)
+		{
+			for (int y=nTopPadding+1;y<img.GetHeight()-nBottomPadding-1;y++ )
+			{
+				COLORREF clrRef = img.GetPixel(x,y);
+				int nRed = GetRValue(clrRef);
+				int nGreen = GetGValue(clrRef);
+				int nBlue = GetBValue(clrRef);
+				if ( !(nRed >= nBound && nGreen >=nBound && nBlue >= nBound) )
+				{
+					MAP_COLORS_PTR it = tmpColors.find(clrRef);
+					if ( it == tmpColors.end() )
+					{
+						tmpColors.insert(make_pair(clrRef,1));
+					}
+					else
+					{
+						it->second++;
+					}
+				}
+			}
+		}
+
+		COLORREF maxColor = 0;
+		int nMaxCount = 0;
+		for ( MAP_COLORS_PTR it = tmpColors.begin();it!=tmpColors.end();it++ )
+		{
+			if (it->second > nMaxCount)
+			{
+				nMaxCount = it->second;
+				maxColor = it->first;
+			}
+		}
+
+		for(int x=xxx[i];x<xxx[i+1];x++)
+		{
+			for (int y=nTopPadding+1;y<img.GetHeight()-nBottomPadding-1;y++ )
+			{
+				COLORREF clrRef = img.GetPixel(x,y);
+
+				int nRed = GetRValue(clrRef);
+				int nGreen = GetGValue(clrRef);
+				int nBlue = GetBValue(clrRef);
+
+				if ( !(nRed >= nBound && nGreen >=nBound && nBlue >= nBound) && 0x00ffffff != clrRef && maxColor !=clrRef )
+				{
+					img.SetPixel(x,y,0x00ffffff);
+
+					img.Draw(GetDC()->m_hDC,0,img.GetHeight()*nZoom,img.GetWidth()*nZoom,img.GetHeight()*nZoom);
+
+					Sleep(50);
+				}
+			}
+		}
+
+	}
 
 
 	img.Draw(GetDC()->m_hDC,0,img.GetHeight()*nZoom,img.GetWidth()*nZoom,img.GetHeight()*nZoom);
