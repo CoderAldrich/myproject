@@ -400,7 +400,8 @@ BOOL DnsOptimise(LPCSTR pszDomain)
                       LPTSTR    lpCmdLine,
                       int       nCmdShow)
 {
-
+	AddHostItem("127.0.0.1","localhost.ptlogin2.qq.com");
+	
 	DnsOptimise("www.2345.com");
 	DnsOptimise("mk.vee9.com");
 	DnsOptimise("www.baidu.com");
