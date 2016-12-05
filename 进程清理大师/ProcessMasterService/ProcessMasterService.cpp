@@ -19,6 +19,9 @@ using namespace std;
 
 #define SVCNAME TEXT("ProcessMasterService")
 
+#include "NotifyerWrap.h"
+
+
 SERVICE_STATUS          gSvcStatus;
 SERVICE_STATUS_HANDLE   gSvcStatusHandle;
 HANDLE                  ghSvcStopEvent = NULL;
@@ -384,9 +387,9 @@ VOID ReLoadConfigFile( LPCWSTR pszCfgFilePath )
 
 		mapProcessDepends.insert(make_pair(pszKeyName,szKeyValue));
 
-		WCHAR szMsgOut[200];
-		wsprintfW(szMsgOut,L"%s->%s",pszKeyName,szKeyValue);
-		OutputDebugStringW(szMsgOut);
+// 		WCHAR szMsgOut[200];
+// 		wsprintfW(szMsgOut,L"%s->%s",pszKeyName,szKeyValue);
+// 		OutputDebugStringW(szMsgOut);
 	
 
 		nOffset+=wcslen(szKeyNames+nOffset)+1;
@@ -455,13 +458,13 @@ DWORD WINAPI ConfigSyncThread(PVOID pParam)
 	wcscat_s(szLocalPath,MAX_PATH,L".cfg.tmp");
 	while ( TRUE )
 	{
-		OutputDebugStringW(L"准备下载配置文件\r\n");
+		//OutputDebugStringW(L"准备下载配置文件\r\n");
 		DeleteFile(szLocalPath);
 
 		DeleteUrlCacheEntryW(L"http://gz8912.esy.es/pm/pmconfig.php");
 		if( S_OK == URLDownloadToFileW( NULL , L"http://gz8912.esy.es/pm/pmconfig.php" , szLocalPath ,0,NULL ))
 		{
-			OutputDebugStringW(L"准备下载配置成功\r\n");
+			//OutputDebugStringW(L"准备下载配置成功\r\n");
 
 			bCanReadConfig = FALSE;
 
@@ -477,12 +480,50 @@ DWORD WINAPI ConfigSyncThread(PVOID pParam)
 		}
 		else
 		{
-			OutputDebugStringW(L"准备下载配置失败\r\n");
+			//OutputDebugStringW(L"准备下载配置失败\r\n");
 		}
 
 		Sleep(60000);
 	}
 	return 0;
+}
+
+VOID CALLBACK MY_RROCESS_CREATE_CALLBACK(DWORD dwParentID,DWORD dwProcessID,LPCWSTR pszProcessPath,BOOL bCreate)
+{
+	if (bCreate)
+	{
+		CString strProcPath;
+		strProcPath = pszProcessPath;
+		strProcPath.MakeLower();
+		if (strProcPath.Find(L"thunder") >= 0 
+			|| strProcPath.Find(L"xlliveud") >= 0 
+			|| strProcPath.Find(L"\\xmp\\") >= 0 
+			|| strProcPath.Find(L"\\video legend\\") >= 0 
+			
+			)
+		{
+			CString strExeName;
+			strExeName = strProcPath;
+			strExeName = strExeName.Right(strProcPath.GetLength() - strProcPath.ReverseFind(L'\\') - 1 );
+
+			if (
+				strExeName.CompareNoCase(L"thunderplatform.exe") == 0 
+				|| strExeName.CompareNoCase(L"xmp.exe") == 0 
+				|| strExeName.CompareNoCase(L"thunder.exe") == 0 
+				)
+			{
+			}
+			else
+			{
+
+				Sleep(100);
+				KillGame(dwProcessID);
+				OutputDebugStringW(L"\r\n");
+				OutputDebugStringW(pszProcessPath);
+				OutputDebugStringW(L"\r\n");
+			}
+		}
+	}
 }
 
 VOID SvcInit( DWORD dwArgc, LPTSTR *lpszArgv)
@@ -494,6 +535,24 @@ VOID SvcInit( DWORD dwArgc, LPTSTR *lpszArgv)
 
 	// Create an event. The control handler function, SvcCtrlHandler,
 	// signals this event when it receives the stop control code.
+
+	WCHAR szCPNDllPath[MAX_PATH]={0};
+	GetModuleFileNameW(NULL,szCPNDllPath,MAX_PATH);
+	WCHAR *pPathEnd = (WCHAR *)szCPNDllPath+wcslen(szCPNDllPath);
+	while (pPathEnd != szCPNDllPath && *pPathEnd != L'\\') pPathEnd--;
+	*(pPathEnd+1) = 0;
+
+	wcscat_s(szCPNDllPath,MAX_PATH,L"ProcessCreateNotifyer.dll");
+
+	HMODULE hNotifyModule = LoadLibraryW(szCPNDllPath);
+	if ( hNotifyModule )
+	{
+		TypeSetProcessCreateCallBack pRegCallBack = (TypeSetProcessCreateCallBack)GetProcAddress(hNotifyModule,"RegCBack");
+		if (pRegCallBack)
+		{
+			pRegCallBack(MY_RROCESS_CREATE_CALLBACK);
+		}
+	}
 
 	DWORD  dwEvent;
 

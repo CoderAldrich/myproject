@@ -213,6 +213,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\NotifyerWrap.h"
+				>
+			</File>
+			<File
 				RelativePath=".\PostFile.h"
 				>
 			</File>
