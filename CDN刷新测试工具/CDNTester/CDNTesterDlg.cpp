@@ -318,12 +318,18 @@ DWORD WINAPI DownloadThread(PVOID pParam)
 						strFileName = strFileName.Left(strFileName.ReverseFind(L'.'));
 
 						CString strFilePath;
-						strFilePath.Format(L"%s%s_%s_%s.%s",g_strSavePath,strFileName,CString(strDataMd5),strRemoteInfo,g_strFileExt);
-						HANDLE hFile = CreateFile(strFilePath,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,0,NULL);
+						CString strTempRemoteInfo;
+						strTempRemoteInfo = strRemoteInfo;
+						strTempRemoteInfo.Replace(L":",L"_");
+
+						strFilePath.Format(L"%s%s_%s_%s.%s",g_strSavePath,strFileName,CString(strDataMd5),strTempRemoteInfo,g_strFileExt);
+
+						HANDLE hFile = CreateFile(strFilePath,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,0,NULL);	
 						if ( INVALID_HANDLE_VALUE != hFile )
 						{
 							DWORD dwWriteLen = 0;
-							WriteFile(hFile,pRecvBuf,llRecvDataLen,&dwWriteLen,NULL);
+							BOOL bRes = WriteFile(hFile,pRecvBuf,llRecvDataLen,&dwWriteLen,NULL);
+							DWORD dwErrorCode = GetLastError();
 							CloseHandle(hFile);
 						}
 					}
