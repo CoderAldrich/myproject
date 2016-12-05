@@ -98,7 +98,7 @@ BOOL CWebBrowserApp::InitInstance()
  	DetourUpdateThread(GetCurrentThread());
  	//DetourAttach((PVOID *)&pInternetErrorDlg,(PVOID)MyInternetErrorDlg);
  	//DetourAttach((PVOID *)&pGetModuleFileNameW,(PVOID)MyGetModuleFileNameW);
-	DetourAttach((PVOID *)&pInternetOpenW,(PVOID)MyInternetOpenW);
+	//DetourAttach((PVOID *)&pInternetOpenW,(PVOID)MyInternetOpenW);
 	
  	DetourTransactionCommit();
 
