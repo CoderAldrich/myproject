@@ -528,7 +528,6 @@ VOID CALLBACK DataRecvedCallback( PVOID pParam , BYTE *pData,int nDataLen,BOOL b
 			PostSendRequest(pCallbackParam->hRemote,(BYTE *)strChunkData.GetBuffer(),strChunkData.GetLength(),NULL);
 			if (bFinalData)
 			{
-				CStringA strChunkData;
 				strChunkData = "0\r\n\r\n";
 				PostSendRequest(pCallbackParam->hRemote,(BYTE *)strChunkData.GetBuffer(),strChunkData.GetLength(),NULL);
 			}
