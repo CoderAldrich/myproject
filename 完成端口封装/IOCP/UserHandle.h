@@ -1,7 +1,7 @@
 
 #pragma once
 #include <windows.h>
-#include "CSLock.h"
+#include "RWLock.h"
 
 //InterlockedIncrement();
 //InterlockedDecrement();
@@ -10,7 +10,7 @@ class CUserHandle
 {
 
 	typedef struct tagHANDLE_ARRARY{
-		CCSLock csLock;
+		CRWLock rwLock;
 		PVOID  pUserData[256];
 		BOOL   bDataInUse[256];	
 		struct tagHANDLE_ARRARY *pNext;

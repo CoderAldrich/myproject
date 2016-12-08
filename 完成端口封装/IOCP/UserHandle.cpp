@@ -25,7 +25,7 @@ HANDLE CUserHandle::AllocHandle( PVOID pUserData )
 	{
 		BOOL bAlloced = FALSE;
 
-		pTempHandleArray->csLock.Lock();
+		pTempHandleArray->rwLock.wlock();
 
 		for ( int i=0;i<256;i++ )
 		{
@@ -39,7 +39,7 @@ HANDLE CUserHandle::AllocHandle( PVOID pUserData )
 				break;
 			}
 		}
-		pTempHandleArray->csLock.UnLock();
+		pTempHandleArray->rwLock.unlock();
 
 		if ( bAlloced )
 		{
@@ -48,7 +48,7 @@ HANDLE CUserHandle::AllocHandle( PVOID pUserData )
 		else
 		{
 			PHANDLE_ARRARY pNextHandleArray = NULL;
-			pTempHandleArray->csLock.Lock();
+			pTempHandleArray->rwLock.wlock();
 			if ( pTempHandleArray->pNext == NULL )
 			{
 				pNextHandleArray = new HANDLE_ARRARY;
@@ -61,7 +61,7 @@ HANDLE CUserHandle::AllocHandle( PVOID pUserData )
 				pNextHandleArray = pTempHandleArray->pNext;
 			}
 
-			pTempHandleArray->csLock.UnLock();
+			pTempHandleArray->rwLock.unlock();
 
 			pTempHandleArray = pNextHandleArray;
 
@@ -91,12 +91,12 @@ BOOL CUserHandle::CheckValidHandle(HANDLE hHandle)
 
 	if (pTempHandleArray)
 	{
-		pTempHandleArray->csLock.Lock();
+		pTempHandleArray->rwLock.rlock();
 		if ( pTempHandleArray->bDataInUse[((int)hHandle-1)%256] == TRUE )
 		{
 			bValied = TRUE;
 		}
-		pTempHandleArray->csLock.UnLock();
+		pTempHandleArray->rwLock.unlock();
 	}
 
 	return bValied;
@@ -119,12 +119,12 @@ PVOID  CUserHandle::GetHandleData( HANDLE hHandle )
 
 	if (pTempHandleArray)
 	{
-		pTempHandleArray->csLock.Lock();
+		pTempHandleArray->rwLock.rlock();
 		if ( pTempHandleArray->bDataInUse[((int)hHandle-1)%256] == TRUE )
 		{
 			pUserData = pTempHandleArray->pUserData[((int)hHandle-1)%256];
 		}
-		pTempHandleArray->csLock.UnLock();
+		pTempHandleArray->rwLock.unlock();
 	}
 
 	return pUserData;
@@ -147,7 +147,7 @@ BOOL CUserHandle::CloseHandle( HANDLE hHandle ,PVOID *ppUserData )
 
 	if (pTempHandleArray)
 	{
-		pTempHandleArray->csLock.Lock();
+		pTempHandleArray->rwLock.wlock();
 		if ( pTempHandleArray->bDataInUse[((int)hHandle-1)%256] == TRUE )
 		{
 			pTempHandleArray->bDataInUse[((int)hHandle-1)%256] = FALSE;
@@ -159,7 +159,7 @@ BOOL CUserHandle::CloseHandle( HANDLE hHandle ,PVOID *ppUserData )
 
 			bClosed = TRUE;
 		}
-		pTempHandleArray->csLock.UnLock();
+		pTempHandleArray->rwLock.unlock();
 	}
 
 	return bClosed;
