@@ -65,7 +65,7 @@ BOOL CHttpRecvParser::ParseData(const char * pBuffer,int nLen)
 
 
 	CStringA strData;
-	strData = pBuffer;
+	strData.Append(pBuffer,nLen);
 
 	CStringA strHttpHeader;
 	int HttpHeadEnd = strData.Find("\r\n\r\n");

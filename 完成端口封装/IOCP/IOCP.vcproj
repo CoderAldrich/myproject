@@ -115,7 +115,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
@@ -187,6 +187,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\IOCPClientManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\IOCPTcpClient.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\RWLock.cpp"
 				>
 			</File>
@@ -230,6 +238,14 @@
 			</File>
 			<File
 				RelativePath=".\HttpSendParser.h"
+				>
+			</File>
+			<File
+				RelativePath=".\IOCPClientManager.h"
+				>
+			</File>
+			<File
+				RelativePath=".\IOCPTcpClient.h"
 				>
 			</File>
 			<File
