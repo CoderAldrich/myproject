@@ -6,7 +6,7 @@ CIOCPTcpClient::CIOCPTcpClient(void)
 {
 	m_sock = INVALID_SOCKET;
 	m_pUserParam = NULL;
-	
+	m_dwSendPendingLen = 0;
 	memset(&m_Callbacks,0,sizeof(m_Callbacks));
 }
 
@@ -37,7 +37,14 @@ SOCKET CIOCPTcpClient::GetSocketHandle()
 {
 	return m_sock;
 }
-
+DWORD CIOCPTcpClient::GetSendPendingLen()
+{
+	DWORD dwSendPendingLen = 0;
+	m_lockSendPendingLen.Lock();
+	dwSendPendingLen = m_dwSendPendingLen;
+	m_lockSendPendingLen.UnLock();
+	return dwSendPendingLen;
+}
 BOOL CIOCPTcpClient::Connect( LPCSTR pszTargetIP,USHORT nTargetPort)
 {
 	if (pszTargetIP == NULL)
@@ -129,15 +136,15 @@ BOOL CIOCPTcpClient::PostSendRequest( BYTE *pSendBuf,DWORD dwDataLen , DWORD *pd
 		return FALSE;
 	}
 
-// 	pIOCPNode->lockSendPendingLen.Lock();
-// 
-// 	pIOCPNode->dwSendPendingLen += dwDataLen;
-// 	if (pdwPenddingSendLen)
-// 	{
-// 		*pdwPenddingSendLen = pIOCPNode->dwSendPendingLen;
-// 	}
-// 
-// 	pIOCPNode->lockSendPendingLen.UnLock();
+ 	m_lockSendPendingLen.Lock();
+ 
+ 	m_dwSendPendingLen += dwDataLen;
+ 	if (pdwPenddingSendLen)
+ 	{
+ 		*pdwPenddingSendLen = m_dwSendPendingLen;
+ 	}
+ 
+ 	m_lockSendPendingLen.UnLock();
 
 	return TRUE;
 }
@@ -171,7 +178,9 @@ VOID CIOCPTcpClient::OnDataRecv( HANDLE hYou , DWORD dwBitLen )
 }
 VOID CIOCPTcpClient::OnDataSend( HANDLE hYou , DWORD dwBitLen )
 {
-	int a=0;
+	m_lockSendPendingLen.Lock();
+	m_dwSendPendingLen -= dwBitLen;
+	m_lockSendPendingLen.UnLock();
 }
 
 

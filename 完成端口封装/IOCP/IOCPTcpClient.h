@@ -1,7 +1,7 @@
 #pragma once
 #include <WinSock2.h>
 #include <Windows.h>
-
+#include "CSLock.h"
 
 typedef enum IOCP_OPTION_TYPE{
 	IOT_ERROR=0,
@@ -42,6 +42,10 @@ protected:
 	WSABUF wsaBufferSend;
 
 	IOCP_TCP_CALLBACK m_Callbacks;
+
+	CCSLock m_lockSendPendingLen;
+	DWORD m_dwSendPendingLen;
+
 public:
 	CIOCPTcpClient(void);
 	~CIOCPTcpClient(void);
@@ -51,6 +55,7 @@ public:
 	BOOL Attach( SOCKET sock );
 	BOOL Create();
 	SOCKET GetSocketHandle();
+	DWORD  GetSendPendingLen();
 	BOOL Connect( LPCSTR pszTargetIP,USHORT nTargetPort);
 	
 	VOID SetUserParam( PVOID pUserParam );

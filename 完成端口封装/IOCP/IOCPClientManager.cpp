@@ -2,6 +2,7 @@
 
 
 #include "IOCPClientManager.h"
+#include "HelpFun.h"
 
 CIOCPClientManager::CIOCPClientManager(void)
 {
@@ -63,6 +64,8 @@ BOOL CIOCPClientManager::DestoryIOCPClient( HANDLE hClient )
 	{
 		CAutoCSLocker AutoLocker(pHandleLock);
 
+		DebugStringW( L"Client Disconnect 0x%x",hClient );
+
 		CIOCPTcpClient *pIOCPClient = NULL;
 		m_HandleManager.CloseHandle(hClient,(PVOID *)&pIOCPClient);
 		if (pIOCPClient)
@@ -78,6 +81,45 @@ BOOL CIOCPClientManager::DestoryIOCPClient( HANDLE hClient )
 	return bDestoryRes;
 }
 
+BOOL CIOCPClientManager::CheckOnline( HANDLE hClient )
+{
+	BOOL bOnline = FALSE;
+
+	CCSLock *pHandleLock = m_HandleManager.GetHandleLocker(hClient);
+	if (pHandleLock)
+	{
+		CAutoCSLocker AutoLocker(pHandleLock);
+
+		CIOCPTcpClient *pIOCPClient = NULL;
+		m_HandleManager.CloseHandle(hClient,(PVOID *)&pIOCPClient);
+		if (pIOCPClient)
+		{
+			bOnline = TRUE;
+		}
+	}
+
+	return bOnline;
+}
+
+DWORD CIOCPClientManager::GetSendPendingLen( HANDLE hClient )
+{
+	DWORD dwSendPendingLen = 0;
+
+	CCSLock *pHandleLock = m_HandleManager.GetHandleLocker(hClient);
+	if (pHandleLock)
+	{
+		CAutoCSLocker AutoLocker(pHandleLock);
+
+		CIOCPTcpClient *pIOCPClient = NULL;
+		m_HandleManager.CloseHandle(hClient,(PVOID *)&pIOCPClient);
+		if (pIOCPClient)
+		{
+			dwSendPendingLen = pIOCPClient->GetSendPendingLen();
+		}
+	}
+
+	return dwSendPendingLen;
+}
 
 BOOL CIOCPClientManager::Connect( HANDLE hClient , LPCSTR pszTargetIP,USHORT nTargetPort )
 {

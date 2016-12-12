@@ -288,9 +288,19 @@ VOID WINAPI ClientDisConnectCallback( HANDLE hClient , PVOID pUserParam)
 			delete pClientData->pHttpDataParser;
 		}
 
-		g_ClientManager.DestoryIOCPClient( pClientData->hRemote );
+		DWORD dwSendPendingLen = g_ClientManager.GetSendPendingLen(pClientData->hRemote);
+		if ( dwSendPendingLen == 0 )
+		{
+			g_ClientManager.DestoryIOCPClient( pClientData->hRemote );
+		}
+		else
+		{
+			int a=0;
+		}
+		
+		//
 
-		DebugStringW(L"Delete The pClientData Ptr 0x%x",pClientData);
+		//DebugStringW(L"Delete The pClientData Ptr 0x%x",pClientData);
 
 		delete pClientData;
 	}
@@ -340,26 +350,33 @@ VOID WINAPI DataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,
 				hRemote = g_ClientManager.CreateIOCPClient(GetIOCPCallbacks(hIOCPServer));
 				if ( NULL == hRemote )
 				{
+					DebugStringW(L"g_ClientManager.CreateIOCPClient Error");
 					break;
 				}
 
 				if( FALSE == g_ClientManager.Connect(hRemote,strHost,80))
 				{
+					DebugStringW(L"g_ClientManager.Connect Error");
 					break;
 				}
 
 				if ( FALSE == g_ClientManager.JoinIOCP(hRemote,GetIOCPHandle(hIOCPServer)))
 				{
+					DebugStringW(L"g_ClientManager.JoinIOCP Error");
 					break;
 				}
 
 				if ( FALSE == g_ClientManager.PostSendRequest(hRemote,(BYTE *)pClientData->strHeadBuffer.GetBuffer(),pClientData->strHeadBuffer.GetLength() , NULL))
 				{
+					DebugStringW(L"g_ClientManager.PostSendRequest Error");
 					break;
 				}
 
+				pClientData->strHeadBuffer = "";
+
 				if ( FALSE == g_ClientManager.PostRecvRequest(hRemote))
 				{
+					DebugStringW(L"g_ClientManager.PostRecvRequest Error");
 					break;
 				}
 

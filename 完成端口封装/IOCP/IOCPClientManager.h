@@ -33,7 +33,8 @@ public:
 	HANDLE CreateIOCPClient( PIOCP_TCP_CALLBACK pCallbacks );
 	BOOL   JoinIOCP( HANDLE hClient,HANDLE hIOCP );
 	BOOL   DestoryIOCPClient( HANDLE hClient );
-	
+	BOOL   CheckOnline( HANDLE hClient );
+	DWORD  GetSendPendingLen( HANDLE hClient );
 	BOOL Connect( HANDLE hClient , LPCSTR pszTargetIP,USHORT nTargetPort );
 	VOID SetUserParam( HANDLE hClient ,PVOID pUserParam );
 	PVOID GetUserParam( HANDLE hClient  );
