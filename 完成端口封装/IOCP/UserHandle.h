@@ -5,6 +5,7 @@
 
 //InterlockedIncrement();
 //InterlockedDecrement();
+#include "CSLock.h"
 
 class CUserHandle
 {
@@ -12,7 +13,8 @@ class CUserHandle
 	typedef struct tagHANDLE_ARRARY{
 		CRWLock rwLock;
 		PVOID  pUserData[256];
-		BOOL   bDataInUse[256];	
+		USHORT   usDataInUse[256];
+		CCSLock  csLocks[256];
 		struct tagHANDLE_ARRARY *pNext;
 	}HANDLE_ARRARY,*PHANDLE_ARRARY;
 protected:
@@ -25,6 +27,7 @@ public:
 	HANDLE AllocHandle( PVOID pUserData );
 	BOOL   CheckValidHandle( HANDLE hHandle );
 	PVOID  GetHandleData( HANDLE hHandle );
+	CCSLock *GetHandleLocker( HANDLE hHandle );
 	BOOL   CloseHandle(  HANDLE hHandle ,PVOID *ppUserData );
 };
 

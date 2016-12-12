@@ -33,16 +33,22 @@ HANDLE CIOCPClientManager::CreateIOCPClient( PIOCP_TCP_CALLBACK pCallbacks  )
 
 BOOL CIOCPClientManager::JoinIOCP( HANDLE hClient,HANDLE hIOCP )
 {
-	CAutoCSLocker AutoLocker(&m_csLocker);
-
 	BOOL bRes = FALSE;
 
-	CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
-	if (pIOCPClient)
+	CCSLock *pHandleLock = m_HandleManager.GetHandleLocker(hClient);
+	
+	if ( pHandleLock )
 	{
-		HANDLE hTemp = CreateIoCompletionPort((HANDLE)(pIOCPClient->GetSocketHandle()),hIOCP,(ULONG_PTR)hClient,0);
-		bRes = hTemp != NULL;
+		CAutoCSLocker AutoLocker(pHandleLock);
+
+		CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
+		if (pIOCPClient)
+		{
+			HANDLE hTemp = CreateIoCompletionPort((HANDLE)(pIOCPClient->GetSocketHandle()),hIOCP,(ULONG_PTR)hClient,0);
+			bRes = hTemp != NULL;
+		}
 	}
+
 
 	return bRes;
 
@@ -50,19 +56,24 @@ BOOL CIOCPClientManager::JoinIOCP( HANDLE hClient,HANDLE hIOCP )
 
 BOOL CIOCPClientManager::DestoryIOCPClient( HANDLE hClient )
 {
-	CAutoCSLocker AutoLocker(&m_csLocker);
-
 	BOOL bDestoryRes = FALSE;
 
-	CIOCPTcpClient *pIOCPClient = NULL;
-	m_HandleManager.CloseHandle(hClient,(PVOID *)&pIOCPClient);
-	if (pIOCPClient)
+	CCSLock *pHandleLock = m_HandleManager.GetHandleLocker(hClient);
+	if (pHandleLock)
 	{
-		pIOCPClient->OnConnectClose(hClient);
-		delete pIOCPClient;
+		CAutoCSLocker AutoLocker(pHandleLock);
 
-		bDestoryRes = TRUE;
+		CIOCPTcpClient *pIOCPClient = NULL;
+		m_HandleManager.CloseHandle(hClient,(PVOID *)&pIOCPClient);
+		if (pIOCPClient)
+		{
+			pIOCPClient->OnConnectClose(hClient);
+			delete pIOCPClient;
+
+			bDestoryRes = TRUE;
+		}
 	}
+	
 
 	return bDestoryRes;
 }
@@ -70,13 +81,17 @@ BOOL CIOCPClientManager::DestoryIOCPClient( HANDLE hClient )
 
 BOOL CIOCPClientManager::Connect( HANDLE hClient , LPCSTR pszTargetIP,USHORT nTargetPort )
 {
-	CAutoCSLocker AutoLocker(&m_csLocker);
-
 	BOOL bConnectRes = FALSE;
-	CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
-	if (pIOCPClient)
+
+	CCSLock *pHandleLock = m_HandleManager.GetHandleLocker(hClient);
+	if (pHandleLock)
 	{
-		bConnectRes = pIOCPClient->Connect(pszTargetIP,nTargetPort);
+		CAutoCSLocker AutoLocker(pHandleLock);
+		CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
+		if (pIOCPClient)
+		{
+			bConnectRes = pIOCPClient->Connect(pszTargetIP,nTargetPort);
+		}
 	}
 
 	return bConnectRes;
@@ -84,52 +99,67 @@ BOOL CIOCPClientManager::Connect( HANDLE hClient , LPCSTR pszTargetIP,USHORT nTa
 
 VOID CIOCPClientManager::SetUserParam( HANDLE hClient ,PVOID pUserParam )
 {
-	CAutoCSLocker AutoLocker(&m_csLocker);
-
-	CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
-	if (pIOCPClient)
+	CCSLock *pHandleLock = m_HandleManager.GetHandleLocker(hClient);
+	if (pHandleLock)
 	{
-		pIOCPClient->SetUserParam(pUserParam);
+		CAutoCSLocker AutoLocker(pHandleLock);
+		CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
+		if (pIOCPClient)
+		{
+			pIOCPClient->SetUserParam(pUserParam);
+		}
 	}
 }
 
 PVOID CIOCPClientManager::GetUserParam( HANDLE hClient  )
 {
-	CAutoCSLocker AutoLocker(&m_csLocker);
-
-	CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
-	if (pIOCPClient)
+	CCSLock *pHandleLock = m_HandleManager.GetHandleLocker(hClient);
+	if (pHandleLock)
 	{
-		return pIOCPClient->GetUserParam();
+		CAutoCSLocker AutoLocker(pHandleLock);
+		CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
+		if (pIOCPClient)
+		{
+			return pIOCPClient->GetUserParam();
+		}
 	}
+
+	return NULL;
 }
 
 BOOL CIOCPClientManager::PostRecvRequest( HANDLE hClient )
 {
-
-	CAutoCSLocker AutoLocker(&m_csLocker);
-
 	BOOL bRes = FALSE;
 
-	CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
-	if (pIOCPClient)
+	CCSLock *pHandleLock = m_HandleManager.GetHandleLocker(hClient);
+	if (pHandleLock)
 	{
-		bRes = pIOCPClient->PostRecvRequest();
+		CAutoCSLocker AutoLocker(pHandleLock);
+
+		CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
+		if (pIOCPClient)
+		{
+			bRes = pIOCPClient->PostRecvRequest();
+		}
+
 	}
 
 	return bRes;
 }
 BOOL CIOCPClientManager::PostSendRequest( HANDLE hClient,BYTE *pSendBuf,DWORD dwDataLen , DWORD *pdwPenddingSendLen )
 {
-
-	CAutoCSLocker AutoLocker(&m_csLocker);
-
 	BOOL bRes = FALSE;
 
-	CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
-	if (pIOCPClient)
+	CCSLock *pHandleLock = m_HandleManager.GetHandleLocker(hClient);
+	if (pHandleLock)
 	{
-		bRes = pIOCPClient->PostSendRequest(pSendBuf,dwDataLen , pdwPenddingSendLen);
+		CAutoCSLocker AutoLocker(pHandleLock);
+
+		CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
+		if (pIOCPClient)
+		{
+			bRes = pIOCPClient->PostSendRequest(pSendBuf,dwDataLen , pdwPenddingSendLen);
+		}
 	}
 
 	return bRes;
@@ -137,16 +167,17 @@ BOOL CIOCPClientManager::PostSendRequest( HANDLE hClient,BYTE *pSendBuf,DWORD dw
 
 VOID CIOCPClientManager::OnDataTransfer( HANDLE hClient ,PWSAOVERLAPPEDEX pOverLappedEx , DWORD dwBitLen )
 {
-
-	CAutoCSLocker AutoLocker(&m_csLocker);
-
-	CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
-	if (pIOCPClient)
+	CCSLock *pHandleLock = m_HandleManager.GetHandleLocker(hClient);
+	if (pHandleLock)
 	{
-		pIOCPClient->OnDataTransfer(hClient,pOverLappedEx , dwBitLen);
+		CAutoCSLocker AutoLocker(pHandleLock);
+		CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
+		if (pIOCPClient)
+		{
+			pIOCPClient->OnDataTransfer(hClient,pOverLappedEx , dwBitLen);
 
+		}
 	}
-
 }
 
 

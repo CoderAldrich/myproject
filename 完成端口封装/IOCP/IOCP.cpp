@@ -303,15 +303,15 @@ VOID WINAPI DataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,
 	if (pClientData && pClientData->hRemote)
 	{
 		
- 		if ( pClientData->bServerToClient )
- 		{
- 			BOOL bFinalData = FALSE;
- 			pClientData->pHttpDataParser->ParseRecvData( pDataBuffer,dwDataLen,&bFinalData);
- 			if (bFinalData)
- 			{
- 				pClientData->pHttpDataParser->ResetParser();
- 			}
- 		}
+  		if ( pClientData->bServerToClient )
+  		{
+  			BOOL bFinalData = FALSE;
+  			pClientData->pHttpDataParser->ParseRecvData( pDataBuffer,dwDataLen,&bFinalData);
+  			if (bFinalData)
+  			{
+  				pClientData->pHttpDataParser->ResetParser();
+  			}
+  		}
 		
 		if (  FALSE == pClientData->CallbackParam.bReplaceData )
 		{

@@ -5,7 +5,7 @@ CUserHandle::CUserHandle()
 {
 	m_pHandleArray = new HANDLE_ARRARY;
 	m_pHandleArray->pNext = NULL;
-	ZeroMemory(m_pHandleArray->bDataInUse,sizeof(m_pHandleArray->bDataInUse));
+	ZeroMemory(m_pHandleArray->usDataInUse,sizeof(m_pHandleArray->usDataInUse));
 	m_lHandleCount = 0;
 }
 CUserHandle::~CUserHandle()
@@ -29,10 +29,17 @@ HANDLE CUserHandle::AllocHandle( PVOID pUserData )
 
 		for ( int i=0;i<256;i++ )
 		{
-			if ( pTempHandleArray->bDataInUse[i] == FALSE )
+			if ( pTempHandleArray->usDataInUse[i] == 0 )
 			{
 				hHandle = (HANDLE)(nGroupIndex*256+i+1);
-				pTempHandleArray->bDataInUse[i] = TRUE;
+				pTempHandleArray->usDataInUse[i] = (USHORT)GetTickCount();
+				if ( 0 == pTempHandleArray->usDataInUse[i] )
+				{
+					pTempHandleArray->usDataInUse[i]++;
+				}
+
+				*((USHORT *)&hHandle+1) = pTempHandleArray->usDataInUse[i];
+
 				pTempHandleArray->pUserData[i] = pUserData;
 
 				bAlloced = TRUE;
@@ -53,7 +60,7 @@ HANDLE CUserHandle::AllocHandle( PVOID pUserData )
 			{
 				pNextHandleArray = new HANDLE_ARRARY;
 				pNextHandleArray->pNext = NULL;
-				ZeroMemory(pNextHandleArray->bDataInUse,sizeof(pNextHandleArray->bDataInUse));
+				ZeroMemory(pNextHandleArray->usDataInUse,sizeof(pNextHandleArray->usDataInUse));
 				pTempHandleArray->pNext = pNextHandleArray;
 			}
 			else
@@ -76,9 +83,9 @@ HANDLE CUserHandle::AllocHandle( PVOID pUserData )
 BOOL CUserHandle::CheckValidHandle(HANDLE hHandle)
 {
 	BOOL bValied = FALSE;
-
-
-	int nGroupIndex = ((int)hHandle-1)/256;
+	USHORT usCheckCode = ((DWORD)hHandle>>16);
+	USHORT usHandleIndex = ((USHORT)hHandle-1)%256;
+	int nGroupIndex = ((USHORT)usHandleIndex-1)/256;
 
 	PHANDLE_ARRARY pTempHandleArray = m_pHandleArray;
 	for (int i=0;i<nGroupIndex;i++)
@@ -92,7 +99,7 @@ BOOL CUserHandle::CheckValidHandle(HANDLE hHandle)
 	if (pTempHandleArray)
 	{
 		pTempHandleArray->rwLock.rlock();
-		if ( pTempHandleArray->bDataInUse[((int)hHandle-1)%256] == TRUE )
+		if ( pTempHandleArray->usDataInUse[usHandleIndex] == usCheckCode )
 		{
 			bValied = TRUE;
 		}
@@ -105,8 +112,10 @@ BOOL CUserHandle::CheckValidHandle(HANDLE hHandle)
 PVOID  CUserHandle::GetHandleData( HANDLE hHandle )
 {
 	PVOID pUserData = NULL;
-
-	int nGroupIndex = ((int)hHandle-1)/256;
+	
+	USHORT usCheckCode = ((DWORD)hHandle>>16);
+	USHORT usHandleIndex = ((USHORT)hHandle-1)%256;
+	int nGroupIndex = ((USHORT)usHandleIndex-1)/256;
 
 	PHANDLE_ARRARY pTempHandleArray = m_pHandleArray;
 	for (int i=0;i<nGroupIndex;i++)
@@ -120,9 +129,9 @@ PVOID  CUserHandle::GetHandleData( HANDLE hHandle )
 	if (pTempHandleArray)
 	{
 		pTempHandleArray->rwLock.rlock();
-		if ( pTempHandleArray->bDataInUse[((int)hHandle-1)%256] == TRUE )
+		if ( pTempHandleArray->usDataInUse[usHandleIndex] == usCheckCode )
 		{
-			pUserData = pTempHandleArray->pUserData[((int)hHandle-1)%256];
+			pUserData = pTempHandleArray->pUserData[usHandleIndex];
 		}
 		pTempHandleArray->rwLock.unlock();
 	}
@@ -130,11 +139,43 @@ PVOID  CUserHandle::GetHandleData( HANDLE hHandle )
 	return pUserData;
 }
 
+CCSLock *CUserHandle::GetHandleLocker( HANDLE hHandle )
+{
+	CCSLock *pHandleLock = NULL;
+
+	USHORT usCheckCode = ((DWORD)hHandle>>16);
+	USHORT usHandleIndex = ((USHORT)hHandle-1)%256;
+	int nGroupIndex = ((USHORT)usHandleIndex-1)/256;
+
+	PHANDLE_ARRARY pTempHandleArray = m_pHandleArray;
+	for (int i=0;i<nGroupIndex;i++)
+	{
+		if ( pTempHandleArray )
+		{
+			pTempHandleArray = pTempHandleArray->pNext;
+		}
+	}
+
+	if (pTempHandleArray)
+	{
+		pTempHandleArray->rwLock.rlock();
+		if ( pTempHandleArray->usDataInUse[usHandleIndex] == usCheckCode )
+		{
+			pHandleLock = &(pTempHandleArray->csLocks[usHandleIndex]);
+		}
+		pTempHandleArray->rwLock.unlock();
+	}
+
+	return pHandleLock;
+}
+
 BOOL CUserHandle::CloseHandle( HANDLE hHandle ,PVOID *ppUserData )
 {
 	BOOL bClosed = FALSE;
 
-	int nGroupIndex = ((int)hHandle-1)/256;
+	USHORT usCheckCode = ((DWORD)hHandle>>16);
+	USHORT usHandleIndex = ((USHORT)hHandle-1)%256;
+	int nGroupIndex = ((USHORT)usHandleIndex-1)/256;
 
 	PHANDLE_ARRARY pTempHandleArray = m_pHandleArray;
 	for (int i=0;i<nGroupIndex;i++)
@@ -148,13 +189,13 @@ BOOL CUserHandle::CloseHandle( HANDLE hHandle ,PVOID *ppUserData )
 	if (pTempHandleArray)
 	{
 		pTempHandleArray->rwLock.wlock();
-		if ( pTempHandleArray->bDataInUse[((int)hHandle-1)%256] == TRUE )
+		if ( pTempHandleArray->usDataInUse[usHandleIndex] == usCheckCode )
 		{
-			pTempHandleArray->bDataInUse[((int)hHandle-1)%256] = FALSE;
+			pTempHandleArray->usDataInUse[usHandleIndex] = 0;
 			
 			if (ppUserData)
 			{
-				*ppUserData = pTempHandleArray->pUserData[((int)hHandle-1)%256];
+				*ppUserData = pTempHandleArray->pUserData[usHandleIndex];
 			}
 
 			bClosed = TRUE;
