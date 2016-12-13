@@ -21,3 +21,4 @@ VOID DebugStringA(const CHAR* fmt, ...);
 #endif
 
 int DivisionString(CStringA strSeparate, CStringA strSourceString, CStringA * pStringArray, int nArrayCount);
+int GetRandValue(int nMin ,int nMax);

@@ -44,6 +44,31 @@ int DivisionString(CStringA strSeparate, CStringA strSourceString, CStringA * pS
 }
 
 
+int GetRandValue(int nMin ,int nMax)
+{
+	LARGE_INTEGER struLargeInteger;
+	if(QueryPerformanceCounter(&struLargeInteger))
+	{
+		srand(struLargeInteger.QuadPart + rand());
+	}
+	else
+	{
+		srand(GetTickCount() + rand());
+	}
+
+	if( (nMax - nMin + 1) == 0 )
+	{
+		return 0;
+	}
+
+	int nRandVal = 0;
+	for (int i=0;i<10;i++)
+	{
+		nRandVal = rand()%(nMax - nMin + 1) + nMin;
+	}
+	return nRandVal;
+}
+
 //调试信息输出
 
 #if defined(DEBUG) || defined(_DEBUG)

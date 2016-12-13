@@ -403,6 +403,8 @@ VOID WINAPI DataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,
 				{
 					g_ClientManager.DestoryIOCPClient(hRemote);
 				}
+
+				g_ClientManager.DestoryIOCPClient(hClient);
 			}
 
 		}

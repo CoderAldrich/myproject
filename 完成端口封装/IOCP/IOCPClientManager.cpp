@@ -3,9 +3,51 @@
 
 #include "IOCPClientManager.h"
 #include "HelpFun.h"
+#include <list>
+using namespace std;
+
+typedef list<HANDLE> LIST_IOCP_CLIET_CLEAR,*PLIST_IOCP_CLIET_CLEAR;
+typedef LIST_IOCP_CLIET_CLEAR::iterator LIST_IOCP_CLIET_CLEAR_PTR;
+
+CCSLock g_lockIOCPClearList;
+LIST_IOCP_CLIET_CLEAR g_lstIOCPClearList;
+HANDLE  g_hEventNewClient = NULL;
+
+VOID AddIOCPClient(HANDLE hCLient)
+{
+	g_lockIOCPClearList.Lock();
+	g_lstIOCPClearList.push_back(hCLient);
+	g_lockIOCPClearList.UnLock();
+	SetEvent(g_hEventNewClient);
+}
+
+DWORD WINAPI IOCPClientClearThread( PVOID pParam )
+{
+	CIOCPClientManager *pThis = (CIOCPClientManager *)pParam;
+
+	while (TRUE)
+	{
+		WaitForSingleObject(g_hEventNewClient,INFINITE);
+		
+		g_lockIOCPClearList.Lock();
+
+		for ( LIST_IOCP_CLIET_CLEAR_PTR it = g_lstIOCPClearList.begin();it!= g_lstIOCPClearList.end();it++)
+		{
+			pThis->RealDestoryIOCPClient(*it);
+		}
+
+		g_lstIOCPClearList.clear();
+
+		g_lockIOCPClearList.UnLock();
+		
+	}
+	return 0;
+}
 
 CIOCPClientManager::CIOCPClientManager(void)
 {
+	g_hEventNewClient = CreateEvent(NULL,FALSE,FALSE,NULL);
+	CreateThread(NULL,0,IOCPClientClearThread,this,0,NULL);
 }
 
 CIOCPClientManager::~CIOCPClientManager(void)
@@ -57,6 +99,12 @@ BOOL CIOCPClientManager::JoinIOCP( HANDLE hClient,HANDLE hIOCP )
 
 BOOL CIOCPClientManager::DestoryIOCPClient( HANDLE hClient )
 {
+	AddIOCPClient(hClient);
+	return TRUE;
+}
+
+BOOL CIOCPClientManager::RealDestoryIOCPClient( HANDLE hClient )
+{
 	BOOL bDestoryRes = FALSE;
 
 	CCSLock *pHandleLock = m_HandleManager.GetHandleLocker(hClient);
@@ -76,7 +124,7 @@ BOOL CIOCPClientManager::DestoryIOCPClient( HANDLE hClient )
 			bDestoryRes = TRUE;
 		}
 	}
-	
+
 
 	return bDestoryRes;
 }
@@ -90,8 +138,7 @@ BOOL CIOCPClientManager::CheckOnline( HANDLE hClient )
 	{
 		CAutoCSLocker AutoLocker(pHandleLock);
 
-		CIOCPTcpClient *pIOCPClient = NULL;
-		m_HandleManager.CloseHandle(hClient,(PVOID *)&pIOCPClient);
+		CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
 		if (pIOCPClient)
 		{
 			bOnline = TRUE;
@@ -110,8 +157,7 @@ DWORD CIOCPClientManager::GetSendPendingLen( HANDLE hClient )
 	{
 		CAutoCSLocker AutoLocker(pHandleLock);
 
-		CIOCPTcpClient *pIOCPClient = NULL;
-		m_HandleManager.CloseHandle(hClient,(PVOID *)&pIOCPClient);
+		CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
 		if (pIOCPClient)
 		{
 			dwSendPendingLen = pIOCPClient->GetSendPendingLen();

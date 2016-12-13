@@ -147,7 +147,7 @@ BOOL CHttpDataParser::HandleTransferData( PBYTE pData,int nDataLen,BOOL bFinalDa
 		BYTE *pUnCompBuffer = NULL;
 		ULONG  ulUnCompBufferLen = 0;
 		BOOL bUnCompRes = UnCompressGzipData(&m_gzipstream,&pUnCompBuffer,&ulUnCompBufferLen,pData,nDataLen);
-		ASSERT(bUnCompRes);
+		//ASSERT(bUnCompRes);
 
 		if ( bUnCompRes && m_pCallback )
 		{

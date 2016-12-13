@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "UserHandle.h"
+#include "HelpFun.h"
 
 CUserHandle::CUserHandle()
 {
@@ -32,11 +33,7 @@ HANDLE CUserHandle::AllocHandle( PVOID pUserData )
 			if ( pTempHandleArray->usDataInUse[i] == 0 )
 			{
 				hHandle = (HANDLE)(nGroupIndex*256+i+1);
-				pTempHandleArray->usDataInUse[i] = (USHORT)GetTickCount();
-				if ( 0 == pTempHandleArray->usDataInUse[i] )
-				{
-					pTempHandleArray->usDataInUse[i]++;
-				}
+				pTempHandleArray->usDataInUse[i] = (USHORT)GetRandValue(10,65530);
 
 				*((USHORT *)&hHandle+1) = pTempHandleArray->usDataInUse[i];
 
