@@ -44,7 +44,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -222,6 +222,50 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+		</Filter>
+		<Filter
+			Name="json"
+			>
+			<File
+				RelativePath=".\json\assertions.h"
+				>
+			</File>
+			<File
+				RelativePath=".\json\autolink.h"
+				>
+			</File>
+			<File
+				RelativePath=".\json\config.h"
+				>
+			</File>
+			<File
+				RelativePath=".\json\features.h"
+				>
+			</File>
+			<File
+				RelativePath=".\json\forwards.h"
+				>
+			</File>
+			<File
+				RelativePath=".\json\json.h"
+				>
+			</File>
+			<File
+				RelativePath=".\json\reader.h"
+				>
+			</File>
+			<File
+				RelativePath=".\json\value.h"
+				>
+			</File>
+			<File
+				RelativePath=".\json\version.h"
+				>
+			</File>
+			<File
+				RelativePath=".\json\writer.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
