@@ -16,6 +16,9 @@
 #include <vector>
 using namespace std;
 
+#include "CNZZ.h"
+
+
 BOOL WriteStringToFile( HANDLE hFile,LPCSTR pszText )
 {
 	DWORD dwWriteLen=0;
@@ -68,16 +71,13 @@ BOOL JsonCheckNodes( Json::Value *proot , ... )
 	return bAllExist;
 }
 
-int _tmain(int argc, _TCHAR* argv[])
+int CNZZDataExport(LPCWSTR pchSiteId,LPCWSTR pchPassWord,LPCWSTR pszDayTime,LPCWSTR pszSavePath,TypeMsgShowCallBack pMsgShowCallback)
 {
-
-	LPCWSTR pchSiteId=L"1261014836";
-	LPCWSTR pchPassWord=L"112233";
-	LPCWSTR pchStartTime=L"2016-12-20";
-	LPCWSTR pchEndTime=L"2016-12-20";
+	LPCWSTR pchStartTime=pszDayTime;
+	LPCWSTR pchEndTime=pszDayTime;
 	CString strSaveFileName;
 
-	strSaveFileName.Format(L"C:\\CNZZData_%s_%s-%s.txt",CString(pchSiteId),CString(pchStartTime),CString(pchEndTime));
+	strSaveFileName.Format(L"%sCNZZData_%s_%s-%s.txt",CString(pszSavePath),CString(pchSiteId),CString(pchStartTime),CString(pchEndTime));
 
 	CString strData;
 	CString strPostUrl;
@@ -204,7 +204,12 @@ int _tmain(int argc, _TCHAR* argv[])
 
 						CStringA strPageIndex;
 						strPageIndex.Format("%d",nPageIndex);
-						printf(strPageIndex+" "+strIndex+" "+strTime+" "+strIp+" "+strReferer+" "+strViewPage+"\n");
+
+						if (pMsgShowCallback)
+						{
+							pMsgShowCallback(CString(strPageIndex+" "+strIndex+" "+strTime+" "+strIp+" "+strReferer+" "+strViewPage));
+						}
+						
 
 					}
 
@@ -227,8 +232,10 @@ int _tmain(int argc, _TCHAR* argv[])
 		CloseHandle(hFile);
 	}
 
-	printf("提取完毕");
-	//getchar();
+	if (pMsgShowCallback)
+	{
+		pMsgShowCallback(L"全部导出成功");
+	}
 
 	return 0;
 }
