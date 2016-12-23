@@ -162,6 +162,8 @@ public:
 
 		return strKeyValue;
 	}
+
+
 	UINT GetIniUint(LPCWSTR pszSection,LPCWSTR pszKeyName,UINT unDefaultValue)
 	{
 		UINT unValue = unDefaultValue;
@@ -188,6 +190,8 @@ public:
 
 		return unValue;
 	}
+
+
 
 	UINT GetSectionCount()
 	{
@@ -223,6 +227,56 @@ public:
 		return strSection;
 	}
 
+	BOOL WriteIniString( LPCWSTR pszSection,LPCWSTR pszKeyName,LPCWSTR pszKeyValue )
+	{
+		MAP_SECTION_PTR it = m_mapSection.find(pszSection);
+		if (it == m_mapSection.end())
+		{
+			MAP_DATA Data;
+			Data.insert(std::make_pair(pszKeyName,pszKeyValue));
+			m_mapSection.insert(std::make_pair(pszSection,Data));
+		}
+		else
+		{
+			MAP_DATA_PTR datait = it->second.find(pszKeyName);
+			if (datait == it->second.end())
+			{
+				it->second.insert(std::make_pair(pszKeyName,pszKeyValue));
+			}
+			else
+			{
+				datait->second = pszKeyValue;
+			}
+		}
+
+		return TRUE;
+	}
+
+	BOOL WriteIniInt( LPCWSTR pszSection,LPCWSTR pszKeyName,int nValue )
+	{
+		CString strKeyValue;
+		strKeyValue.Format(L"%d",nValue);
+
+		return WriteIniString(pszSection,pszKeyName,strKeyValue);
+	}
+
+	CString BuildData()
+	{
+		CString strMemIniData;
+
+		for ( MAP_SECTION_PTR it = m_mapSection.begin();it!= m_mapSection.end();it++ )
+		{
+			strMemIniData+=L"["+it->first+L"]\r\n";
+			for (MAP_DATA_PTR itdata = it->second.begin();itdata != it->second.end();itdata++)
+			{
+				strMemIniData+=itdata->first + L"=" + itdata->second+ L"\r\n";
+			}
+		}
+
+		return strMemIniData;
+	}
+
+
 #if defined(DEBUG) || defined(_DEBUG)
 	VOID PrintTree()
 	{
@@ -241,13 +295,20 @@ public:
 int _tmain(int argc, _TCHAR* argv[])
 {
 	
-	LPCWSTR pszData=L"count=10\r\nname=gaozan\r\nhahah=hahahah";
+	LPCWSTR pszData=L"[]count=10\r\nname=gaozan\r\nhahah=hahahah";
 	
 	CMemIniFile MemIni;
 	MemIni.ParseMemoryDataW((BYTE *)pszData,wcslen(pszData)*2);
 	MemIni.PrintTree();
+
+	MemIni.WriteIniString(L"",L"count",L"2222");
+
 	CString strValue = MemIni.GetIniString(L"",L"count",L"aaaa");
+
 	UINT nValue = MemIni.GetIniUint(L"",L"count",0);
+	
+	CString strMemIniData;
+	strMemIniData = MemIni.BuildData();
 
 	OutputDebugStringW(L"\r\n");
 
