@@ -247,7 +247,4 @@ void CRemoteDebuggerControllerDlg::OnBnClickedOk()
 		}
 
 	}
-
-
-
 }
