@@ -3,6 +3,10 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RemoteDebuger", "RemoteDebuger\RemoteDebuger.vcproj", "{43F8E437-265F-4D04-BC8F-64DE5B25A942}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RemoteDebugerServer", "RemoteDebugerServer\RemoteDebugerServer.vcproj", "{62539E6D-669F-4D83-A930-23D21A18A473}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RemoteDebuggerController", "RemoteDebuggerController\RemoteDebuggerController.vcproj", "{865082F4-D6D8-43A4-8779-F1E92E0EEF9C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -13,6 +17,14 @@ Global
 		{43F8E437-265F-4D04-BC8F-64DE5B25A942}.Debug|Win32.Build.0 = Debug|Win32
 		{43F8E437-265F-4D04-BC8F-64DE5B25A942}.Release|Win32.ActiveCfg = Release|Win32
 		{43F8E437-265F-4D04-BC8F-64DE5B25A942}.Release|Win32.Build.0 = Release|Win32
+		{62539E6D-669F-4D83-A930-23D21A18A473}.Debug|Win32.ActiveCfg = Debug|Win32
+		{62539E6D-669F-4D83-A930-23D21A18A473}.Debug|Win32.Build.0 = Debug|Win32
+		{62539E6D-669F-4D83-A930-23D21A18A473}.Release|Win32.ActiveCfg = Release|Win32
+		{62539E6D-669F-4D83-A930-23D21A18A473}.Release|Win32.Build.0 = Release|Win32
+		{865082F4-D6D8-43A4-8779-F1E92E0EEF9C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{865082F4-D6D8-43A4-8779-F1E92E0EEF9C}.Debug|Win32.Build.0 = Debug|Win32
+		{865082F4-D6D8-43A4-8779-F1E92E0EEF9C}.Release|Win32.ActiveCfg = Release|Win32
+		{865082F4-D6D8-43A4-8779-F1E92E0EEF9C}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

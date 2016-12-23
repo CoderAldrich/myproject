@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="RemoteDebuger"
-	ProjectGUID="{43F8E437-265F-4D04-BC8F-64DE5B25A942}"
-	RootNamespace="RemoteDebuger"
+	Name="RemoteDebugerServer"
+	ProjectGUID="{62539E6D-669F-4D83-A930-23D21A18A473}"
+	RootNamespace="RemoteDebugerServer"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -41,10 +41,10 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -62,7 +62,7 @@
 				Name="VCLinkerTool"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
-				SubSystem="2"
+				SubSystem="1"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -114,7 +114,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
@@ -134,7 +134,7 @@
 				Name="VCLinkerTool"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
-				SubSystem="2"
+				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
@@ -171,11 +171,39 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\Buffer.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CSLock.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\HelpFun.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\IOCP.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\IOCPClientManager.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\IOCPTcpClient.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\公共\MemIni.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\RemoteDebuger.cpp"
+				RelativePath=".\RemoteDebugerServer.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RWLock.cpp"
 				>
 			</File>
 			<File
@@ -198,6 +226,10 @@
 					/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath=".\UserHandle.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="头文件"
@@ -205,15 +237,35 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\Buffer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CSLock.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CtrlCodes.h"
+				>
+			</File>
+			<File
+				RelativePath=".\HelpFun.h"
+				>
+			</File>
+			<File
+				RelativePath=".\IOCPClientManager.h"
+				>
+			</File>
+			<File
+				RelativePath=".\IOCPTcpClient.h"
+				>
+			</File>
+			<File
 				RelativePath="..\公共\MemIni.h"
 				>
 			</File>
 			<File
-				RelativePath=".\RemoteDebuger.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Resource.h"
+				RelativePath=".\RWLock.h"
 				>
 			</File>
 			<File
@@ -224,44 +276,16 @@
 				RelativePath=".\targetver.h"
 				>
 			</File>
+			<File
+				RelativePath=".\UserHandle.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
-			<File
-				RelativePath=".\RemoteDebuger.ico"
-				>
-			</File>
-			<File
-				RelativePath=".\RemoteDebuger.rc"
-				>
-			</File>
-			<File
-				RelativePath=".\small.ico"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="NetWork"
-			>
-			<File
-				RelativePath=".\SocketBase.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\SocketBase.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TcpSocket.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\TcpSocket.h"
-				>
-			</File>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"

@@ -2,10 +2,10 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="RemoteDebuger"
-	ProjectGUID="{43F8E437-265F-4D04-BC8F-64DE5B25A942}"
-	RootNamespace="RemoteDebuger"
-	Keyword="Win32Proj"
+	Name="RemoteDebuggerController"
+	ProjectGUID="{865082F4-D6D8-43A4-8779-F1E92E0EEF9C}"
+	RootNamespace="RemoteDebuggerController"
+	Keyword="MFCProj"
 	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
@@ -21,6 +21,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
+			UseOfMFC="1"
 			CharacterSet="1"
 			>
 			<Tool
@@ -37,14 +38,17 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
+				PreprocessorDefinitions="_DEBUG"
+				MkTypLibCompatible="false"
+				ValidateParameters="true"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
+				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				DebugInformationFormat="4"
@@ -54,6 +58,9 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="2052"
+				AdditionalIncludeDirectories="$(IntDir)"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -92,6 +99,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
+			UseOfMFC="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -109,12 +117,16 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="false"
+				ValidateParameters="true"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
+				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG"
+				MinimalRebuild="false"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
@@ -126,6 +138,9 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="2052"
+				AdditionalIncludeDirectories="$(IntDir)"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -175,7 +190,15 @@
 				>
 			</File>
 			<File
-				RelativePath=".\RemoteDebuger.cpp"
+				RelativePath=".\RemoteDebuggerController.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RemoteDebuggerControllerDlg.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\SocketBase.cpp"
 				>
 			</File>
 			<File
@@ -198,6 +221,10 @@
 					/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath=".\TcpSocket.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="头文件"
@@ -209,11 +236,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\RemoteDebuger.h"
+				RelativePath=".\RemoteDebuggerController.h"
+				>
+			</File>
+			<File
+				RelativePath=".\RemoteDebuggerControllerDlg.h"
 				>
 			</File>
 			<File
 				RelativePath=".\Resource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\SocketBase.h"
 				>
 			</File>
 			<File
@@ -224,6 +259,10 @@
 				RelativePath=".\targetver.h"
 				>
 			</File>
+			<File
+				RelativePath=".\TcpSocket.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"
@@ -231,35 +270,15 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\RemoteDebuger.ico"
+				RelativePath=".\res\RemoteDebuggerController.ico"
 				>
 			</File>
 			<File
-				RelativePath=".\RemoteDebuger.rc"
+				RelativePath=".\RemoteDebuggerController.rc"
 				>
 			</File>
 			<File
-				RelativePath=".\small.ico"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="NetWork"
-			>
-			<File
-				RelativePath=".\SocketBase.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\SocketBase.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TcpSocket.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\TcpSocket.h"
+				RelativePath=".\res\RemoteDebuggerController.rc2"
 				>
 			</File>
 		</Filter>
@@ -269,5 +288,9 @@
 		</File>
 	</Files>
 	<Globals>
+		<Global
+			Name="RESOURCE_FILE"
+			Value="RemoteDebuggerController.rc"
+		/>
 	</Globals>
 </VisualStudioProject>
