@@ -4,6 +4,12 @@
 #include "UserHandle.h"
 #include "CSLock.h"
 
+#include <list>
+using namespace std;
+
+typedef list<HANDLE> LIST_IOCP_CLIET_CLEAR,*PLIST_IOCP_CLIET_CLEAR;
+typedef LIST_IOCP_CLIET_CLEAR::iterator LIST_IOCP_CLIET_CLEAR_PTR;
+
 class CAutoCSLocker
 {
 protected:
@@ -27,6 +33,11 @@ class CIOCPClientManager
 protected:
 	CUserHandle m_HandleManager;
 	CCSLock  m_csLocker;
+
+	CCSLock m_lockIOCPClearList;
+	LIST_IOCP_CLIET_CLEAR m_lstIOCPClearList;
+	HANDLE  m_hEventNewClient;
+
 public:
 	CIOCPClientManager(void);
 	~CIOCPClientManager(void);
@@ -45,4 +56,8 @@ public:
 	BOOL PostSendRequest( HANDLE hClient,BYTE *pSendBuf,DWORD dwDataLen , DWORD *pdwPenddingSendLen );
 	VOID OnDataTransfer( HANDLE hClient ,PWSAOVERLAPPEDEX pOverLappedEx , DWORD dwBitLen );
 	VOID GetAllOnlineClient( TypeOnlineClientEnumCallBack pCallback,PVOID pParam );
+	
+	VOID AddIOCPClient(HANDLE hCLient);
+	static DWORD WINAPI IOCPClientClearThread( PVOID pParam );
+
 };

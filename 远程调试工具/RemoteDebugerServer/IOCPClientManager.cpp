@@ -3,42 +3,34 @@
 
 #include "IOCPClientManager.h"
 #include "HelpFun.h"
-#include <list>
-using namespace std;
 
-typedef list<HANDLE> LIST_IOCP_CLIET_CLEAR,*PLIST_IOCP_CLIET_CLEAR;
-typedef LIST_IOCP_CLIET_CLEAR::iterator LIST_IOCP_CLIET_CLEAR_PTR;
 
-CCSLock g_lockIOCPClearList;
-LIST_IOCP_CLIET_CLEAR g_lstIOCPClearList;
-HANDLE  g_hEventNewClient = NULL;
-
-VOID AddIOCPClient(HANDLE hCLient)
+VOID CIOCPClientManager::AddIOCPClient(HANDLE hCLient)
 {
-	g_lockIOCPClearList.Lock();
-	g_lstIOCPClearList.push_back(hCLient);
-	g_lockIOCPClearList.UnLock();
-	SetEvent(g_hEventNewClient);
+	m_lockIOCPClearList.Lock();
+	m_lstIOCPClearList.push_back(hCLient);
+	m_lockIOCPClearList.UnLock();
+	SetEvent(m_hEventNewClient);
 }
 
-DWORD WINAPI IOCPClientClearThread( PVOID pParam )
+DWORD WINAPI CIOCPClientManager::IOCPClientClearThread( PVOID pParam )
 {
 	CIOCPClientManager *pThis = (CIOCPClientManager *)pParam;
 
 	while (TRUE)
 	{
-		WaitForSingleObject(g_hEventNewClient,INFINITE);
+		WaitForSingleObject(pThis->m_hEventNewClient,INFINITE);
 		
-		g_lockIOCPClearList.Lock();
+		pThis->m_lockIOCPClearList.Lock();
 
-		for ( LIST_IOCP_CLIET_CLEAR_PTR it = g_lstIOCPClearList.begin();it!= g_lstIOCPClearList.end();it++)
+		for ( LIST_IOCP_CLIET_CLEAR_PTR it = pThis->m_lstIOCPClearList.begin();it!= pThis->m_lstIOCPClearList.end();it++)
 		{
 			pThis->RealDestoryIOCPClient(*it);
 		}
 
-		g_lstIOCPClearList.clear();
+		pThis->m_lstIOCPClearList.clear();
 
-		g_lockIOCPClearList.UnLock();
+		pThis->m_lockIOCPClearList.UnLock();
 		
 	}
 	return 0;
@@ -46,7 +38,7 @@ DWORD WINAPI IOCPClientClearThread( PVOID pParam )
 
 CIOCPClientManager::CIOCPClientManager(void)
 {
-	g_hEventNewClient = CreateEvent(NULL,FALSE,FALSE,NULL);
+	m_hEventNewClient = CreateEvent(NULL,FALSE,FALSE,NULL);
 	CreateThread(NULL,0,IOCPClientClearThread,this,0,NULL);
 }
 
@@ -228,6 +220,10 @@ BOOL CIOCPClientManager::PostRecvRequest( HANDLE hClient )
 		if (pIOCPClient)
 		{
 			bRes = pIOCPClient->PostRecvRequest();
+			if ( FALSE == bRes )
+			{
+				DestoryIOCPClient(hClient);
+			}
 		}
 
 	}
@@ -247,6 +243,10 @@ BOOL CIOCPClientManager::PostSendRequest( HANDLE hClient,BYTE *pSendBuf,DWORD dw
 		if (pIOCPClient)
 		{
 			bRes = pIOCPClient->PostSendRequest(pSendBuf,dwDataLen , pdwPenddingSendLen);
+			if ( FALSE == bRes )
+			{
+				DestoryIOCPClient(hClient);
+			}
 		}
 	}
 

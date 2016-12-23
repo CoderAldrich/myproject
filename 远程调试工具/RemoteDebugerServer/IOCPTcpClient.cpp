@@ -118,10 +118,6 @@ BOOL CIOCPTcpClient::PostRecvRequest( )
 
 BOOL CIOCPTcpClient::PostSendRequest( BYTE *pSendBuf,DWORD dwDataLen , DWORD *pdwPenddingSendLen )
 {
-	{
-		send(m_sock,(LPCSTR)pSendBuf,dwDataLen,0);
-		return TRUE;
-	}
 	DWORD dwFlag = 0;
 	DWORD dwRecvLen = 0 ;
 

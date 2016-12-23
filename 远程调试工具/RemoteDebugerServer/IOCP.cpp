@@ -199,22 +199,55 @@ HANDLE hCtrlClientServer = NULL;
 
 VOID WINAPI ClientConnectCallback( HANDLE hClient,sockaddr_in *psiClient )
 {
+	CIOCPClientManager *pClientManager = GetIOCPClientManager(hToClientServer);
+	if (pClientManager)
+	{
+		BOOL *pbHeartBeatResponse = new BOOL;
+		*pbHeartBeatResponse = TRUE;
 
+		pClientManager->SetUserParam(hClient,pbHeartBeatResponse);
+	}
 }
 VOID WINAPI ClientDisConnectCallback( HANDLE hClient , PVOID pUserParam)
 {
+	CIOCPClientManager *pClientManager = GetIOCPClientManager(hToClientServer);
 
+	delete pUserParam;
 }
 
 VOID WINAPI DataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,DWORD dwDataLen)
 {
 	CIOCPClientManager *pCtrlClientManager = GetIOCPClientManager(hCtrlClientServer);
 	CIOCPClientManager *pClientManager = GetIOCPClientManager(hToClientServer);
+	
+	CMemIniFile Ini;
+	Ini.ParseMemoryDataW(pDataBuffer,dwDataLen);
 
-	if (pCtrlClientManager)
+	if ( pCtrlClientManager && pCtrlClientManager )
 	{
-		HANDLE hCtrlClient = pClientManager->GetUserParam(hClient);
-		pCtrlClientManager->PostSendRequest(hCtrlClient,pDataBuffer,dwDataLen,NULL);
+		CMemIniFile Ini;
+		Ini.ParseMemoryDataW(pDataBuffer,dwDataLen);
+
+		CString strCmd;
+		strCmd = Ini.GetIniString(L"",L"cmd",L"");
+		if (strCmd == L"heartbeat")
+		{
+			BOOL *pbHeartBeatResponse = (BOOL *)pClientManager->GetUserParam(hClient);
+			
+			if (pbHeartBeatResponse)
+			{
+				*pbHeartBeatResponse = TRUE;
+			}
+		}
+		else
+		{
+			HANDLE hCtrlClient = (HANDLE)Ini.GetIniUint(L"",L"target",0);
+			if (hCtrlClient)
+			{
+				pCtrlClientManager->PostSendRequest(hCtrlClient,pDataBuffer,dwDataLen,NULL);
+			}
+		}
+
 	}
 
 }
@@ -282,8 +315,11 @@ VOID WINAPI CtrlDataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuf
 		HANDLE hTargetClient = (HANDLE)Ini.GetIniUint( L"",L"target", 0 );
 		if (hTargetClient)
 		{
-			pClientManager->SetUserParam(hTargetClient,hClient);
-			pClientManager->PostSendRequest(hTargetClient,pDataBuffer,dwDataLen,NULL);
+			Ini.WriteIniInt(L"",L"source",(int)hClient);
+			CString strSendData;
+			strSendData = Ini.BuildData();
+
+			pClientManager->PostSendRequest(hTargetClient,(BYTE *)strSendData.GetBuffer(),strSendData.GetLength()*sizeof(WCHAR),NULL);
 		}
 
 	}
@@ -291,6 +327,50 @@ VOID WINAPI CtrlDataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuf
 }
 
 
+VOID WINAPI OnlineClientEnumCallBack( PVOID pParam , HANDLE hClient );
+
+DWORD WINAPI HeartBeatThread( PVOID pParam )
+{
+	PIOCP_TCP_SERVER_PARAM pServerParam = (PIOCP_TCP_SERVER_PARAM)pParam;
+
+	WCHAR szHeartBeatData[]=L"[]\r\ncmd=heartbeat";
+	while (TRUE)
+	{
+		list<HANDLE> lstHandles;
+
+		pServerParam->pClientManager->GetAllOnlineClient( OnlineClientEnumCallBack, &lstHandles);
+
+		HANDLE hTempHandle = NULL;
+		for (list<HANDLE>::const_iterator it = lstHandles.begin();it!=lstHandles.end();it++)
+		{
+			BOOL *pbHeartBeatResponse = (BOOL *)pServerParam->pClientManager->GetUserParam(*it);
+			if (pbHeartBeatResponse)
+			{
+				*pbHeartBeatResponse = FALSE;
+			}
+			
+			pServerParam->pClientManager->PostSendRequest(*it,(BYTE *)szHeartBeatData,34,NULL);	
+			
+		}
+
+		Sleep(5000);
+
+		for (list<HANDLE>::const_iterator it = lstHandles.begin();it!=lstHandles.end();it++)
+		{
+			BOOL *pbHeartBeatResponse = (BOOL *)pServerParam->pClientManager->GetUserParam(*it);
+			if ( pbHeartBeatResponse && FALSE == *pbHeartBeatResponse )
+			{
+				pServerParam->pClientManager->DestoryIOCPClient(*it);
+			}
+		}
+
+		Sleep(5000);
+
+	}
+
+
+	return 0;
+}
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -302,12 +382,17 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	hToClientServer = CreateIOCPTcpServer(8889,&TcpCallback);
 
+	HANDLE hHeartBeatThread = CreateThread(NULL,0,HeartBeatThread,(PVOID)hToClientServer,0,NULL);
+	CloseHandle(hHeartBeatThread);
+
 	IOCP_TCP_CALLBACK CtrlTcpCallback;
 	CtrlTcpCallback.pClientConnect = CtrlClientConnectCallback ;
 	CtrlTcpCallback.pClientDisConnect = CtrlClientDisConnectCallback ;
 	CtrlTcpCallback.pDataRecv = CtrlDataRecvCallback;
 
 	hCtrlClientServer = CreateIOCPTcpServer(8890,&CtrlTcpCallback);
+// 	hHeartBeatThread = CreateThread(NULL,0,HeartBeatThread,(PVOID)hCtrlClientServer,0,NULL);
+// 	CloseHandle(hHeartBeatThread);
 
 	while (1)
 	{

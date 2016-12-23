@@ -24,6 +24,7 @@ CRemoteDebuggerControllerDlg::CRemoteDebuggerControllerDlg(CWnd* pParent /*=NULL
 	, m_strCmdLine(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_hCurClient = NULL;
 }
 
 void CRemoteDebuggerControllerDlg::DoDataExchange(CDataExchange* pDX)
@@ -32,6 +33,7 @@ void CRemoteDebuggerControllerDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT1, m_strCmdLine);
 	DDX_Control(pDX, IDC_EDIT2, m_wndMsgShow);
 	DDX_Control(pDX, IDC_LIST1, m_wndOnLineClient);
+	DDX_Control(pDX, IDC_EDIT3, m_wndCurClient);
 }
 
 BEGIN_MESSAGE_MAP(CRemoteDebuggerControllerDlg, CDialog)
@@ -40,6 +42,9 @@ BEGIN_MESSAGE_MAP(CRemoteDebuggerControllerDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDOK, &CRemoteDebuggerControllerDlg::OnBnClickedOk)
 	ON_MESSAGE(WM_USER+2222,OnHandleRecvMsg)
+	ON_WM_TIMER()
+	ON_LBN_SELCHANGE(IDC_LIST1, &CRemoteDebuggerControllerDlg::OnLbnSelchangeList1)
+	ON_BN_CLICKED(IDC_BUTTON1, &CRemoteDebuggerControllerDlg::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 HANDLE hClientHandle = NULL;
@@ -47,10 +52,10 @@ HANDLE hClientHandle = NULL;
 DWORD WINAPI RecvDataThread( PVOID pParam )
 {
 	CRemoteDebuggerControllerDlg *pThis = (CRemoteDebuggerControllerDlg *)pParam;
-	char chRecvBuffer[40960];
+	char chRecvBuffer[4096];
 	while (TRUE)
 	{
-		int nRecvRes = pThis->m_tcpSock.RecvData(chRecvBuffer,40940);
+		int nRecvRes = pThis->m_tcpSock.RecvData(chRecvBuffer,4094);
 		if (nRecvRes <= 0)
 		{
 			break;
@@ -166,21 +171,17 @@ BOOL CRemoteDebuggerControllerDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
-	Sleep(1000);
+	Sleep(500);
 
 	BOOL bRes = m_tcpSock.CreateTcpSocket();
 	bRes = m_tcpSock.Connect("gz8912.jios.org",8890);
 
-	if (bRes)
-	{
-		CreateThread(NULL,0,RecvDataThread,this,0,NULL);
+	CreateThread(NULL,0,RecvDataThread,this,0,NULL);
 
-		CMemIniFile Ini;
-		Ini.WriteIniString(L"",L"cmd",L"getonlineclient");
-		CString strSendData;
-		strSendData = Ini.BuildData();
-		m_tcpSock.SendData((BYTE *)strSendData.GetBuffer(),strSendData.GetLength()*sizeof(WCHAR));
-	}
+	RefushOnClient();
+
+	SetTimer(1111,10000,NULL);
+	
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -226,11 +227,10 @@ void CRemoteDebuggerControllerDlg::OnBnClickedOk()
 {
 	UpdateData();
 	
-	int nSelIndex = m_wndOnLineClient.GetCurSel();
-	if (nSelIndex >= 0)
+	if (m_hCurClient)
 	{
 		CString strTargetHandle;
-		m_wndOnLineClient.GetText(nSelIndex,strTargetHandle);
+		strTargetHandle.Format(L"%d",m_hCurClient);
 
 		if (strTargetHandle.GetLength() > 0 )
 		{
@@ -247,4 +247,44 @@ void CRemoteDebuggerControllerDlg::OnBnClickedOk()
 		}
 
 	}
+}
+
+void CRemoteDebuggerControllerDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	if ( nIDEvent == 1111 )
+	{
+		RefushOnClient();
+	}
+
+	CDialog::OnTimer(nIDEvent);
+}
+
+VOID CRemoteDebuggerControllerDlg::RefushOnClient(void)
+{
+	CMemIniFile Ini;
+	Ini.WriteIniString(L"",L"cmd",L"getonlineclient");
+	CString strSendData;
+	strSendData = Ini.BuildData();
+	m_tcpSock.SendData((BYTE *)strSendData.GetBuffer(),strSendData.GetLength()*sizeof(WCHAR));
+
+	return VOID();
+}
+
+void CRemoteDebuggerControllerDlg::OnLbnSelchangeList1()
+{
+	int nSelIndex = m_wndOnLineClient.GetCurSel();
+	if (nSelIndex >= 0)
+	{
+		CString strTargetHandle;
+		m_wndOnLineClient.GetText(nSelIndex,strTargetHandle);
+
+		m_hCurClient = (HANDLE)_ttoi(strTargetHandle);
+
+		m_wndCurClient.SetWindowText(strTargetHandle);
+	}
+}
+
+void CRemoteDebuggerControllerDlg::OnBnClickedButton1()
+{
+	m_wndMsgShow.SetWindowText(L"");
 }

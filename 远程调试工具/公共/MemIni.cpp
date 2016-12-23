@@ -117,7 +117,11 @@ BOOL CMemIniFile::ParseUnicodeStringW(LPCWSTR pszData,LONGLONG llLen)
 BOOL CMemIniFile::ParseMemoryDataW( CONST BYTE *pData , int nDataLen )
 {
 	LONGLONG llStrLen = nDataLen/sizeof(WCHAR);
-	ParseUnicodeStringW((LPCWSTR)pData,llStrLen);
+
+	CString strData;
+	strData.Append((WCHAR *)pData,llStrLen);
+
+	ParseUnicodeStringW((LPCWSTR)strData,llStrLen);
 	return TRUE;
 }
 

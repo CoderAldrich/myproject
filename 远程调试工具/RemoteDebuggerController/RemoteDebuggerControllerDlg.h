@@ -24,7 +24,7 @@ public:
 // 实现
 protected:
 	HICON m_hIcon;
-
+	HANDLE m_hCurClient;
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
 	afx_msg void OnPaint();
@@ -36,4 +36,9 @@ public:
 	afx_msg void OnBnClickedOk();
 	CEdit m_wndMsgShow;
 	CListBox m_wndOnLineClient;
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	VOID RefushOnClient(void);
+	afx_msg void OnLbnSelchangeList1();
+	CEdit m_wndCurClient;
+	afx_msg void OnBnClickedButton1();
 };
