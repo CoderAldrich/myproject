@@ -1,0 +1,16 @@
+LIBRARY	"IOCP"
+EXPORTS
+	IOCPCreateTcpServer
+	IOCPPostSendRequest
+	IOCPDestoryClient
+	IOCPSetClientUserParam
+	IOCPGetClientUserParam
+	IOCPGetAllOnlineClient
+	IOCPCreateClient
+	IOCPCreateClientWithSock
+	IOCPJoin
+	CreateClient
+	DeleteClient
+	ClientConnect
+	StartRecvData
+	ClientSendData

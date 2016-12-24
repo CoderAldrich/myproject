@@ -7,7 +7,13 @@ CIOCPTcpClient::CIOCPTcpClient(void)
 	m_sock = INVALID_SOCKET;
 	m_pUserParam = NULL;
 	m_dwSendPendingLen = 0;
+	m_bHeartBeatResponse = FALSE;
 	memset(&m_Callbacks,0,sizeof(m_Callbacks));
+
+	m_nRemainDataLen = 0;
+	m_nTotalDataLen = 0;
+	m_ctrlCode = TC_ERROR;
+
 }
 
 CIOCPTcpClient::~CIOCPTcpClient(void)
@@ -94,6 +100,15 @@ PVOID CIOCPTcpClient::GetUserParam(  )
 	return m_pUserParam;
 }
 
+VOID CIOCPTcpClient::SetHeartBeatResponse(BOOL bResponse)
+{
+	m_bHeartBeatResponse = bResponse;
+}
+BOOL CIOCPTcpClient::GetHeartBeatResponse()
+{
+	return m_bHeartBeatResponse;
+}
+
 BOOL CIOCPTcpClient::PostRecvRequest( )
 {
 
@@ -169,10 +184,66 @@ VOID CIOCPTcpClient::OnDataTransfer( HANDLE hYou , PWSAOVERLAPPEDEX pOverLappedE
 
 VOID CIOCPTcpClient::OnDataRecv( HANDLE hYou , DWORD dwBitLen )
 {
-	if(m_Callbacks.pDataRecv)
+
+	m_bufDataRecved.AppendData((BYTE *)m_chRecvBuffer,dwBitLen);
+
+	while ( TRUE )
 	{
-		m_Callbacks.pDataRecv(hYou,m_pUserParam,(BYTE *)m_chRecvBuffer,dwBitLen);
+		char *pchRealDataBuffer = (char *)m_bufDataRecved.GetDataBuffer();
+		int    nRealDataLen = m_bufDataRecved.GetTotalBufferLen();
+
+		if ( m_nRemainDataLen == 0 )
+		{
+			if ( nRealDataLen >= sizeof(IOCP_TCP_HEAD) )
+			{
+				PIOCP_TCP_HEAD pTcpHead = (PIOCP_TCP_HEAD)pchRealDataBuffer;
+				m_nTotalDataLen = pTcpHead->dwDataLen;
+				m_nRemainDataLen = 1;
+				m_ctrlCode = pTcpHead->tcpCtrlCode;
+
+				m_bufDataRecved.DeleteLeft(sizeof(IOCP_TCP_HEAD));
+				pchRealDataBuffer = (char *)m_bufDataRecved.GetDataBuffer();
+				nRealDataLen = m_bufDataRecved.GetTotalBufferLen();
+			}
+			else
+			{
+				break;
+			}
+		}
+
+
+		if ( m_nRemainDataLen == 1 )
+		{
+			if ( nRealDataLen >= m_nTotalDataLen )
+			{
+				//OnRecvFullPkg( m_ctrlCode ,pchRealDataBuffer,m_nTotalDataLen);
+				
+				if ( TC_HEART_BEAT == m_ctrlCode )
+				{
+					SetHeartBeatResponse(TRUE);
+				}
+				else if( TC_TRANSFER_DATA == m_ctrlCode )
+				{
+					if(m_Callbacks.pDataRecv)
+					{
+						m_Callbacks.pDataRecv(hYou,m_pUserParam,(BYTE *)pchRealDataBuffer,m_nTotalDataLen);
+					}
+				}
+				
+
+				m_bufDataRecved.DeleteLeft(m_nTotalDataLen);
+				m_nTotalDataLen = 0;
+				m_nRemainDataLen = 0;
+				m_ctrlCode = TC_ERROR;
+			}
+			else
+			{
+				break;
+			}
+		}
 	}
+
+
 
 	PostRecvRequest();
 }

@@ -26,8 +26,6 @@ public:
 	}
 };
 
-typedef VOID (WINAPI *TypeOnlineClientEnumCallBack)( PVOID pParam , HANDLE hClient );
-
 class CIOCPClientManager
 {
 protected:
@@ -50,14 +48,16 @@ public:
 	BOOL   CheckOnline( HANDLE hClient );
 	DWORD  GetSendPendingLen( HANDLE hClient );
 	BOOL Connect( HANDLE hClient , LPCSTR pszTargetIP,USHORT nTargetPort );
-	VOID SetUserParam( HANDLE hClient ,PVOID pUserParam );
+	BOOL SetUserParam( HANDLE hClient ,PVOID pUserParam );
 	PVOID GetUserParam( HANDLE hClient  );
 	BOOL PostRecvRequest( HANDLE hClient );
 	BOOL PostSendRequest( HANDLE hClient,BYTE *pSendBuf,DWORD dwDataLen , DWORD *pdwPenddingSendLen );
 	VOID OnDataTransfer( HANDLE hClient ,PWSAOVERLAPPEDEX pOverLappedEx , DWORD dwBitLen );
-	VOID GetAllOnlineClient( TypeOnlineClientEnumCallBack pCallback,PVOID pParam );
+	VOID GetAllOnlineClient( list<HANDLE> *plstOnlineHandles );
 	
 	VOID AddIOCPClient(HANDLE hCLient);
+	BOOL SetHeartBeatResponse(HANDLE hClient,BOOL bResponse);
+	BOOL GetHeartBeatResponse(HANDLE hClient);
 	static DWORD WINAPI IOCPClientClearThread( PVOID pParam );
 
 };

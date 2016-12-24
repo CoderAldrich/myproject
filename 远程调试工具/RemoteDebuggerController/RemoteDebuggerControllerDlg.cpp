@@ -7,6 +7,8 @@
 #include "RemoteDebuggerControllerDlg.h"
 
 #include "..\公共\MemIni.h"
+#include "..\iocp\IOCPExport.h"
+#pragma comment(lib,"IOCP.lib")
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -25,6 +27,7 @@ CRemoteDebuggerControllerDlg::CRemoteDebuggerControllerDlg(CWnd* pParent /*=NULL
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_hCurClient = NULL;
+	m_hClient = NULL;
 }
 
 void CRemoteDebuggerControllerDlg::DoDataExchange(CDataExchange* pDX)
@@ -47,36 +50,35 @@ BEGIN_MESSAGE_MAP(CRemoteDebuggerControllerDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON1, &CRemoteDebuggerControllerDlg::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
-HANDLE hClientHandle = NULL;
 
-DWORD WINAPI RecvDataThread( PVOID pParam )
-{
-	CRemoteDebuggerControllerDlg *pThis = (CRemoteDebuggerControllerDlg *)pParam;
-	char chRecvBuffer[4096];
-	while (TRUE)
-	{
-		int nRecvRes = pThis->m_tcpSock.RecvData(chRecvBuffer,4094);
-		if (nRecvRes <= 0)
-		{
-			break;
-		}
-		chRecvBuffer[nRecvRes] = 0;
-		chRecvBuffer[nRecvRes+1] = 0;
-		
- 		CString strMsgOut;
- 		strMsgOut = (WCHAR *)chRecvBuffer;
- 
- 		int nLen = strMsgOut.GetLength();
- 		WCHAR *pszMsgBuf = new WCHAR[nLen+1];
- 		wcscpy_s(pszMsgBuf,nLen+1,strMsgOut.GetBuffer());
- 
- 		pThis->PostMessage(WM_USER+2222,(WPARAM)pszMsgBuf,0);
-
-	}
-
-
-	return 0;
-}
+//  DWORD WINAPI RecvDataThread( PVOID pParam )
+//  {
+//  	CRemoteDebuggerControllerDlg *pThis = (CRemoteDebuggerControllerDlg *)pParam;
+//  	char chRecvBuffer[4096];
+//  	while (TRUE)
+//  	{
+//  		int nRecvRes = pThis->m_tcpSock.RecvData(chRecvBuffer,4094);
+//  		if (nRecvRes <= 0)
+//  		{
+//  			break;
+//  		}
+//  		chRecvBuffer[nRecvRes] = 0;
+//  		chRecvBuffer[nRecvRes+1] = 0;
+//  		
+//   		CString strMsgOut;
+//   		strMsgOut = (WCHAR *)chRecvBuffer;
+//   
+//   		int nLen = strMsgOut.GetLength();
+//   		WCHAR *pszMsgBuf = new WCHAR[nLen+1];
+//   		wcscpy_s(pszMsgBuf,nLen+1,strMsgOut.GetBuffer());
+//   
+//   		pThis->PostMessage(WM_USER+2222,(WPARAM)pszMsgBuf,0);
+//  
+//  	}
+//  
+//  
+//  	return 0;
+//  }
 
 LRESULT CRemoteDebuggerControllerDlg::OnHandleRecvMsg(WPARAM wParam,LPARAM lParam)
 {
@@ -115,6 +117,10 @@ LRESULT CRemoteDebuggerControllerDlg::OnHandleRecvMsg(WPARAM wParam,LPARAM lPara
 				bBreak = TRUE;
 				strTempRecvData = strRecvData;
 			}
+
+			OutputDebugStringW(strTempRecvData);
+			OutputDebugStringW(L"\r\n");
+
 			CMemIniFile Ini;
 			Ini.ParseMemoryDataW((BYTE *)strTempRecvData.GetBuffer(),strTempRecvData.GetLength()*sizeof(WCHAR));
 
@@ -162,6 +168,23 @@ LRESULT CRemoteDebuggerControllerDlg::OnHandleRecvMsg(WPARAM wParam,LPARAM lPara
 	return 0;
 }
 
+CRemoteDebuggerControllerDlg *pThis = NULL;
+VOID WINAPI DataRecvCallback( HANDLE hClient, BYTE *pDataBuffer,DWORD dwDatalen )
+{
+	CString strMsgOut;
+	strMsgOut = (WCHAR *)pDataBuffer;
+
+	int nLen = strMsgOut.GetLength();
+	WCHAR *pszMsgBuf = new WCHAR[nLen+1];
+	wcscpy_s(pszMsgBuf,nLen+1,strMsgOut.GetBuffer());
+
+	pThis->PostMessage(WM_USER+2222,(WPARAM)pszMsgBuf,0);
+}
+VOID WINAPI ConnectClosed( HANDLE hClient )
+{
+	int a=0;
+}
+
 BOOL CRemoteDebuggerControllerDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
@@ -170,13 +193,17 @@ BOOL CRemoteDebuggerControllerDlg::OnInitDialog()
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
-
+#ifdef DEBUG
 	Sleep(500);
-
-	BOOL bRes = m_tcpSock.CreateTcpSocket();
-	bRes = m_tcpSock.Connect("gz8912.jios.org",8890);
-
-	CreateThread(NULL,0,RecvDataThread,this,0,NULL);
+#endif
+	
+	pThis = this;
+	m_hClient = CreateClient(DataRecvCallback,ConnectClosed);
+	BOOL bConRes = ClientConnect(m_hClient,"localhost",8890);
+	if (bConRes)
+	{
+		StartRecvData(m_hClient);
+	}
 
 	RefushOnClient();
 
@@ -239,10 +266,10 @@ void CRemoteDebuggerControllerDlg::OnBnClickedOk()
 			Ini.WriteIniString(L"",L"data",m_strCmdLine);
 			Ini.WriteIniString(L"",L"target",strTargetHandle);
 
-
 			CString strSendData;
 			strSendData = Ini.BuildData();
-			m_tcpSock.SendData((BYTE *)strSendData.GetBuffer(),strSendData.GetLength()*sizeof(WCHAR));
+			ClientSendData(m_hClient,(BYTE *)strSendData.GetBuffer(),strSendData.GetLength()*sizeof(WCHAR));
+
 			int a=0;
 		}
 
@@ -265,7 +292,9 @@ VOID CRemoteDebuggerControllerDlg::RefushOnClient(void)
 	Ini.WriteIniString(L"",L"cmd",L"getonlineclient");
 	CString strSendData;
 	strSendData = Ini.BuildData();
-	m_tcpSock.SendData((BYTE *)strSendData.GetBuffer(),strSendData.GetLength()*sizeof(WCHAR));
+
+	ClientSendData(m_hClient,(BYTE *)strSendData.GetBuffer(),strSendData.GetLength()*sizeof(WCHAR));
+	
 
 	return VOID();
 }

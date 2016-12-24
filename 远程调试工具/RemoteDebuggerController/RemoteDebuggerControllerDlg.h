@@ -4,7 +4,6 @@
 
 #pragma once
 #include "afxwin.h"
-#include "TcpSocket.h"
 
 // CRemoteDebuggerControllerDlg 对话框
 class CRemoteDebuggerControllerDlg : public CDialog
@@ -20,7 +19,7 @@ public:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 public:
 
-	CTcpSocket m_tcpSock;
+	HANDLE m_hClient;
 // 实现
 protected:
 	HICON m_hIcon;

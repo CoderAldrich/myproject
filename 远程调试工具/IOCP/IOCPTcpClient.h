@@ -3,6 +3,9 @@
 #include <Windows.h>
 #pragma comment(lib,"ws2_32.lib")
 #include "CSLock.h"
+#include "IOCPExport.h"
+#include "IOCPPrivate.h"
+#include "Buffer.h"
 
 typedef enum IOCP_OPTION_TYPE{
 	IOT_ERROR=0,
@@ -14,23 +17,6 @@ typedef struct tagWSAOVERLAPPEDEX{
 	WSAOVERLAPPED wsaOverLapped;
 	IOCP_OPTION_TYPE IOCPType;
 }WSAOVERLAPPEDEX,*PWSAOVERLAPPEDEX;
-
-
-typedef VOID (WINAPI *CALLBACK_CLIENT_CONNECT)( HANDLE hClient,sockaddr_in *psiClient );
-typedef VOID (WINAPI *CALLBACK_CLIENT_DISCONNECT)( HANDLE hClient,PVOID pUserParam);
-typedef VOID (WINAPI *CALLBACK_DATA_RECV)( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,DWORD dwDataLen);
-typedef BOOL (WINAPI *SEND_DATA)( HANDLE hClient,BYTE *pDataBuffer,DWORD dwDataLen);
-
-typedef struct tagIOCP_TCP_CALLBACK
-{
-	//客户端连接回调
-	CALLBACK_CLIENT_CONNECT pClientConnect;
-	//客户端断开回调
-	CALLBACK_CLIENT_DISCONNECT pClientDisConnect;
-	//收到客户端数据回调
-	CALLBACK_DATA_RECV  pDataRecv;
-
-}IOCP_TCP_CALLBACK,*PIOCP_TCP_CALLBACK;
 
 class CIOCPTcpClient
 {
@@ -46,6 +32,13 @@ protected:
 
 	CCSLock m_lockSendPendingLen;
 	DWORD m_dwSendPendingLen;
+	
+	BOOL   m_bHeartBeatResponse;
+
+	CBuffer m_bufDataRecved;
+	TCP_CTRL_CODE m_ctrlCode;
+	int      m_nRemainDataLen;
+	int      m_nTotalDataLen;
 
 public:
 	CIOCPTcpClient(void);
@@ -62,6 +55,9 @@ public:
 	VOID SetUserParam( PVOID pUserParam );
 	PVOID GetUserParam(  );
 	
+	VOID SetHeartBeatResponse(BOOL bResponse);
+	BOOL GetHeartBeatResponse();
+
 	BOOL PostRecvRequest( );
 	BOOL PostSendRequest( BYTE *pSendBuf,DWORD dwDataLen , DWORD *pdwPenddingSendLen );
 

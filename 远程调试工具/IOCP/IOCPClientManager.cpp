@@ -12,6 +12,45 @@ VOID CIOCPClientManager::AddIOCPClient(HANDLE hCLient)
 	m_lockIOCPClearList.UnLock();
 	SetEvent(m_hEventNewClient);
 }
+BOOL CIOCPClientManager::SetHeartBeatResponse(HANDLE hClient,BOOL bResponse)
+{
+	BOOL bRes = FALSE;
+
+	CCSLock *pHandleLock = m_HandleManager.GetHandleLocker(hClient);
+
+	if ( pHandleLock )
+	{
+		CAutoCSLocker AutoLocker(pHandleLock);
+
+		CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
+		if (pIOCPClient)
+		{
+			pIOCPClient->SetHeartBeatResponse(bResponse);
+		}
+	}
+
+	return bRes;
+}
+
+BOOL CIOCPClientManager::GetHeartBeatResponse(HANDLE hClient)
+{
+	BOOL bResponse = FALSE;
+
+	CCSLock *pHandleLock = m_HandleManager.GetHandleLocker(hClient);
+
+	if ( pHandleLock )
+	{
+		CAutoCSLocker AutoLocker(pHandleLock);
+
+		CIOCPTcpClient *pIOCPClient = (CIOCPTcpClient *)m_HandleManager.GetHandleData(hClient);
+		if (pIOCPClient)
+		{
+			bResponse = pIOCPClient->GetHeartBeatResponse();
+		}
+	}
+
+	return bResponse;
+}
 
 DWORD WINAPI CIOCPClientManager::IOCPClientClearThread( PVOID pParam )
 {
@@ -177,8 +216,9 @@ BOOL CIOCPClientManager::Connect( HANDLE hClient , LPCSTR pszTargetIP,USHORT nTa
 	return bConnectRes;
 }
 
-VOID CIOCPClientManager::SetUserParam( HANDLE hClient ,PVOID pUserParam )
+BOOL CIOCPClientManager::SetUserParam( HANDLE hClient ,PVOID pUserParam )
 {
+	BOOL bSetParamRes = FALSE;
 	CCSLock *pHandleLock = m_HandleManager.GetHandleLocker(hClient);
 	if (pHandleLock)
 	{
@@ -187,8 +227,11 @@ VOID CIOCPClientManager::SetUserParam( HANDLE hClient ,PVOID pUserParam )
 		if (pIOCPClient)
 		{
 			pIOCPClient->SetUserParam(pUserParam);
+			bSetParamRes = TRUE;
 		}
 	}
+
+	return bSetParamRes;
 }
 
 PVOID CIOCPClientManager::GetUserParam( HANDLE hClient  )
@@ -263,7 +306,6 @@ VOID CIOCPClientManager::OnDataTransfer( HANDLE hClient ,PWSAOVERLAPPEDEX pOverL
 		if (pIOCPClient)
 		{
 			pIOCPClient->OnDataTransfer(hClient,pOverLappedEx , dwBitLen);
-
 		}
 	}
 }
@@ -273,15 +315,7 @@ VOID WINAPI HandleEnumCallback( PVOID pParam,HANDLE hClient )
 	list<HANDLE> *plstHandles = (list<HANDLE> *)pParam;
 	plstHandles->push_back(hClient);
 }
-VOID CIOCPClientManager::GetAllOnlineClient( TypeOnlineClientEnumCallBack pCallback , PVOID pParam )
+VOID CIOCPClientManager::GetAllOnlineClient( list<HANDLE> *plstOnlineHandles )
 {
-	list<HANDLE> lstHandles;
-
-	m_HandleManager.EnumHandles(HandleEnumCallback,&lstHandles);
-
-	for (list<HANDLE>::const_iterator it = lstHandles.begin();it!=lstHandles.end();it++)
-	{
-		pCallback(pParam,*it);
-	}
-
+	m_HandleManager.EnumHandles(HandleEnumCallback,plstOnlineHandles);
 }

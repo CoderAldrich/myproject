@@ -68,6 +68,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="$(OutDir)\"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -198,10 +199,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\SocketBase.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\stdafx.cpp"
 				>
 				<FileConfiguration
@@ -220,10 +217,6 @@
 						UsePrecompiledHeader="1"
 					/>
 				</FileConfiguration>
-			</File>
-			<File
-				RelativePath=".\TcpSocket.cpp"
-				>
 			</File>
 		</Filter>
 		<Filter
@@ -248,19 +241,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\SocketBase.h"
-				>
-			</File>
-			<File
 				RelativePath=".\stdafx.h"
 				>
 			</File>
 			<File
 				RelativePath=".\targetver.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TcpSocket.h"
 				>
 			</File>
 		</Filter>

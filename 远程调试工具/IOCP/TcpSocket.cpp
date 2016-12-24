@@ -6,6 +6,13 @@ CTcpSocket::CTcpSocket()
 	m_TcpSock = NULL;
 	m_bAcceptInit = FALSE;
 	m_nAcceptPort = 0;
+	m_pDataRecv = NULL;
+	m_pConnectClosed = NULL;
+	m_hRecvThread = NULL;
+	m_nRemainDataLen = 0;
+	m_nTotalDataLen = 0;
+	m_hThisClient = NULL;
+	m_ctrlCode = TC_ERROR;
 }
 
 CTcpSocket::CTcpSocket(SOCKET sock)
@@ -13,6 +20,13 @@ CTcpSocket::CTcpSocket(SOCKET sock)
 	m_TcpSock = sock;
 	m_bAcceptInit = FALSE;
 	m_nAcceptPort = 0;
+	m_pDataRecv = NULL;
+	m_pConnectClosed = NULL;
+	m_hRecvThread = NULL;
+	m_nRemainDataLen = 0;
+	m_nTotalDataLen = 0;
+	m_hThisClient = NULL;
+	m_ctrlCode = TC_ERROR;
 }
 
 CTcpSocket::~CTcpSocket()
@@ -173,4 +187,106 @@ int CTcpSocket::SendData(PVOID pDataBuf, int nDataLen)
 int CTcpSocket::RecvData(PVOID pDataBuf, int nBufLen)
 {	
 	return recv(m_TcpSock,(char *)pDataBuf,nBufLen,0);
+}
+
+VOID CTcpSocket::HandleRecvData( char *pchRecvBuffer,int nRecvLen  )
+{
+	m_bufDataRecved.AppendData((BYTE *)pchRecvBuffer,nRecvLen);
+
+	while ( TRUE )
+	{
+		char *pchRealDataBuffer = (char *)m_bufDataRecved.GetDataBuffer();
+		int    nRealDataLen = m_bufDataRecved.GetTotalBufferLen();
+
+		if ( m_nRemainDataLen == 0 )
+		{
+			if ( nRealDataLen >= sizeof(IOCP_TCP_HEAD) )
+			{
+				PIOCP_TCP_HEAD pTcpHead = (PIOCP_TCP_HEAD)pchRealDataBuffer;
+				m_nTotalDataLen = pTcpHead->dwDataLen;
+				m_nRemainDataLen = 1;
+				m_ctrlCode = pTcpHead->tcpCtrlCode;
+
+				m_bufDataRecved.DeleteLeft(sizeof(IOCP_TCP_HEAD));
+				pchRealDataBuffer = (char *)m_bufDataRecved.GetDataBuffer();
+				nRealDataLen = m_bufDataRecved.GetTotalBufferLen();
+			}
+			else
+			{
+				break;
+			}
+		}
+		
+
+		if ( m_nRemainDataLen == 1 )
+		{
+			if ( nRealDataLen >= m_nTotalDataLen )
+			{
+				OnRecvFullPkg( m_ctrlCode ,pchRealDataBuffer,m_nTotalDataLen);
+				
+				m_bufDataRecved.DeleteLeft(m_nTotalDataLen);
+				m_nTotalDataLen = 0;
+				m_nRemainDataLen = 0;
+				m_ctrlCode = TC_ERROR;
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+	
+}
+VOID CTcpSocket::OnRecvFullPkg( TCP_CTRL_CODE ctrlCode , char *pchFullPkgDataBuffer,int nFullPkgDataLen )
+{
+	if ( TC_TRANSFER_DATA == ctrlCode )
+	{
+		if (m_pDataRecv)
+		{
+			m_pDataRecv(m_hThisClient,(BYTE *)pchFullPkgDataBuffer,nFullPkgDataLen);
+		}
+	}
+
+	if ( TC_HEART_BEAT == ctrlCode )
+	{
+		IOCP_TCP_HEAD tcpHead;
+		tcpHead.dwDataLen = 0;
+		tcpHead.tcpCtrlCode = TC_HEART_BEAT;
+		
+		SendData(&tcpHead,sizeof(tcpHead));
+	}
+}
+
+
+int WINAPI WinMain1111(
+					__in HINSTANCE hInstance,
+					__in_opt HINSTANCE hPrevInstance,
+					__in_opt LPSTR lpCmdLine,
+					__in int nShowCmd
+					)
+{
+	CTcpSocket tcpSocket;
+	char chTestRecvBuffer[100];
+	PIOCP_TCP_HEAD pTcpHead = (PIOCP_TCP_HEAD)chTestRecvBuffer;
+	pTcpHead->tcpCtrlCode = TC_TRANSFER_DATA;
+	pTcpHead->dwDataLen = 0;
+
+	pTcpHead = (PIOCP_TCP_HEAD)(chTestRecvBuffer + 0 + sizeof(IOCP_TCP_HEAD));
+	pTcpHead->tcpCtrlCode = TC_HEART_BEAT;
+	pTcpHead->dwDataLen = 30;
+
+	for (int i=0;i<30;i++)
+	{
+		pTcpHead->pData[i] = i;
+	}
+	
+	int nTotalPkgLen = sizeof(IOCP_TCP_HEAD)+10+sizeof(IOCP_TCP_HEAD)+30;
+	for (int i=0;i<nTotalPkgLen;i+=1)
+	{
+		tcpSocket.HandleRecvData(chTestRecvBuffer+i,1);
+	}
+	
+
+
+	return 0;
 }

@@ -61,6 +61,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="$(OutDir)\"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -240,26 +241,6 @@
 			</File>
 			<File
 				RelativePath=".\small.ico"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="NetWork"
-			>
-			<File
-				RelativePath=".\SocketBase.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\SocketBase.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TcpSocket.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\TcpSocket.h"
 				>
 			</File>
 		</Filter>

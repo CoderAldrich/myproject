@@ -259,17 +259,10 @@ VOID WINAPI DataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,
 VOID WINAPI CtrlClientConnectCallback( HANDLE hClient,sockaddr_in *psiClient )
 {
 
-	// 	char chBuffer[]="ping www.baidu.com";
-	// 	g_ClientManager.PostSendRequest(hClient,(BYTE *)chBuffer,strlen(chBuffer),NULL);
-	// 	
-
-	// 
-	// 	int a=0;
-
 }
 VOID WINAPI CtrlClientDisConnectCallback( HANDLE hClient , PVOID pUserParam)
 {
-	//int a=0;
+
 }
 
 VOID WINAPI CtrlDataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,DWORD dwDataLen)
@@ -372,7 +365,7 @@ DWORD WINAPI HeartBeatThread( PVOID pParam )
 	return 0;
 }
 
-int _tmain(int argc, _TCHAR* argv[])
+int _tmain111(int argc, _TCHAR* argv[])
 {
 
 	IOCP_TCP_CALLBACK TcpCallback;
