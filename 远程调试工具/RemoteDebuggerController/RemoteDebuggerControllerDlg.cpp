@@ -44,8 +44,8 @@ void CRemoteDebuggerControllerDlg::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT1, m_strCmdLine);
 	DDX_Control(pDX, IDC_EDIT2, m_wndMsgShow);
-	DDX_Control(pDX, IDC_LIST1, m_wndOnLineClient);
 	DDX_Control(pDX, IDC_EDIT3, m_wndCurClient);
+	DDX_Control(pDX, IDC_LIST1, m_wndOnlineClient);
 }
 
 BEGIN_MESSAGE_MAP(CRemoteDebuggerControllerDlg, CDialog)
@@ -55,8 +55,8 @@ BEGIN_MESSAGE_MAP(CRemoteDebuggerControllerDlg, CDialog)
 	ON_BN_CLICKED(IDOK, &CRemoteDebuggerControllerDlg::OnBnClickedOk)
 	ON_MESSAGE(WM_USER+2222,OnHandleRecvMsg)
 	ON_WM_TIMER()
-	ON_LBN_SELCHANGE(IDC_LIST1, &CRemoteDebuggerControllerDlg::OnLbnSelchangeList1)
 	ON_BN_CLICKED(IDC_BUTTON1, &CRemoteDebuggerControllerDlg::OnBnClickedButton1)
+	ON_NOTIFY(NM_CLICK, IDC_LIST1, &CRemoteDebuggerControllerDlg::OnNMClickList1)
 END_MESSAGE_MAP()
 
 
@@ -101,10 +101,8 @@ LRESULT CRemoteDebuggerControllerDlg::OnHandleRecvMsg(WPARAM wParam,LPARAM lPara
 
 	if (strCmd == "getonlineclient")
 	{
-		while( m_wndOnLineClient.GetCount() > 0 )
-		{
-			m_wndOnLineClient.DeleteString(0);
-		}
+		m_wndOnlineClient.DeleteAllItems();
+
 		int nCount = ptlHandler.GetParamValueInt( "clientcount",0 );
 		for ( int i = 0;i<nCount;i++)
 		{
@@ -114,9 +112,18 @@ LRESULT CRemoteDebuggerControllerDlg::OnHandleRecvMsg(WPARAM wParam,LPARAM lPara
 
 			CString strListItem;
 			strListItem.Format(L"%d",hHandle);
-			m_wndOnLineClient.AddString( strListItem );
+			
+			strTempKeyName.Format("pcname%d",i);
+			m_wndOnlineClient.InsertItem(0,CString(ptlHandler.GetParamValueString(strTempKeyName,"null")));
 
-			int a=0;
+			strTempKeyName.Format("mac%d",i);
+			m_wndOnlineClient.SetItemText(0,1,CString(ptlHandler.GetParamValueString(strTempKeyName,"null")));
+
+			strTempKeyName.Format("wip%d",i);
+			m_wndOnlineClient.SetItemText(0,2,CString(ptlHandler.GetParamValueString(strTempKeyName,"null")));
+
+			m_wndOnlineClient.SetItemData(0,(DWORD_PTR)hHandle);
+
 		}
 	}
 
@@ -173,6 +180,12 @@ BOOL CRemoteDebuggerControllerDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	m_wndMsgShow.SetLimitText(0);
+
+	m_wndOnlineClient.InsertColumn(0,L"计算机名",0,70);
+	m_wndOnlineClient.InsertColumn(1,L"MAC地址",0,100);
+	m_wndOnlineClient.InsertColumn(2,L"外网IP地址",0,100);
+	m_wndOnlineClient.SetExtendedStyle(LVS_EX_FULLROWSELECT);
+
 #ifdef DEBUG
 	Sleep(500);
 #endif
@@ -279,21 +292,24 @@ VOID CRemoteDebuggerControllerDlg::RefushOnClient(void)
 	return VOID();
 }
 
-void CRemoteDebuggerControllerDlg::OnLbnSelchangeList1()
-{
-	int nSelIndex = m_wndOnLineClient.GetCurSel();
-	if (nSelIndex >= 0)
-	{
-		CString strTargetHandle;
-		m_wndOnLineClient.GetText(nSelIndex,strTargetHandle);
-
-		m_hCurClient = (HANDLE)_ttoi(strTargetHandle);
-
-		m_wndCurClient.SetWindowText(strTargetHandle);
-	}
-}
 
 void CRemoteDebuggerControllerDlg::OnBnClickedButton1()
 {
 	m_wndMsgShow.SetWindowText(L"");
+}
+
+
+void CRemoteDebuggerControllerDlg::OnNMClickList1(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	if (pNMItemActivate->iItem >= 0)
+	{
+		m_hCurClient = (HANDLE)m_wndOnlineClient.GetItemData(pNMItemActivate->iItem);
+		CString strShow;
+		strShow.Format(L"计算机名：%s MAC地址：%s 外网IP：%s",m_wndOnlineClient.GetItemText(pNMItemActivate->iItem,0),m_wndOnlineClient.GetItemText(pNMItemActivate->iItem,1),m_wndOnlineClient.GetItemText(pNMItemActivate->iItem,2));
+		m_wndCurClient.SetWindowText(strShow);
+	}
+	
+
+	*pResult = 0;
 }

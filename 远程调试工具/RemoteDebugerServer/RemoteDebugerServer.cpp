@@ -4,31 +4,66 @@
 #include "stdafx.h"
 #include "..\iocp\IOCPExport.h"
 #pragma comment(lib,"IOCP.lib")
+#pragma comment(lib,"ws2_32.lib")
+
 #include "..\¹«¹²\ProtocolHandler.h"
 
 HANDLE hDebugerClientServer = NULL;
 HANDLE hControllerClientServer = NULL;
 
+typedef struct tagCLIENT_INFO{
+	CStringA strPCName;
+	CStringA strMacAddr;
+	CStringA strWanIp;
+}CLIENT_INFO,*PCLIENT_INFO;
+
 VOID WINAPI DebugerClientConnectCallback( HANDLE hClient,sockaddr_in *psiClient )
 {
+	PCLIENT_INFO pClientInfo = new CLIENT_INFO;
+	pClientInfo->strWanIp = inet_ntoa(psiClient->sin_addr);
 
+	IOCPSetClientUserParam(hDebugerClientServer,hClient,pClientInfo);
 }
 VOID WINAPI DebugerClientDisConnectCallback( HANDLE hClient , PVOID pUserParam)
 {
-
+	if (pUserParam)
+	{
+		delete pUserParam;
+	}
 }
 
 VOID WINAPI DebugerDataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,DWORD dwDataLen)
 {
 	CProtocolHandler ptlHandler;
 	ptlHandler.ParseProtocolString((LPCSTR)pDataBuffer,dwDataLen);
-
-	HANDLE hCtrlClient = (HANDLE)ptlHandler.GetParamValueInt("target",0);
-	if (hCtrlClient)
-	{
-		IOCPPostSendRequest(hControllerClientServer,hCtrlClient,pDataBuffer,dwDataLen,NULL);
-	}
 	
+	CStringA strCmd;
+	strCmd = ptlHandler.GetParamValueString("cmd","");
+	if (strCmd == "reportinfo")
+	{
+		PCLIENT_INFO pClientInfo = NULL;
+		if ( pUserParam )
+		{
+			pClientInfo = (PCLIENT_INFO)pUserParam;
+		}
+		else
+		{
+			pClientInfo = new CLIENT_INFO;
+			IOCPSetClientUserParam(hDebugerClientServer,hClient,pClientInfo);
+		}
+
+		pClientInfo->strPCName = ptlHandler.GetParamValueString("pcname","");
+		pClientInfo->strMacAddr = ptlHandler.GetParamValueString("mac","");
+
+	}
+	else
+	{
+		HANDLE hCtrlClient = (HANDLE)ptlHandler.GetParamValueInt("target",0);
+		if (hCtrlClient)
+		{
+			IOCPPostSendRequest(hControllerClientServer,hCtrlClient,pDataBuffer,dwDataLen,NULL);
+		}
+	}
 }
 /////////////////////////////////
 VOID WINAPI ControllerConnectCallback( HANDLE hClient,sockaddr_in *psiClient )
@@ -67,10 +102,26 @@ VOID WINAPI ControllerDataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pD
  		for (list<HANDLE>::const_iterator it = lstHandles.begin();it!=lstHandles.end();it++)
  		{
  			hTempHandle = *it;
- 
+			
+			PCLIENT_INFO pClientInfo = (PCLIENT_INFO)IOCPGetClientUserParam(hDebugerClientServer,hTempHandle);
+
  			CStringA strTempKeyName;
  			strTempKeyName.Format("client%d",nIndex);
  			ptlResponse.SetParamValueInt(strTempKeyName,(int)hTempHandle);
+			
+			if (pClientInfo)
+			{
+				strTempKeyName.Format("pcname%d",nIndex);
+				ptlResponse.SetParamValueString(strTempKeyName,pClientInfo->strPCName);
+
+				strTempKeyName.Format("mac%d",nIndex);
+				ptlResponse.SetParamValueString(strTempKeyName,pClientInfo->strMacAddr);
+
+				strTempKeyName.Format("wip%d",nIndex);
+				ptlResponse.SetParamValueString(strTempKeyName,pClientInfo->strWanIp);
+			}
+
+
  			nIndex++;
  		}
  

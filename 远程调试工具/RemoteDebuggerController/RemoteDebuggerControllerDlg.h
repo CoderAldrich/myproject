@@ -4,6 +4,7 @@
 
 #pragma once
 #include "afxwin.h"
+#include "afxcmn.h"
 
 // CRemoteDebuggerControllerDlg ¶Ô»°¿ò
 class CRemoteDebuggerControllerDlg : public CDialog
@@ -34,10 +35,10 @@ public:
 	CString m_strCmdLine;
 	afx_msg void OnBnClickedOk();
 	CEdit m_wndMsgShow;
-	CListBox m_wndOnLineClient;
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	VOID RefushOnClient(void);
-	afx_msg void OnLbnSelchangeList1();
 	CEdit m_wndCurClient;
 	afx_msg void OnBnClickedButton1();
+	CListCtrl m_wndOnlineClient;
+	afx_msg void OnNMClickList1(NMHDR *pNMHDR, LRESULT *pResult);
 };
