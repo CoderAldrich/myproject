@@ -185,7 +185,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\公共\MemIni.cpp"
+				RelativePath="..\公共\ProtocolHandler.cpp"
 				>
 			</File>
 			<File
@@ -231,7 +231,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\公共\MemIni.h"
+				RelativePath="..\公共\ProtocolHandler.h"
 				>
 			</File>
 			<File

