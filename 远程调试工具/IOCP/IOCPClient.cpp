@@ -52,6 +52,12 @@ DWORD WINAPI RecvDataThread( PVOID pParam )
 
 		ptcpSock->HandleRecvData(chRecvBuffer,nRecvRes);
 	}
+
+	if (ptcpSock->m_pConnectClosed)
+	{
+		ptcpSock->m_pConnectClosed(ptcpSock);
+	}
+
 	return 0;
 }
 BOOL StartRecvData( HANDLE hClient )

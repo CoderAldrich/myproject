@@ -199,7 +199,7 @@ BOOL CRemoteDebuggerControllerDlg::OnInitDialog()
 	
 	pThis = this;
 	m_hClient = CreateClient(DataRecvCallback,ConnectClosed);
-	BOOL bConRes = ClientConnect(m_hClient,"localhost",8890);
+	BOOL bConRes = ClientConnect(m_hClient,"gz8912.jios.org",8890);
 	if (bConRes)
 	{
 		StartRecvData(m_hClient);
