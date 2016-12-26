@@ -177,6 +177,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\PostFile.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\PrintWindow.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\公共\ProtocolHandler.cpp"
 				>
 			</File>
@@ -212,6 +220,14 @@
 			>
 			<File
 				RelativePath="..\公共\Base64.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PostFile.h"
+				>
+			</File>
+			<File
+				RelativePath=".\PrintWindow.h"
 				>
 			</File>
 			<File
